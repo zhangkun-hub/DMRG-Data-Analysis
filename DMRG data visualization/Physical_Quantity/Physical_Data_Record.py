@@ -230,32 +230,38 @@ class SuperCorrRecord(Record):
         record_list = []
         honey_latt = HoneycombXCGeometry(N, a)
         
-        ### 4.遍历数据并封装成SuperCorrRecord对象
+        ### 4.遍历数据，将满足条件的数据提取并封装成SuperCorrRecord对象
+        ## 提取tar-bond的条件1：将与ref-bond尽可能保持水平的tar-bond进行提取
+        allowed_cond = {(0,0), (4,4), (4,7), (5,0), (7,4), (0,5)}
+
         for m, element in enumerate(data_list):
-            ## 4.1 解包数据 (格式为: [[i, j, k, l], [val, 0]])
+            ## 解包数据 (格式为: [[i, j, k, l], [val, 0]])
             try:
                 [i, j, k, l], [value, *_] = element  # *星号操作符：用于收集剩余的元素到一个列表中；_表示"不关心的变量"或"占位符"
             except (TypeError, ValueError):
                 raise NameError(f"Error：第 {m} 个元素格式不正确")
 
-            ## 4.2 校验reference bond一致性
+            ## 校验reference bond一致性
             if (i, j) != first_bond:
                 raise ValueError(f"数据不一致：第 {m} 个元素的源点为 {(i, j)}，预期为 {first_bond}")
 
-            ## 4.3 校验target bond是否在右边3/4边界处之内，满足条件的提取
+            ## 提取tar-bond的条件2：要求target bond不超过右边界
             right_bound_p = int(N * 3/4) - 1
             if l <= right_bound_p:
-                # 4.3.1 超导关联函数的距离计算
-                r = honey_latt.sup_corr_distance(i, j, k, l)
-                
-                # 4.3.2 实例化类对象
-                record_obj = cls(
-                    ref_bond=(i, j), 
-                    target_bond=(k, l), 
-                    distance=r, 
-                    sup_corr=value
-                )
-                record_list.append(record_obj)
+                d1 = (k - i) % 8
+                d2 = (l - j) % 8
+                if (d1, d2) in allowed_cond:
+                    # 超导关联函数的距离计算
+                    r = honey_latt.sup_corr_distance(i, j, k, l)                  
+                    # 实例化类对象
+                    record_obj = cls(
+                        ref_bond=(i, j), 
+                        target_bond=(k, l), 
+                        distance=r, 
+                        sup_corr=value
+                    )
+                    # 添加到record_list中
+                    record_list.append(record_obj)  
 
         return record_list  
         
