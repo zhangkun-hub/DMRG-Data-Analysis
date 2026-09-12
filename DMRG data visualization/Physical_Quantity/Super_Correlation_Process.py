@@ -118,17 +118,18 @@ class SuperCorrProcessor:
     #--------------------- 超导关联函数的数据可视化（一组数据） --------------------
     #-------------------------------------------------------------------------------
     @staticmethod
-    def Super_Corr_Visualization(record_list: list[SuperCorrRecord]):
+    def Super_Corr_Visualization(record_list: list[SuperCorrRecord], label):
         """
         将输入的超导关联函数对象列表元素进行可视化
         :param record_list: 超导关联函数对象列表。
+        :label: 图例，用于表示超导关联函数的哪个键方向(固定格式: "A key (blue bond)")
         """
         ## 1. 提取出超导关联函数的reference bond(i, j)
         ref_bond = record_list[0].ref_bond
 
         ## 2. 将数据存储到x轴和y轴列表中
-        x_data = [] # 创建存储两格点之间的距离数据
-        y_data = [] # 创建存储在x_data的距离下对应的超导关联函数数据
+        x_data = [] # 存储两格点之间的距离数据
+        y_data = [] # 存储在x_data的距离下对应的超导关联函数数据
         for element in record_list:
             x_data.append(element.distance)
             y_data.append(element.sup_corr)
@@ -136,33 +137,35 @@ class SuperCorrProcessor:
         ## 3. 创建1行3列的子图布局
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
         
-        ## 4. 添加总标题
+        ## 4. 添加总标题和颜色
         fig.suptitle(f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond: {ref_bond})', 
                      fontsize=20, fontweight='bold', y=1.0)
+        color = label.split("(")[1].split(")")[0].split()[0]
         
-
         ## 5. 线性坐标图（原始）
-        axs[0].scatter(x_data, y_data, color='blue', s=60, zorder=3)
+        axs[0].scatter(x_data, y_data, color=color, s=60, label=label, zorder=3)
         axs[0].plot(x_data, y_data, color='red', alpha=0.5, linewidth=2)
         axs[0].set_title(f'Linear Scale', fontsize=16)
         axs[0].set_xlabel('distance r', fontsize=14)
         axs[0].set_ylabel(f'$\\langle \\Delta_ij^\\dagger \\Delta_kl \\rangle$', fontsize=14)
         axs[0].axhline(y=0, color='black', linewidth=3.5, linestyle='-', alpha=0.8, zorder=1)
         axs[0].grid(True, alpha=0.3, linestyle='--')
+        axs[0].legend(fontsize=14, loc='best')
 
         ## 6. 半对数坐标图（y轴对数）- 用于判断指数衰减
         # 注意：如果y_data有负值，对数坐标会有问题，这里取绝对值
         y_abs = np.abs(y_data)
-        axs[1].scatter(x_data, y_abs, color='green', s=60, zorder=3)
+        axs[1].scatter(x_data, y_abs, color=color, s=60, label=label, zorder=3)
         axs[1].plot(x_data, y_abs, color='orange', alpha=0.5, linewidth=2)
         axs[1].set_yscale('log')
         axs[1].set_title(f'Log-Linear Scale (y-log)\nExponential decay check', fontsize=16)
         axs[1].set_xlabel('distance r', fontsize=14)
         axs[1].set_ylabel(f'$|\\langle \\Delta_ij^\\dagger \\Delta_kl \\rangle|$ (log scale)', fontsize=14)
         axs[1].grid(True, alpha=0.3, linestyle='--', which='both')
+        axs[1].legend(fontsize=14, loc='best')
 
         ## 7. 双对数坐标图 - 用于判断幂律衰减
-        axs[2].scatter(x_data, y_abs, color='purple', s=60, zorder=3)
+        axs[2].scatter(x_data, y_abs, color=color, s=60, label=label, zorder=3)
         axs[2].plot(x_data, y_abs, color='brown', alpha=0.5, linewidth=2)
         axs[2].set_xscale('log')
         axs[2].set_yscale('log')
@@ -170,6 +173,7 @@ class SuperCorrProcessor:
         axs[2].set_xlabel('distance r (log scale)', fontsize=14)
         axs[2].set_ylabel(f'$|\\langle \\Delta_ij^\\dagger \\Delta_kl \\rangle|$ (log scale)', fontsize=14)
         axs[2].grid(True, alpha=0.3, linestyle='--', which='both')
+        axs[2].legend(fontsize=14, loc='best')
 
         ## 8. 调整布局
         plt.tight_layout()
@@ -345,4 +349,3 @@ class SuperCorrProcessor:
         axs[1].legend(fontsize=14, loc='best')
         plt.tight_layout()
         plt.show()
-    
