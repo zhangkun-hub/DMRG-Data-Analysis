@@ -142,20 +142,47 @@ class CorrelationProcessor:
     #--------------------- 自旋关联函数的数据绝对误差可视化 --------------------
     #---------------------------------------------------------------------------
     @staticmethod
-    def Spin_Corr_Visualization_difference(record_list_1: list[CorrelationRecord], record_list_2: list[CorrelationRecord]):
+    def Spin_Corr_Visualization_difference(
+        corr_dict: dict[str, list[CorrelationRecord]]
+    ):
         """
-        将输入的两组自旋关联函数对象列表元素进行绝对误差的可视化
+        将输入的自旋关联函数字典中的前两组数据进行可视化，并绘制两组数据之间的绝对误差。
+
+        Input:
+        :corr_dict: dict[str, list[CorrelationRecord]]
+            字典的结构：
+                    key   -> 子图标题
+                    value -> 对应的自旋关联函数对象列表
+
+            例如：{'UltraDMRG': records_list_1, 'Itensor': records_list_2}
         """
-        ### 1. 检查两个自旋关联函数对象列表的长度是否一致
+        ### 检查输入数据并获取字典中的前两组数据
+        ## 至少需要两组数据，才能计算绝对误差
+        if len(corr_dict) < 2:
+            raise ValueError(
+                "corr_dict 至少需要包含两组自旋关联函数数据，才能计算绝对误差"
+            )
+
+        ## 获取字典中的前两组数据
+        # 注：Python 3.7+ 中字典保持插入顺序，因此这里按照输入顺序取前两组
+        titles = list(corr_dict.keys())
+
+        title_1 = titles[0]
+        title_2 = titles[1]
+
+        record_list_1 = corr_dict[title_1]
+        record_list_2 = corr_dict[title_2]
+
+        ### 检查两个自旋关联函数对象列表的长度是否一致
         if len(record_list_1) != len(record_list_2):
             raise ValueError("输入的两个自旋关联函数对象列表的列表长度不一致")
         
-        ### 2. 获取自旋关联函数的源点
+        ### 获取自旋关联函数的源点
         source_point = record_list_1[0].source_point
         if source_point != record_list_2[0].source_point:
             raise ValueError("两个自旋关联函数的源点并不相同")
 
-        ### 3. 将数据存储到x轴和y轴列表中
+        ### 将数据存储到x轴和y轴列表中
         x_data = [] # 创建存储两格点之间的距离数据
         y1_data = [] # 存储record_list_1的自旋关联函数数据
         y2_data = [] # 存储record_list_2的自旋关联函数数据
@@ -166,32 +193,32 @@ class CorrelationProcessor:
             y2_data.append(record_list_2[i].correlation)
             y3_data.append(abs(element.correlation - record_list_2[i].correlation))
 
-        ### 4. 可视化
-        ## 4.1 创建1行3列的子图布局
+        ### 可视化
+        ## 创建1行3列的子图布局
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
         
-        ## 4.2 添加总标题
+        ## 添加总标题
         fig.suptitle(f'Spin-Spin Correlation Function $\\langle S_i \\cdot S_j \\rangle$ (reference site: {source_point})', 
                      fontsize=20, fontweight='bold', y=1.0)
         
 
-        ## 4.3 record_list_1数据的可视化
+        ## record_list_1数据的可视化
         axs[0].scatter(x_data, y1_data, color='blue', s=60, zorder=3)
         axs[0].plot(x_data, y1_data, color='red', alpha=0.5, linewidth=2)
-        axs[0].set_title(f'UltraDMRG', fontsize=16)
+        axs[0].set_title(title_1, fontsize=16)
         axs[0].set_xlabel('distance r', fontsize=14)
         axs[0].set_ylabel(f'$\\langle S_i \\cdot S_j \\rangle$', fontsize=14)
         axs[0].grid(True, alpha=0.3, linestyle='--')
 
-        ## 4.4 record_list_2数据的可视化
+        ## record_list_2数据的可视化
         axs[1].scatter(x_data, y2_data, color='green', s=60, zorder=3)
         axs[1].plot(x_data, y2_data, color='orange', alpha=0.5, linewidth=2)
-        axs[1].set_title(f'Itensor', fontsize=16)
+        axs[1].set_title(title_2, fontsize=16)
         axs[1].set_xlabel('distance r', fontsize=14)
         axs[1].set_ylabel(f'$\\langle S_i \\cdot S_j \\rangle$', fontsize=14)
         axs[1].grid(True, alpha=0.3, linestyle='--')
 
-        ## 4.5 record_list_1与record_list_2之差的数据可视化
+        ## record_list_1与record_list_2之差的数据可视化
         axs[2].scatter(x_data, y3_data, color='purple', s=60, zorder=3)
         axs[2].plot(x_data, y3_data, color='brown', alpha=0.5, linewidth=2)
         axs[2].set_title(f'Absolute Error of Spin-Spin Correlation', fontsize=16)
@@ -199,10 +226,10 @@ class CorrelationProcessor:
         axs[2].set_ylabel(f'Absolute Error', fontsize=14)
         axs[2].grid(True, alpha=0.3, linestyle='--')
 
-        ## 4.6 调整布局
+        ## 调整布局
         plt.tight_layout()
 
-        ## 4.7 显示图表
+        ## 显示图表
         plt.show()
 
 

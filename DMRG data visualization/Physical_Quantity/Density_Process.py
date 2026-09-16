@@ -78,139 +78,154 @@ class DensityProcessor:
     #------------------- 电子密度的绝对误差的一维折线图可视化 --------------------
     #----------------------------------------------------------------------------- 
     @staticmethod
-    def Line_Chart_Visualization_difference(record_list_1: list[DensityRecord], record_list_2: list[DensityRecord]):
+    def Line_Chart_Visualization_difference(
+        density_dict: dict[str, list[DensityRecord]]
+    ):
         """
-        电子密度对象1与对象2(两组数据)的绝对误差的一维折线图可视化
-        :param record_list_1: 格点电子密度对象1列表。
-        :param record_list_2: 格点电子密度对象2列表。
+        将输入的电子密度字典中的前两组数据进行可视化，并绘制两组数据之间的绝对误差的一维折线图可视化。
+
+        Input:
+        :density_dict: dict[str, list[DensityRecord]]
+            字典的结构：
+                    key   -> 子图标题
+                    value -> 对应的自旋关联函数对象列表
+
+            例如：{'UltraDMRG': records_list_1, 'Itensor': records_list_2}
         """
-        ### 1. 检查两个密度对象长度是否一致
+        # -----------------------------------------------------------------------
+        # ---------------------------- 检查输入数据 ------------------------------
+        ## 检查输入数据并获取字典中的前两组数据
+        # 至少需要两组数据，才能计算绝对误差
+        if len(density_dict) < 2:
+            raise ValueError(
+                "density_dict 至少需要包含两组电子密度数据，才能计算绝对误差"
+            )
+
+        # 获取字典中的前两组数据
+        # 注：Python 3.7+ 中字典保持插入顺序，因此这里按照输入顺序取前两组
+        titles = list(density_dict.keys())
+
+        title_1 = titles[0]
+        title_2 = titles[1]
+
+        record_list_1 = density_dict[title_1]
+        record_list_2 = density_dict[title_2]
+
+        ## 检查两个密度对象长度是否一致
         if len(record_list_1) != len(record_list_2):
             raise ValueError("输入的两个密度对象列表的列表长度不一致")
-        
-        ### 2. 将数据存储到y轴列表中
-        ## 2.1 创建存储record_list_1数据的y轴列表
-        y0_data_1 = []    # 创建存储水平起始点为0的水平行的格点密度数据
-        y1_data_1 = []    # 创建存储水平起始点为1的水平行的格点密度数据
-        y2_data_1 = []    # 创建存储水平起始点为2的水平行的格点密度数据
-        y3_data_1 = []    # 创建存储水平起始点为3的水平行的格点密度数据
-        
-        ## 2.2 创建存储record_list_2数据的y轴列表
-        y0_data_2 = []    
-        y1_data_2 = []    
-        y2_data_2 = []    
-        y3_data_2 = []
-        
-        ## 2.3 创建存储两列表数据之差的y轴列表
-        y0_data_difference = []    
-        y1_data_difference = []    
-        y2_data_difference = []    
-        y3_data_difference = []
-        
-        ## 2.4 将数据添加到对应的y轴列表中
+
+
+        # ------------------------------------------------------------------------
+        # ----------------------- 按水平起点分类数据并检查 ------------------------- 
+        ## 创建四组数据：
+        # index = 0, 1, 2, 3 分别对应 horizontal_starting_point
+        data_1 = [[], [], [], []]           # 记录record_list_1的数据
+        data_2 = [[], [], [], []]           # 记录record_list_1的数据
+        data_difference = [[], [], [], []]  # 记录data1与data2的绝对误差
+
+        ## 根据 horizontal_starting_point 将数据分别存入四组列表
         for i, element in enumerate(record_list_1):
-            if element.horizontal_starting_point == 0:
-                y0_data_1.append(element.density)
-                y0_data_2.append(record_list_2[i].density)
-                y0_data_difference.append(abs(element.density - record_list_2[i].density))
-            elif element.horizontal_starting_point == 1:
-                y1_data_1.append(element.density)
-                y1_data_2.append(record_list_2[i].density)
-                y1_data_difference.append(abs(element.density - record_list_2[i].density))
-            elif element.horizontal_starting_point == 2:
-                y2_data_1.append(element.density)
-                y2_data_2.append(record_list_2[i].density)
-                y2_data_difference.append(abs(element.density - record_list_2[i].density))
-            else:
-                y3_data_1.append(element.density)
-                y3_data_2.append(record_list_2[i].density)
-                y3_data_difference.append(abs(element.density - record_list_2[i].density))
-              
-            
-        ### 3. 判断四组数据的长度是否完全一致
-        # 判断原理：通过集合set的自动去重功能，可以判断如果集合长度不为1，说明元素不完全相同
-        lengths_1 = [len(y0_data_1), len(y1_data_1), len(y2_data_1), len(y3_data_1)]
-        if len(set(lengths_1)) != 1:      
-            raise ValueError(f"输入的record_list_1的四组数据长度不一致: {lengths_1}") 
-            
-        lengths_2 = [len(y0_data_2), len(y1_data_2), len(y2_data_2), len(y3_data_2)]
-        if len(set(lengths_2)) != 1:      
-            raise ValueError(f"输入的record_list_2的四组数据长度不一致: {lengths_2}") 
-            
-        lengths_difference = [len(y0_data_difference), len(y1_data_difference), len(y2_data_difference), len(y3_data_difference)]
-        if len(set(lengths_difference)) != 1:      
-            raise ValueError(f"两列表数据之差对应的四组数据长度不一致: {lengths_difference}") 
+            start_p = element.horizontal_starting_point
 
-            
-        ### 4. 密度可视化
-        ## 4.1 创建1行3列的子图布局
+            ## 检查 horizontal_starting_point 是否在 0~3 范围内
+            if start_p not in range(4):
+                raise ValueError(f"发现非法的 horizontal_starting_point: {start_p}")
+
+            density_1 = element.density
+            density_2 = record_list_2[i].density
+
+            data_1[start_p].append(density_1)
+            data_2[start_p].append(density_2)
+            data_difference[start_p].append(abs(density_1 - density_2))
+
+        ## 分别检查三组数据中的四个水平行长度是否一致
+        lengths_1 = [len(data) for data in data_1]
+        lengths_2 = [len(data) for data in data_2]
+        lengths_difference = [len(data) for data in data_difference]
+
+        if len(set(lengths_1)) != 1:
+            raise ValueError(f"输入的record_list_1的四组数据长度不一致: {lengths_1}")
+
+        if len(set(lengths_2)) != 1:
+            raise ValueError(f"输入的record_list_2的四组数据长度不一致: {lengths_2}")
+
+        if len(set(lengths_difference)) != 1:
+            raise ValueError(f"两列表数据之差对应的四组数据长度不一致: {lengths_difference}")
+
+
+        # --------------------------------------------------------------------
+        # ------------------------- 准备绘图数据 ------------------------------
+        ## x轴数据
+        x = range(len(data_1[0]))
+
+        ## 四个水平起点对应的标签
+        labels = [
+            'Horizontal Start 0',
+            'Horizontal Start 1',
+            'Horizontal Start 2',
+            'Horizontal Start 3'
+        ]
+
+        ## 绘图参数
+        colors = ['blue', 'orange', 'green', 'red']
+        markers = ['o', 's', '^', 'd']
+        linestyles = ['-', '--', '-', ':']
+
+        ## 将三组数据与对应标题统一进行保存
+        plot_data = [
+            ("record_list_1", data_1, title_1),
+            ("record_list_2", data_2, title_2),
+            ("difference", data_difference, "Absolute Error of Electron Density")
+        ]
+
+
+        #------------------------------------------------------------------------
+        #--------------------- 创建三个子图进行可视化 -----------------------------
+        ## 创建1行3列的子图布局
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
-        
-        ## 4.2 添加总标题
-        fig.suptitle(f'Electron Density Distribution in Honeycomb Lattice', 
-                     fontsize=20, fontweight='bold', y=1.0)
-        
-        ## 4.3 创建x轴与y轴数据字典
-        x = range(len(y0_data_1))
-        data_dict = {
-            "record_list_1":[
-                    (x, y0_data_1, 'Horizontal Start 0'),
-                    (x, y1_data_1, 'Horizontal Start 1'),
-                    (x, y2_data_1, 'Horizontal Start 2'),
-                    (x, y3_data_1, 'Horizontal Start 3')],
-            "record_list_2":[
-                    (x, y0_data_1, 'Horizontal Start 0'),
-                    (x, y1_data_1, 'Horizontal Start 1'),
-                    (x, y2_data_1, 'Horizontal Start 2'),
-                    (x, y3_data_1, 'Horizontal Start 3')],
-            "difference":[
-                    (x, y0_data_difference, 'Horizontal Start 0'),
-                    (x, y1_data_difference, 'Horizontal Start 1'),
-                    (x, y2_data_difference, 'Horizontal Start 2'),
-                    (x, y3_data_difference, 'Horizontal Start 3')],
-        
-        }
-        
-        ## 4.4 创建绘图的参数
-        colors = ['blue', 'orange', 'green', 'red']  # 绘制颜色设置
-        markers = ['o', 's', '^', 'd']           # 数据点形状设置
-        linestyles = ['-', '--', '-', ':']        # 折线形状设置
-        
-            
-        ## 4.5 record_list_1数据的可视化
-        for i, (x, y, label) in enumerate(data_dict["record_list_1"]):
-            axs[0].scatter(x, y, color=colors[i], s=60, zorder=3, label=label)
-            axs[0].plot(x, y, color=colors[i], marker=markers[i], linestyle=linestyles[i], alpha=0.5, linewidth=2)
-        axs[0].set_title(f'UltraDMRG', fontsize=16)
-        axs[0].set_xlabel('Index', fontsize=14)
-        axs[0].set_ylabel(f'Density $\\langle n \\rangle$', fontsize=14)
-        axs[0].grid(True, alpha=0.3, linestyle='--')
-        axs[0].legend(fontsize=14, loc='best')
 
-        ## 4.6 record_list_2数据的可视化
-        for i, (x, y, label) in enumerate(data_dict["record_list_2"]):
-            axs[1].scatter(x, y, color=colors[i], s=60, zorder=3, label=label)
-            axs[1].plot(x, y, color=colors[i], marker=markers[i], linestyle=linestyles[i], alpha=0.5, linewidth=2)
-        axs[1].set_title(f'Itensor', fontsize=16)
-        axs[1].set_xlabel('Index', fontsize=14)
-        axs[1].set_ylabel(f'Density $\\langle n \\rangle$', fontsize=14)
-        axs[1].grid(True, alpha=0.3, linestyle='--')
-        axs[1].legend(fontsize=14, loc='best')
+        ## 添加总标题
+        fig.suptitle(
+            'Electron Density Distribution in Honeycomb Lattice',
+            fontsize=20,
+            fontweight='bold',
+            y=1.0
+        )
 
-        ## 4.7 record_list_1与record_list_2之差的数据可视化
-        for i, (x, y, label) in enumerate(data_dict["difference"]):
-            axs[2].scatter(x, y, color=colors[i], s=60, zorder=3, label=label)
-            axs[2].plot(x, y, color=colors[i], marker=markers[i], linestyle=linestyles[i], alpha=0.5, linewidth=2)
-        axs[2].set_title(f'Absolute Error of Electron Density', fontsize=16)
-        axs[2].set_xlabel('Index', fontsize=14)
-        axs[2].set_ylabel(f'Absolute Error', fontsize=14)
-        axs[2].grid(True, alpha=0.3, linestyle='--')
+        ### 给每个子图进行对应数据的可视化
+        for ax, (_, data, title) in zip(axs, plot_data):
+            ## 绘制四条水平行数据
+            for i in range(4):
+                ax.scatter(x, data[i], color=colors[i], s=60, zorder=3, label=labels[i])
+                ax.plot(x, data[i], color=colors[i], marker=markers[i],
+                    linestyle=linestyles[i], alpha=0.5, linewidth=2
+                )
 
-        ## 4.6 调整布局
+            ## 设置标题
+            ax.set_title(title, fontsize=16)
+
+            ## 设置x轴
+            ax.set_xlabel('Index', fontsize=14)
+
+            ## 设置y轴
+            if title == "Absolute Error of Electron Density":
+                ax.set_ylabel('Absolute Error', fontsize=14)
+            else:
+                ax.set_ylabel(r'Density $\langle n \rangle$', fontsize=14)
+
+            ## 网格
+            ax.grid(True, alpha=0.3, linestyle='--')
+
+            ## 前两个子图显示图例
+            if title != "Absolute Error of Electron Density":
+                ax.legend(fontsize=14, loc='best')
+
+        ## 调整布局
         plt.tight_layout()
 
-        ## 4.7 显示图表
-        plt.show()    
+        ## 显示图表
+        plt.show()
     
     
 

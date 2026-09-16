@@ -275,21 +275,48 @@ class SuperCorrProcessor:
     #-------------------------------------------------------------------------------
     @staticmethod
     def Super_Corr_Visualization_difference(
-        records_dict_1: dict[str, list[SuperCorrRecord]],
-        records_dict_2: dict[str, list[SuperCorrRecord]]
+        super_corr_dict: dict[str, dict[str, list[SuperCorrRecord]]]
     ):
         """
-        将输入的两组超导关联函数字典里的各组元素进行绝对误差的可视化
+        将输入的超导关联函数字典中的前两组数据进行可视化，并绘制两组数据之间的绝对误差。
+
+        Input:
+        :super_corr_dict: dict[str, dict[str, list[SuperCorrRecord]]]
+            外层字典的结构：
+                    key   -> 子图标题
+                    value -> 对应的超导关联函数字典
+
+            例如：{'UltraDMRG': records_dict_1, 'Itensor': records_dict_2}
+                其中 records_dict_1 和 records_dict_2 的结构为：
+                    dict[str, list[SuperCorrRecord]]
         """
-        ### 2. 获取reference bond（取第一组第一条）
+        ### 检查输入数据并获取外层字典中的前两组数据
+        ## 至少需要两组数据，才能计算绝对误差
+        if len(super_corr_dict) < 2:
+            raise ValueError(
+                "super_corr_dict 至少需要包含两组超导关联函数数据，才能计算绝对误差"
+            )
+
+        ## 获取外层字典中的前两组数据
+        # 注：Python 3.7+ 中字典保持插入顺序，因此这里按照输入顺序取前两组
+        titles = list(super_corr_dict.keys())
+
+        title_1 = titles[0]
+        title_2 = titles[1]
+
+        records_dict_1 = super_corr_dict[title_1]
+        records_dict_2 = super_corr_dict[title_2]
+
+
+        ### 获取reference bond（取第一组第一条）
         first_key_1 = next(iter(records_dict_1)) # 获取字典的第一个键(字典是无序的，但在Python 3.7+中插入顺序保留，这里取第一个插入的键)
         ref_bond = records_dict_1[first_key_1][0].ref_bond
 
-        ### 2. 给三种键方向准备相应的颜色与形状进行区分
+        ### 给三种键方向准备相应的颜色与形状进行区分
         colors = ['blue', 'green', 'orange']
         markers = ['o', 's', 'D']
 
-        ### 3. 创建子图
+        ### 创建子图
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
         fig.suptitle(
             f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond: {ref_bond})',
@@ -297,39 +324,39 @@ class SuperCorrProcessor:
         )
 
         
-        ### 4. 遍历每一组数据并作图
+        ### 遍历每一组数据并作图
         for idx, (label, rec_list) in enumerate(records_dict_1.items()):
-            ### 4.1 检查两个超导关联函数对象列表的长度是否一致
+            ### 检查两个超导关联函数对象列表的长度是否一致
             if len(rec_list) != len(records_dict_2[label]):
                 raise ValueError(f"输入的两个超导关联函数字典在键({label})对应的数据列表的长度不一致")
             
-            ## 4.2 输入x轴与y轴数据
+            ## 输入x轴与y轴数据
             x_data = [r.distance for r in rec_list]
             y_data_1 = [r.sup_corr for r in rec_list]
             y_data_2 = [r.sup_corr for r in records_dict_2[label]]
             y_data_3 = [abs(a - b) for a, b in zip(y_data_1, y_data_2)]
 
-            ## 4.3 输入颜色与数据形状
+            ## 输入颜色与数据形状
             c = colors[idx % len(colors)]
             m = markers[idx % len(markers)]
 
-            # 4.4 record_dict_1数据的可视化
+            # record_dict_1数据的可视化
             axs[0].scatter(x_data, y_data_1, color=c, marker=m, s=60, label=label, zorder=3)
             axs[0].plot(x_data, y_data_1, color=c, alpha=0.5, linewidth=2)
             
-            # 4.5 record_dict_2数据的可视化
+            # record_dict_2数据的可视化
             axs[1].scatter(x_data, y_data_2, color=c, marker=m, s=60, label=label, zorder=3)
             axs[1].plot(x_data, y_data_2, color=c, alpha=0.5, linewidth=2)
 
-            # 4.6 record_dict_1与record_dict_2之差的数据可视化
+            # record_dict_1与record_dict_2之差的数据可视化
             axs[2].scatter(x_data, y_data_3, color=c, marker=m, s=60, label=label, zorder=3)
             axs[2].plot(x_data, y_data_3, color=c, alpha=0.5, linewidth=2)
 
             
-        ### 5. 设置各子图属性
+        ### 设置各子图属性
         titles = [
-            'UltraDMRG',
-            'Itensor',
+            title_1,
+            title_2,
             'Absolute Error of Superconducting Correlation'
         ]
         ylabels = [

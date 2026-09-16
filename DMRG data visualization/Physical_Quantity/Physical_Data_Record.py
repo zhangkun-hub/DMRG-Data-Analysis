@@ -221,7 +221,7 @@ class SuperCorrRecord(Record):
             raise ValueError("数据结构不符合预期格式 [[i, j, k, l], [val, 0]]")
         
         ## 2.2 校验：reference bond是否左边1/4边界处
-        left_bound_p = int(N / 4 / 4) * 4
+        left_bound_p = int(N / 8 / 4) * 8
         left_boundary = [left_bound_p, left_bound_p + 1, left_bound_p + 2, left_bound_p + 3]
         if first_bond[0] not in left_boundary:
             raise ValueError(f"初始reference bond {first_bond[0]} 不在左边1/4边界处")

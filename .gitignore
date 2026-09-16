@@ -1,2 +1,19 @@
 # 忽略指定文件夹
 Data_N*/
+
+# AI 工具本地配置
+*.claude
+*claude.md
+*.claudeignore
+.cursor/
+.aider*
+.continue/
+.cody/
+
+# 密钥和凭证
+*.pem
+*.key
+credentials.json
+.npmrc
+.aws/
+.ssh/
