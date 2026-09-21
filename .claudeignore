@@ -1,0 +1,10 @@
+# .claudeignore 示例
+node_modules/     # Node.js 项目的依赖包目录（太大了，AI不需要看）
+.next/            # Next.js 构建产物
+*.log             # 日志文件
+.env              # 环境变量（包含敏感信息）
+
+# 编译输出
+dist/             
+build/
+bin/

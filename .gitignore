@@ -1,10 +1,13 @@
-# 忽略指定文件夹
+# 数据文件
 Data_N*/
+model and visual/
+
+# 测试文件
+*test*
 
 # AI 工具本地配置
-*.claude
-*claude.md
-*.claudeignore
+*settings.local.json
+*CLAUDE.lcoal.md
 .cursor/
 .aider*
 .continue/
