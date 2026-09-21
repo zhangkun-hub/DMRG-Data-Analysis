@@ -45,6 +45,7 @@ class AnalyzerConfig:
     r_max_noise_run: int = 3           # 连续低于阈值的点数要求(防单点尖峰)
     n_rmin_candidates: int = 20        # r_min 候选数上限
     # ---- 噪声底(effective noise floor / conservative noise scale) ----
+    envelope_mode: str = 'all_points'  # 包络模式：'all_points'(全点) | 'extrema'(峰值法) | 'both'(两者都算并对比)
     tail_frac_noise: float = 0.25      # 远距尾部分数
     noise_floor_abs_min: float = 1e-15 # 绝对下限
     prom_factor: float = 3.0           # 极值噪声筛选倍数
@@ -182,6 +183,7 @@ class DecayAnalysisResult:
     n_distances: int = 0
     fit_space: str = ''
     envelope_fit: FitResult = None
+    envelope_fit_alt: FitResult = None   # envelope_mode='both' 时的对比包络（另一种模式）
     detrended_fit: FitResult = None
     candidate_fits: dict = field(default_factory=dict)
     comparison: dict = field(default_factory=dict)
@@ -586,6 +588,50 @@ class SuperCorrDecayAnalyzer:
             r2=r2_log, aic=aic, aicc=aicc, bic=bic,
             window=(float(np.min(r)), float(np.max(r))),
             error_source='lstsq_cov', message=msg)
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _fit_envelope_with_mode(r: np.ndarray, C: np.ndarray, noise_floor: float,
+                                config: AnalyzerConfig) -> tuple:
+        """按 config.envelope_mode 拟合包络，返回 (envelope_fit, alt_fit, warnings)。
+        - 'all_points'：全点 |C(r)| 对数空间拟合（谷底点会系统性拉低包络）
+        - 'extrema'：峰值法——斜率符号法找到的局部极值点做对数空间拟合（不受谷底拉低，但样本少）
+        - 'both'：两种都算，AICc 优者为主包络，另一个作为对比结果返回
+        """
+        r = np.asarray(r, dtype=float)
+        C = np.asarray(C, dtype=float)
+        warnings = []
+        absC = np.abs(C)
+        f_p_all = SuperCorrDecayAnalyzer.fit_envelope_logspace(r, absC, 'power', config)
+        f_e_all = SuperCorrDecayAnalyzer.fit_envelope_logspace(r, absC, 'exp', config)
+        env_all = (f_p_all if np.isfinite(f_p_all.aicc) and
+                   (not np.isfinite(f_e_all.aicc) or f_p_all.aicc <= f_e_all.aicc)
+                   else f_e_all)
+        if config.envelope_mode == 'all_points':
+            return (env_all, None, warnings)
+
+        ext_r, ext_v = SuperCorrDecayAnalyzer.detect_extrema(r, C, noise_floor, config)
+        if len(ext_r) < 4:
+            warnings.append(f"envelope_mode='{config.envelope_mode}' 但极值点仅 "
+                            f"{len(ext_r)} 个（<4），退化回全点包络")
+            return (env_all, None, warnings)
+        f_p_ext = SuperCorrDecayAnalyzer.fit_envelope_logspace(
+            ext_r, np.abs(ext_v), 'power', config)
+        f_e_ext = SuperCorrDecayAnalyzer.fit_envelope_logspace(
+            ext_r, np.abs(ext_v), 'exp', config)
+        env_ext = (f_p_ext if np.isfinite(f_p_ext.aicc) and
+                   (not np.isfinite(f_e_ext.aicc) or f_p_ext.aicc <= f_e_ext.aicc)
+                   else f_e_ext)
+        tag = f"极值点包络（峰值法，n={len(ext_r)} 个极值点）"
+        env_ext.message = tag if not env_ext.message else env_ext.message + "；" + tag
+        if config.envelope_mode == 'extrema':
+            return (env_ext, None, warnings)
+
+        # both：AICc 优者为主
+        if np.isfinite(env_ext.aicc) and (not np.isfinite(env_all.aicc)
+                                          or env_ext.aicc <= env_all.aicc):
+            return (env_ext, env_all, warnings)
+        return (env_all, env_ext, warnings)
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -1190,7 +1236,8 @@ class SuperCorrDecayAnalyzer:
     # ----------------------------------------------------------------------
     @staticmethod
     def scan_r_min(r: np.ndarray, C: np.ndarray,
-                   config: AnalyzerConfig = None) -> StabilityReport:
+                   config: AnalyzerConfig = None,
+                   noise_floor: float = 0.0) -> StabilityReport:
         """r_min 全网格自动扫描。每个有效候选：包络 power/exp 拟合 +
         该窗口内重新执行振荡诊断（evidence/Q/φ/R2_cos/osc_flag），
         完整保存全部候选行（含跳过原因），推荐值只从扫描表自动产生。"""
@@ -1220,14 +1267,9 @@ class SuperCorrDecayAnalyzer:
                 rows.append({'r_min': r_min, 'n_pts': n, 'skipped': True,
                              'reason': f'n_pts={n} < n_min_fit({config.n_min_fit})'})
                 continue
-            # 包络拟合（|C| log 空间）
-            absC = np.abs(C_win)
-            f_p = SuperCorrDecayAnalyzer.fit_envelope_logspace(r_win, absC, 'power', config)
-            f_e = SuperCorrDecayAnalyzer.fit_envelope_logspace(r_win, absC, 'exp', config)
-            if np.isfinite(f_p.aicc) and (not np.isfinite(f_e.aicc) or f_p.aicc <= f_e.aicc):
-                env = f_p
-            else:
-                env = f_e
+            # 包络拟合（按 envelope_mode；'both' 时以主包络为准）
+            env, _, _ = SuperCorrDecayAnalyzer._fit_envelope_with_mode(
+                r_win, C_win, noise_floor, config)
             param_key = 'K' if 'K' in env.params else 'xi'
             # 该候选窗口内重新执行振荡诊断
             osc = SuperCorrDecayAnalyzer._quick_oscillation(r_win, C_win, env, config)
@@ -1530,8 +1572,9 @@ class SuperCorrDecayAnalyzer:
             result.warnings = warnings
             return result
 
-        # r_min 扫描
-        stability = SuperCorrDecayAnalyzer.scan_r_min(prep.r, prep.C, config)
+        # r_min 扫描（窗口选择标准始终基于全点包络，最终包络按 envelope_mode 计算）
+        stability = SuperCorrDecayAnalyzer.scan_r_min(
+            prep.r, prep.C, config, noise_floor=prep.final_noise_floor)
         warnings.extend(stability.messages)
         result.stability = stability
         r_min = (stability.recommended_r_min
@@ -1541,15 +1584,19 @@ class SuperCorrDecayAnalyzer:
         result.r_min, result.r_max = r_min, prep.r_max_used
         result.n_points = len(r_win)
 
-        # 包络拟合（推荐窗口，|C| log 空间）
-        absC = np.abs(C_win)
-        f_p = SuperCorrDecayAnalyzer.fit_envelope_logspace(r_win, absC, 'power', config)
-        f_e = SuperCorrDecayAnalyzer.fit_envelope_logspace(r_win, absC, 'exp', config)
-        envelope_fit = (f_p if np.isfinite(f_p.aicc) and
-                        (not np.isfinite(f_e.aicc) or f_p.aicc <= f_e.aicc) else f_e)
+        # 包络拟合（按 envelope_mode：全点 / 峰值法 / 两者对比）
+        envelope_fit, envelope_fit_alt, env_warnings = \
+            SuperCorrDecayAnalyzer._fit_envelope_with_mode(
+                r_win, C_win, prep.final_noise_floor, config)
         result.envelope_fit = envelope_fit
+        result.envelope_fit_alt = envelope_fit_alt
+        warnings.extend(env_warnings)
         if envelope_fit.message:
             warnings.append(f"包络拟合: {envelope_fit.message}")
+        if (envelope_fit_alt is not None and envelope_fit_alt.valid
+                and envelope_fit_alt.model != envelope_fit.model):
+            warnings.append("两种包络模式的形式不一致（全点 vs 峰值法），"
+                            "包络形式选择存在方法学依赖，结论需谨慎")
 
         # 距离族分解
         family_diag = SuperCorrDecayAnalyzer.family_separated_diagnostic(
@@ -1584,7 +1631,8 @@ class SuperCorrDecayAnalyzer:
         result.detrended_fit = det
 
         # 分类决策树
-        hump = SuperCorrDecayAnalyzer._envelope_hump(r_win, absC, prep.final_noise_floor)
+        hump = SuperCorrDecayAnalyzer._envelope_hump(
+            r_win, np.abs(C_win), prep.final_noise_floor)
         dual = SuperCorrDecayAnalyzer._dual_plateau(stability, config)
         verdict = SuperCorrDecayAnalyzer.classify(
             {'prep': prep, 'osc': osc, 'stability': stability, 'candidate_fits': candidate_fits,
@@ -1646,11 +1694,21 @@ class SuperCorrDecayAnalyzer:
         env = result.envelope_fit
         if env is not None:
             print("-" * 72)
-            print("包络拟合（log 空间）:")
+            print(f"包络拟合（log 空间，envelope_mode={result.config.envelope_mode}）:")
             print(f"  模型: {env.model}   R2_log = {env.r2:.6f}  "
                   f"RSS(log) = {env.rss:.3e}  AICc = {env.aicc:.3f}  BIC = {env.bic:.3f}")
             for name, val in env.params.items():
                 print(f"  {name} = {val:.6e} ± {env.param_errors.get(name, float('nan')):.3e}")
+            # envelope_mode='both' 的对比包络
+            alt = result.envelope_fit_alt
+            if alt is not None:
+                kind_alt = '极值点(峰值法)' if '极值点' in alt.message else '全点'
+                kind_env = '极值点(峰值法)' if '极值点' in env.message else '全点'
+                print(f"  包络模式对比: 主包络[{kind_env}] vs 对比包络[{kind_alt}]")
+                print(f"    {kind_alt}: {alt.model}  R2_log = {alt.r2:.6f}  "
+                      f"AICc = {alt.aicc:.3f}  "
+                      f"params = " + ", ".join(
+                          f"{k}={v:.4e}" for k, v in alt.params.items()))
         # 振荡
         osc = result.oscillation
         if osc is not None:
@@ -1768,6 +1826,11 @@ class SuperCorrDecayAnalyzer:
             rr = np.linspace(result.r_min, result.r_max, 200)
             ax.semilogy(rr, SuperCorrDecayAnalyzer._envelope_value(env, rr),
                         'r-', linewidth=2, label=f"exp envelope (ξ={env.params.get('xi', float('nan')):.3g})")
+        alt = result.envelope_fit_alt
+        if alt is not None:
+            rr = np.linspace(result.r_min, result.r_max, 200)
+            ax.semilogy(rr, SuperCorrDecayAnalyzer._envelope_value(alt, rr),
+                        'gray', linestyle='--', linewidth=1.5, label='alt envelope (compare)')
         ax.axvspan(result.r_min, result.r_max, color='gray', alpha=0.12)
         ax.set_title(r'$|C(r)|$ Log-Linear (exponential check)', fontsize=13)
         ax.set_xlabel('distance r', fontsize=12)
@@ -1791,6 +1854,11 @@ class SuperCorrDecayAnalyzer:
             rr = np.linspace(result.r_min, result.r_max, 200)
             ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(env, rr),
                       'r-', linewidth=2, label=f"power envelope (K={env.params.get('K', float('nan')):.3g})")
+        alt = result.envelope_fit_alt
+        if alt is not None:
+            rr = np.linspace(result.r_min, result.r_max, 200)
+            ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(alt, rr),
+                      'gray', linestyle='--', linewidth=1.5, label='alt envelope (compare)')
         ax.axvspan(result.r_min, result.r_max, color='gray', alpha=0.12)
         ax.set_title(r'$|C(r)|$ Log-Log (power-law check)', fontsize=13)
         ax.set_xlabel('distance r', fontsize=12)
