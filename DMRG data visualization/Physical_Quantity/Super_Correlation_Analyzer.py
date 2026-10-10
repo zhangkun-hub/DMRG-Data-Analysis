@@ -35,10 +35,12 @@ class AnalyzerConfig:
     atol_group: float = 1e-12          # 绝对容差
     # ---- 点数门槛 ----
     n_min_fit: int = 8                 # 包络(2 参数)拟合最小点数
+    n_min_hump_window: int = 6         # hump 后衰减段窗口最小点数（2 参数拟合 n>k+3 即可，略低于 n_min_fit）
     n_min_osc_fit: int = 10            # 4 参数模型最小点数(<10 warning, <6 拒绝)
     n_min_osc: int = 12                # 振荡分析的最小点数
     n_min_abs: int = 6                 # 全局最小距离数，不足 → INCONCLUSIVE
     # ---- 窗口 ----
+    r_min_override: float = None       # 手动指定拟合窗口起点（覆盖自动推荐；None=自动）
     r_max_frac: float = 1.0
     r_max_auto: bool = True            # 自动截断噪声尾
     r_max_noise_cut: float = 3.0       # |C| < noise_floor*cut 视为噪声点
@@ -184,6 +186,8 @@ class DecayAnalysisResult:
     fit_space: str = ''
     envelope_fit: FitResult = None
     envelope_fit_alt: FitResult = None   # envelope_mode='both' 时的对比包络（另一种模式）
+    envelope_extrema_r: np.ndarray = field(default_factory=lambda: np.array([]))   # 峰值法参与拟合的极值点位置
+    envelope_extrema_abs: np.ndarray = field(default_factory=lambda: np.array([])) # 对应 |C| 值（可视化高亮用）
     detrended_fit: FitResult = None
     candidate_fits: dict = field(default_factory=dict)
     comparison: dict = field(default_factory=dict)
@@ -593,7 +597,10 @@ class SuperCorrDecayAnalyzer:
     @staticmethod
     def _fit_envelope_with_mode(r: np.ndarray, C: np.ndarray, noise_floor: float,
                                 config: AnalyzerConfig) -> tuple:
-        """按 config.envelope_mode 拟合包络，返回 (envelope_fit, alt_fit, warnings)。
+        """按 config.envelope_mode 拟合包络，
+        返回 (envelope_fit, alt_fit, warnings, extrema_data)：
+        extrema_data = (ext_r, |ext_C|)——峰值法参与拟合的极值点（供可视化高亮），
+        all_points 模式或无有效极值时为空数组。
         - 'all_points'：全点 |C(r)| 对数空间拟合（谷底点会系统性拉低包络）
         - 'extrema'：峰值法——斜率符号法找到的局部极值点做对数空间拟合（不受谷底拉低，但样本少）
         - 'both'：两种都算，AICc 优者为主包络，另一个作为对比结果返回
@@ -602,36 +609,38 @@ class SuperCorrDecayAnalyzer:
         C = np.asarray(C, dtype=float)
         warnings = []
         absC = np.abs(C)
+        empty = (np.array([]), np.array([]))
         f_p_all = SuperCorrDecayAnalyzer.fit_envelope_logspace(r, absC, 'power', config)
         f_e_all = SuperCorrDecayAnalyzer.fit_envelope_logspace(r, absC, 'exp', config)
         env_all = (f_p_all if np.isfinite(f_p_all.aicc) and
                    (not np.isfinite(f_e_all.aicc) or f_p_all.aicc <= f_e_all.aicc)
                    else f_e_all)
         if config.envelope_mode == 'all_points':
-            return (env_all, None, warnings)
+            return (env_all, None, warnings, empty)
 
         ext_r, ext_v = SuperCorrDecayAnalyzer.detect_extrema(r, C, noise_floor, config)
         if len(ext_r) < 4:
             warnings.append(f"envelope_mode='{config.envelope_mode}' 但极值点仅 "
                             f"{len(ext_r)} 个（<4），退化回全点包络")
-            return (env_all, None, warnings)
+            return (env_all, None, warnings, empty)
+        ext_abs = np.abs(ext_v)
         f_p_ext = SuperCorrDecayAnalyzer.fit_envelope_logspace(
-            ext_r, np.abs(ext_v), 'power', config)
+            ext_r, ext_abs, 'power', config)
         f_e_ext = SuperCorrDecayAnalyzer.fit_envelope_logspace(
-            ext_r, np.abs(ext_v), 'exp', config)
+            ext_r, ext_abs, 'exp', config)
         env_ext = (f_p_ext if np.isfinite(f_p_ext.aicc) and
                    (not np.isfinite(f_e_ext.aicc) or f_p_ext.aicc <= f_e_ext.aicc)
                    else f_e_ext)
         tag = f"极值点包络（峰值法，n={len(ext_r)} 个极值点）"
         env_ext.message = tag if not env_ext.message else env_ext.message + "；" + tag
         if config.envelope_mode == 'extrema':
-            return (env_ext, None, warnings)
+            return (env_ext, None, warnings, (ext_r, ext_abs))
 
         # both：AICc 优者为主
         if np.isfinite(env_ext.aicc) and (not np.isfinite(env_all.aicc)
                                           or env_ext.aicc <= env_all.aicc):
-            return (env_ext, env_all, warnings)
-        return (env_all, env_ext, warnings)
+            return (env_ext, env_all, warnings, (ext_r, ext_abs))
+        return (env_all, env_ext, warnings, (ext_r, ext_abs))
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -1024,9 +1033,12 @@ class SuperCorrDecayAnalyzer:
     # ----------------------------------------------------------------------
     @staticmethod
     def bootstrap_errors(f, x: np.ndarray, y: np.ndarray, p_opt: np.ndarray,
+                         bounds: tuple = None,
                          config: AnalyzerConfig = None) -> np.ndarray:
         """残差 bootstrap 参数不确定度。仅作 pcov 失效时的兜底，
-        不作为主要物理证据，不参与模型选择与分类决策。"""
+        不作为主要物理证据，不参与模型选择与分类决策。
+        与主拟合使用同一参数边界，避免参数试探越界（如 ξ<0 导致 exp 溢出）。"""
+        import warnings as _warnings
         config = config or AnalyzerConfig()
         x = np.asarray(x, dtype=float)
         y = np.asarray(y, dtype=float)
@@ -1034,13 +1046,16 @@ class SuperCorrDecayAnalyzer:
         resid = y - yhat
         rng = np.random.default_rng(42)
         params = []
-        for _ in range(config.bootstrap_n):
-            ys = yhat + rng.choice(resid, size=len(y), replace=True)
-            try:
-                popt, _ = optimize.curve_fit(f, x, ys, p0=p_opt, maxfev=20000)
-                params.append(popt)
-            except Exception:
-                continue
+        with _warnings.catch_warnings():
+            _warnings.simplefilter('ignore')   # 越界试探产生的数值警告属预期，静默
+            for _ in range(config.bootstrap_n):
+                ys = yhat + rng.choice(resid, size=len(y), replace=True)
+                try:
+                    popt, _ = optimize.curve_fit(f, x, ys, p0=p_opt,
+                                                 bounds=bounds, maxfev=20000)
+                    params.append(popt)
+                except Exception:
+                    continue
         if not params:
             return np.full(len(p_opt), np.nan)
         return np.std(np.array(params), axis=0)
@@ -1066,9 +1081,13 @@ class SuperCorrDecayAnalyzer:
             res.message += f"；n={n} < n_min_osc_fit({config.n_min_osc_fit})，4 参数模型自由度紧张"
         lo, hi = bounds
         p0 = np.clip(np.asarray(p0, dtype=float), lo, hi)
+        import warnings as _warnings
         try:
-            popt, pcov = optimize.curve_fit(f, r_win, y_win, p0=p0,
-                                            bounds=(lo, hi), max_nfev=20000)
+            # pcov 估计失败/数值溢出属预期情形（参数顶边界），已由后续兜底处理，静默警告
+            with _warnings.catch_warnings():
+                _warnings.simplefilter('ignore')
+                popt, pcov = optimize.curve_fit(f, r_win, y_win, p0=p0,
+                                                bounds=(lo, hi), max_nfev=20000)
         except Exception as e:
             res.valid = False
             res.message += f"；拟合失败: {type(e).__name__}"
@@ -1091,10 +1110,12 @@ class SuperCorrDecayAnalyzer:
             if np.all(diag > 0) and cond < config.pcov_max_cond:
                 err = np.sqrt(diag)
             else:
-                err = SuperCorrDecayAnalyzer.bootstrap_errors(f, r_win, y_win, popt, config)
+                err = SuperCorrDecayAnalyzer.bootstrap_errors(
+                    f, r_win, y_win, popt, (lo, hi), config)
                 err_src = 'bootstrap'
         else:
-            err = SuperCorrDecayAnalyzer.bootstrap_errors(f, r_win, y_win, popt, config)
+            err = SuperCorrDecayAnalyzer.bootstrap_errors(
+                f, r_win, y_win, popt, (lo, hi), config)
             err_src = 'bootstrap'
         res.params = {name: float(v) for name, v in zip(param_names, popt)}
         res.param_errors = {name: float(e) for name, e in zip(param_names, err)}
@@ -1237,10 +1258,13 @@ class SuperCorrDecayAnalyzer:
     @staticmethod
     def scan_r_min(r: np.ndarray, C: np.ndarray,
                    config: AnalyzerConfig = None,
-                   noise_floor: float = 0.0) -> StabilityReport:
+                   noise_floor: float = 0.0,
+                   hump_peak: float = None) -> StabilityReport:
         """r_min 全网格自动扫描。每个有效候选：包络 power/exp 拟合 +
         该窗口内重新执行振荡诊断（evidence/Q/φ/R2_cos/osc_flag），
-        完整保存全部候选行（含跳过原因），推荐值只从扫描表自动产生。"""
+        完整保存全部候选行（含跳过原因），推荐值只从扫描表自动产生。
+        hump_peak 非 None 时（数据存在包络 hump），推荐窗口起点设在 hump 之后，
+        使单调包络只拟合衰减段。"""
         config = config or AnalyzerConfig()
         rep = StabilityReport()
         M = len(r)
@@ -1268,7 +1292,7 @@ class SuperCorrDecayAnalyzer:
                              'reason': f'n_pts={n} < n_min_fit({config.n_min_fit})'})
                 continue
             # 包络拟合（按 envelope_mode；'both' 时以主包络为准）
-            env, _, _ = SuperCorrDecayAnalyzer._fit_envelope_with_mode(
+            env, _, _, _ = SuperCorrDecayAnalyzer._fit_envelope_with_mode(
                 r_win, C_win, noise_floor, config)
             param_key = 'K' if 'K' in env.params else 'xi'
             # 该候选窗口内重新执行振荡诊断
@@ -1336,6 +1360,21 @@ class SuperCorrDecayAnalyzer:
             rep.recommended_r_min = float(min(valid_rows,
                                               key=lambda row: row['aicc'])['r_min'])
             rep.messages.append("无候选满足参数带与模型一致性要求，推荐值取 AICc 最优候选，证据降档")
+        # hump 修正：数据存在包络 hump 时，推荐窗口起点设在 hump 峰值之后（拟合衰减段），
+        # 避免单调包络被迫去拟合"先升后降"的 hump 形态
+        if hump_peak is not None and np.isfinite(hump_peak):
+            after = r[r > hump_peak + 1e-12]
+            if len(after) >= config.n_min_hump_window:
+                rep.recommended_r_min = float(after[0])
+                rep.messages.append(
+                    f"数据存在包络 hump（峰值 r≈{hump_peak:.6g}），"
+                    f"推荐窗口起点设在 hump 之后以拟合衰减段"
+                    f"（峰后 {len(after)} 个点，满足衰减窗口门槛 "
+                    f"n_min_hump_window={config.n_min_hump_window}）")
+            else:
+                rep.messages.append(
+                    f"检测到包络 hump（峰值 r≈{hump_peak:.6g}）但峰后点数不足 "
+                    f"n_min_hump_window({config.n_min_hump_window})，维持原推荐窗口")
         if np.isfinite(rep.spearman_rho) and abs(rep.spearman_rho) > 0.8:
             rep.messages.append(
                 f"参数随 r_min 单调漂移（Spearman ρ={rep.spearman_rho:.2f}），"
@@ -1346,16 +1385,30 @@ class SuperCorrDecayAnalyzer:
     # 8. 综合判定（分类决策树）
     # ----------------------------------------------------------------------
     @staticmethod
-    def _envelope_hump(r: np.ndarray, C_abs: np.ndarray, noise_floor: float) -> bool:
-        """包络斜率变号检测：ln|C| vs r 的局域斜率由负转正 ≥1 次（|C| 先降后升），
-        仅在 |C| > noise_floor×3 的可靠区检测。"""
+    def _envelope_hump(r: np.ndarray, C_abs: np.ndarray) -> tuple:
+        """包络 hump 检测（相对判据，不依赖噪声标尺——小动态范围数据下
+        noise floor 可能与信号同量级，绝对阈值会失效）。
+        判据：ln|C| 的局域斜率由正转负（峰值）＋ 峰后 ≥3 个点单调衰减
+        ＋ 峰为此前全局最大值。振荡数据的峰后斜率不会全为负，不会被误判。
+        返回 (hump_detected, hump_peak_r)。"""
         r = np.asarray(r, dtype=float)
         C_abs = np.asarray(C_abs, dtype=float)
-        ok = (C_abs > noise_floor * 3.0) & (C_abs > 0)
-        if ok.sum() < 4:
-            return False
-        s = _local_slopes(r[ok], np.log(C_abs[ok]))
-        return bool(np.any((s[:-1] < 0) & (s[1:] > 0)))
+        ok = C_abs > 0
+        if ok.sum() < 6:
+            return (False, np.nan)
+        rr = r[ok]
+        yy = np.log(C_abs[ok])
+        s = _local_slopes(rr, yy)
+        n = len(rr)
+        for i in range(1, n - 1):
+            if s[i - 1] > 0 and s[i] < 0:          # 斜率由正转负 → 候选峰
+                tail = s[i:]                        # 峰后所有斜率
+                if len(tail) < 3 or np.any(tail > 0):
+                    continue                        # 峰后不是单调衰减（振荡/噪声）
+                if yy[i] < np.max(yy[:i]):
+                    continue                        # 峰不是前段最大值
+                return (True, float(rr[i]))
+        return (False, np.nan)
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -1572,24 +1625,36 @@ class SuperCorrDecayAnalyzer:
             result.warnings = warnings
             return result
 
+        # 包络 hump 检测（全距离范围，先于窗口选择；相对判据，不依赖噪声标尺）
+        mask_all = _window_mask(prep.r, 0.0, prep.r_max_used)
+        hump, hump_peak = SuperCorrDecayAnalyzer._envelope_hump(
+            prep.r[mask_all], prep.C_abs[mask_all])
+
         # r_min 扫描（窗口选择标准始终基于全点包络，最终包络按 envelope_mode 计算）
         stability = SuperCorrDecayAnalyzer.scan_r_min(
-            prep.r, prep.C, config, noise_floor=prep.final_noise_floor)
+            prep.r, prep.C, config, noise_floor=prep.final_noise_floor,
+            hump_peak=hump_peak if hump else None)
         warnings.extend(stability.messages)
         result.stability = stability
-        r_min = (stability.recommended_r_min
-                 if np.isfinite(stability.recommended_r_min) else float(np.min(prep.r)))
+        r_min = (config.r_min_override
+                 if config.r_min_override is not None
+                 else (stability.recommended_r_min
+                       if np.isfinite(stability.recommended_r_min)
+                       else float(np.min(prep.r))))
+        if config.r_min_override is not None:
+            warnings.append(f"使用手动指定拟合窗口起点 r_min={config.r_min_override}（覆盖自动推荐）")
         mask = _window_mask(prep.r, r_min, prep.r_max_used)
         r_win, C_win = prep.r[mask], prep.C[mask]
         result.r_min, result.r_max = r_min, prep.r_max_used
         result.n_points = len(r_win)
 
         # 包络拟合（按 envelope_mode：全点 / 峰值法 / 两者对比）
-        envelope_fit, envelope_fit_alt, env_warnings = \
+        envelope_fit, envelope_fit_alt, env_warnings, ext_data = \
             SuperCorrDecayAnalyzer._fit_envelope_with_mode(
                 r_win, C_win, prep.final_noise_floor, config)
         result.envelope_fit = envelope_fit
         result.envelope_fit_alt = envelope_fit_alt
+        result.envelope_extrema_r, result.envelope_extrema_abs = ext_data
         warnings.extend(env_warnings)
         if envelope_fit.message:
             warnings.append(f"包络拟合: {envelope_fit.message}")
@@ -1630,9 +1695,7 @@ class SuperCorrDecayAnalyzer:
                         window=(r_min, prep.r_max_used))
         result.detrended_fit = det
 
-        # 分类决策树
-        hump = SuperCorrDecayAnalyzer._envelope_hump(
-            r_win, np.abs(C_win), prep.final_noise_floor)
+        # 分类决策树（hump 已在全距离范围上检测）
         dual = SuperCorrDecayAnalyzer._dual_plateau(stability, config)
         verdict = SuperCorrDecayAnalyzer.classify(
             {'prep': prep, 'osc': osc, 'stability': stability, 'candidate_fits': candidate_fits,
@@ -1657,6 +1720,51 @@ class SuperCorrDecayAnalyzer:
             result.physical_form = f"C(r) ≈ {env_str}"
         result.warnings = warnings
         return result
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def print_compact_summary(result: DecayAnalysisResult) -> None:
+        """简洁文本摘要（summary 模式）。只输出当前模型实际计算得到且有意义的
+        参数，不适用字段直接省略，不填虚构值；纯消费已有 DecayAnalysisResult，
+        不做任何重复拟合。"""
+        env = result.envelope_fit
+        osc = result.oscillation
+        stab = result.stability
+        print("=" * 60)
+        print(f"衰减分析摘要 (analysis_version={result.analysis_version})")
+        print("=" * 60)
+        print(f"classification : {result.classification}")
+        print(f"evidence       : {result.evidence_level}")
+        if result.nonmonotonic_reason:
+            print(f"nonmono_reason : {result.nonmonotonic_reason}")
+        if env is not None and env.params:
+            if 'K' in env.params:
+                print(f"envelope       : power-law, K = {env.params['K']:.4g} "
+                      f"± {env.param_errors.get('K', np.nan):.4g} "
+                      f"(R2_log = {env.r2:.4f})")
+            elif 'xi' in env.params:
+                print(f"envelope       : exponential, xi = {env.params['xi']:.4g} "
+                      f"± {env.param_errors.get('xi', np.nan):.4g} "
+                      f"(R2_log = {env.r2:.4f})")
+        # 仅在振荡有实际证据（非 none/inconclusive）时才输出振荡参数：
+        # 无振荡数据上 Q 也会有数值解，输出会误导
+        if (osc is not None and np.isfinite(osc.Q)
+                and osc.evidence in ('strong', 'moderate', 'weak', 'possible')):
+            print(f"oscillation    : Q = {osc.Q:.4g}, phi = {osc.phi:.4g}, "
+                  f"R2_cos = {osc.r2_cos:.4f} (evidence: {osc.evidence})")
+            if osc.structural_artifact_suspected:
+                print("artifact       : possible structural/geometric artifact")
+        if np.isfinite(result.r_min):
+            print(f"fit window     : r ∈ [{result.r_min:.6g}, {result.r_max:.6g}], "
+                  f"n = {result.n_points} ({result.distance_aggregation})")
+        if stab is not None and np.isfinite(stab.recommended_r_min):
+            print(f"r_min stability: verdict = {stab.verdict}, "
+                  f"recommended r_min = {stab.recommended_r_min:.6g}")
+        if result.warnings:
+            print("warnings       :")
+            for w in result.warnings[:5]:
+                print(f"  - {w}")
+        print("=" * 60)
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -1813,7 +1921,8 @@ class SuperCorrDecayAnalyzer:
     # ----------------------------------------------------------------------
     @staticmethod
     def _draw_panel_loglin(ax, r, C, result):
-        """面板 2：|C| 半对数 + 指数包络"""
+        """面板 2：|C| 半对数 + 指数包络（本面板固定检验 exp 形式：
+        指数在半对数下为直线，数据偏离直线的程度即 exp 假设的失效程度）"""
         r = np.asarray(r, dtype=float)
         if len(r) == 0:
             ax.text(0.5, 0.5, 'no data provided', transform=ax.transAxes,
@@ -1821,16 +1930,21 @@ class SuperCorrDecayAnalyzer:
             return ax
         in_win = _window_mask(r, result.r_min, result.r_max)
         ax.semilogy(r, np.abs(C), 'o', color='tab:blue', ms=5, label='|C(r)|')
-        env = result.envelope_fit
-        if env is not None:
+        # 固定对该窗口做 exp 形式拟合（无论最终选中的是哪种形式）
+        if in_win.sum() >= 3:
+            f_e = SuperCorrDecayAnalyzer.fit_envelope_logspace(
+                r[in_win], np.abs(C[in_win]), 'exp', result.config)
             rr = np.linspace(result.r_min, result.r_max, 200)
-            ax.semilogy(rr, SuperCorrDecayAnalyzer._envelope_value(env, rr),
-                        'r-', linewidth=2, label=f"exp envelope (ξ={env.params.get('xi', float('nan')):.3g})")
-        alt = result.envelope_fit_alt
-        if alt is not None:
-            rr = np.linspace(result.r_min, result.r_max, 200)
-            ax.semilogy(rr, SuperCorrDecayAnalyzer._envelope_value(alt, rr),
-                        'gray', linestyle='--', linewidth=1.5, label='alt envelope (compare)')
+            ax.semilogy(rr, SuperCorrDecayAnalyzer._envelope_value(f_e, rr),
+                        'r-', linewidth=2,
+                        label=f"exp fit: ξ={f_e.params.get('xi', float('nan')):.3g}, "
+                              f"R2_log={f_e.r2:.3f}")
+        # 峰值法参与拟合的极值点高亮（envelope_mode='extrema'/'both' 时非空）
+        # 白底品红粗描边空心圆：与蓝色数据点、红色包络线均有强对比，且会覆盖住底下的线
+        if len(result.envelope_extrema_r) > 0:
+            ax.semilogy(result.envelope_extrema_r, result.envelope_extrema_abs,
+                        'o', ms=9, mfc='white', mec='magenta', mew=2.0, zorder=6,
+                        label=f'extrema in envelope fit (n={len(result.envelope_extrema_r)})')
         ax.axvspan(result.r_min, result.r_max, color='gray', alpha=0.12)
         ax.set_title(r'$|C(r)|$ Log-Linear (exponential check)', fontsize=13)
         ax.set_xlabel('distance r', fontsize=12)
@@ -1842,23 +1956,44 @@ class SuperCorrDecayAnalyzer:
     # ----------------------------------------------------------------------
     @staticmethod
     def _draw_panel_loglog(ax, r, C, result):
-        """面板 3：|C| 双对数 + 幂律包络"""
+        """面板 3：|C| 双对数 + 幂律包络（本面板固定检验 power 形式：
+        幂律在双对数下为直线，数据偏离直线的程度即 power 假设的失效程度）"""
         r = np.asarray(r, dtype=float)
         if len(r) == 0:
             ax.text(0.5, 0.5, 'no data provided', transform=ax.transAxes,
                     ha='center', va='center', fontsize=13)
             return ax
+        in_win = _window_mask(r, result.r_min, result.r_max)
         ax.loglog(r, np.abs(C), 'o', color='tab:blue', ms=5, label='|C(r)|')
-        env = result.envelope_fit
-        if env is not None:
+        # 固定对该窗口做 power 形式拟合（无论最终选中的是哪种形式）
+        if in_win.sum() >= 3:
+            f_p = SuperCorrDecayAnalyzer.fit_envelope_logspace(
+                r[in_win], np.abs(C[in_win]), 'power', result.config)
             rr = np.linspace(result.r_min, result.r_max, 200)
-            ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(env, rr),
-                      'r-', linewidth=2, label=f"power envelope (K={env.params.get('K', float('nan')):.3g})")
-        alt = result.envelope_fit_alt
-        if alt is not None:
-            rr = np.linspace(result.r_min, result.r_max, 200)
-            ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(alt, rr),
-                      'gray', linestyle='--', linewidth=1.5, label='alt envelope (compare)')
+            ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(f_p, rr),
+                      'r-', linewidth=2, label='power fit')
+            # 参数与拟合区间标注（全部来自该次拟合的实际结果，无硬编码）
+            txt = (f"K = {f_p.params.get('K', np.nan):.4g} "
+                   f"± {f_p.param_errors.get('K', np.nan):.4g}\n"
+                   f"$R^2_{{log}}$ = {f_p.r2:.4f}\n"
+                   f"window: [{result.r_min:.6g}, {result.r_max:.6g}]")
+            ax.text(0.03, 0.03, txt, transform=ax.transAxes, fontsize=10,
+                    va='bottom', ha='left',
+                    bbox=dict(boxstyle='round,pad=0.4', fc='white', ec='gray',
+                              alpha=0.85))
+            # 指数包络对比曲线（浅灰虚线，帮助判断 power vs exp，避免图例拥挤）
+            f_e = SuperCorrDecayAnalyzer.fit_envelope_logspace(
+                r[in_win], np.abs(C[in_win]), 'exp', result.config)
+            if np.isfinite(f_e.params.get('xi', np.nan)):
+                ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(f_e, rr),
+                          'gray', linestyle='--', linewidth=1.2, alpha=0.8,
+                          label=f"exp comparison (ξ={f_e.params['xi']:.3g})")
+        # 峰值法参与拟合的极值点高亮（envelope_mode='extrema'/'both' 时非空）
+        # 白底品红粗描边空心圆：与蓝色数据点、红色包络线均有强对比，且会覆盖住底下的线
+        if len(result.envelope_extrema_r) > 0:
+            ax.loglog(result.envelope_extrema_r, result.envelope_extrema_abs,
+                      'o', ms=9, mfc='white', mec='magenta', mew=2.0, zorder=6,
+                      label=f'extrema in envelope fit (n={len(result.envelope_extrema_r)})')
         ax.axvspan(result.r_min, result.r_max, color='gray', alpha=0.12)
         ax.set_title(r'$|C(r)|$ Log-Log (power-law check)', fontsize=13)
         ax.set_xlabel('distance r', fontsize=12)
@@ -1886,8 +2021,14 @@ class SuperCorrDecayAnalyzer:
             if np.isfinite(osc.Q):
                 rr = np.linspace(result.r_min, result.r_max, 300)
                 yhat = osc.amplitude * np.cos(osc.Q * rr + osc.phi)
-                ax.plot(rr, yhat, 'r-', linewidth=2,
-                        label=fr'cos fit: Q={osc.Q:.3g}, φ={osc.phi:.3g}, R²={osc.r2_cos:.3f}')
+                ax.plot(rr, yhat, 'r-', linewidth=2, label='cosine fit')
+                # 振荡参数标注（来自 result.oscillation 的实际结果，无硬编码）
+                txt = (f"Q = {osc.Q:.4g}\nphi = {osc.phi:.4g}\n"
+                       f"$R^2$ = {osc.r2_cos:.4f}")
+                ax.text(0.97, 0.97, txt, transform=ax.transAxes, fontsize=10,
+                        va='top', ha='right',
+                        bbox=dict(boxstyle='round,pad=0.4', fc='white', ec='gray',
+                                  alpha=0.85))
         ax.axhline(0, color='black', linewidth=1.2, alpha=0.7)
         ax.set_title('Detrended C(r)/E(r) + cosine fit', fontsize=13)
         ax.set_xlabel('distance r', fontsize=12)
@@ -2060,26 +2201,61 @@ class SuperCorrDecayAnalyzer:
     @staticmethod
     def Decay_Visualization(result: DecayAnalysisResult, r: np.ndarray = None,
                             C: np.ndarray = None, show: bool = True,
-                            save_path: str = None) -> plt.Figure:
-        """综合 8 面板大图。r/C 为预处理后的数据（同距离平均序列），
-        可由 group_by_distance 获得；不传时部分面板显示提示。"""
-        fig = plt.figure(figsize=(22, 14))
-        gs = fig.add_gridspec(3, 4, hspace=0.45, wspace=0.35)
-        fig.suptitle(
-            f'Superconducting Correlation Decay Analysis — '
-            f'classification: {result.classification} (evidence: {result.evidence_level})',
-            fontsize=20, fontweight='bold')
+                            save_path: str = None,
+                            visualization_mode: str = 'standard'):
+        """按展示级别生成综合分析图。r/C 为预处理后的数据（同距离平均序列，
+        可由 group_by_distance 获得）。visualization_mode 可选：
+        - 'standard'（默认）：2×2 四核心面板（signed C(r) / |C| log-log / detrended / r_min scan）
+        - 'diagnostic'：1×3 辅助诊断面板（log-lin 指数检验 / 候选模型比较 / 残差）
+        - 'summary'：不画图，打印简洁文本摘要并返回 None
+        - 'full'：原有 8 面板完整图（兼容旧调用）
+        """
+        if visualization_mode not in ('summary', 'standard', 'diagnostic', 'full'):
+            raise ValueError(
+                f"不支持的 visualization_mode='{visualization_mode}'，"
+                "可选 'summary' | 'standard' | 'diagnostic' | 'full'")
+        if visualization_mode == 'summary':
+            SuperCorrDecayAnalyzer.print_compact_summary(result)
+            return None
         if r is None or C is None:
             r = np.array([])
             C = np.array([])
-        SuperCorrDecayAnalyzer._draw_panel_signed(fig.add_subplot(gs[0, 0]), r, C, result)
-        SuperCorrDecayAnalyzer._draw_panel_loglin(fig.add_subplot(gs[0, 1]), r, C, result)
-        SuperCorrDecayAnalyzer._draw_panel_loglog(fig.add_subplot(gs[0, 2]), r, C, result)
-        SuperCorrDecayAnalyzer._draw_panel_detrended(fig.add_subplot(gs[0, 3]), r, C, result)
-        SuperCorrDecayAnalyzer._draw_panel_models(fig.add_subplot(gs[1, 0]), r, C, result)
-        SuperCorrDecayAnalyzer._draw_panel_residuals(fig.add_subplot(gs[1, 1]), r, C, result)
-        SuperCorrDecayAnalyzer._draw_panel_scan(fig.add_subplot(gs[1, 2]), result)
-        SuperCorrDecayAnalyzer._draw_panel_summary(fig.add_subplot(gs[1, 3]), result)
+        if visualization_mode == 'standard':
+            fig = plt.figure(figsize=(16, 11))
+            gs = fig.add_gridspec(2, 2, hspace=0.42, wspace=0.30)
+            fig.suptitle(
+                f'Superconducting Correlation Decay Analysis — '
+                f'classification: {result.classification} (evidence: {result.evidence_level})',
+                fontsize=18, fontweight='bold')
+            SuperCorrDecayAnalyzer._draw_panel_signed(fig.add_subplot(gs[0, 0]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_loglog(fig.add_subplot(gs[0, 1]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_detrended(fig.add_subplot(gs[1, 0]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_scan(fig.add_subplot(gs[1, 1]), result)
+        elif visualization_mode == 'diagnostic':
+            fig = plt.figure(figsize=(20, 7))
+            gs = fig.add_gridspec(1, 3, hspace=0.4, wspace=0.28)
+            fig.suptitle(
+                f'Decay Analysis Diagnostics — classification: {result.classification} '
+                f'(evidence: {result.evidence_level})',
+                fontsize=16, fontweight='bold')
+            SuperCorrDecayAnalyzer._draw_panel_loglin(fig.add_subplot(gs[0, 0]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_models(fig.add_subplot(gs[0, 1]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_residuals(fig.add_subplot(gs[0, 2]), r, C, result)
+        else:   # 'full'：保留原 8 面板完整图
+            fig = plt.figure(figsize=(28, 16))
+            gs = fig.add_gridspec(2, 4, hspace=0.5, wspace=0.32)
+            fig.suptitle(
+                f'Superconducting Correlation Decay Analysis — '
+                f'classification: {result.classification} (evidence: {result.evidence_level})',
+                fontsize=24, fontweight='bold')
+            SuperCorrDecayAnalyzer._draw_panel_signed(fig.add_subplot(gs[0, 0]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_loglin(fig.add_subplot(gs[0, 1]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_loglog(fig.add_subplot(gs[0, 2]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_detrended(fig.add_subplot(gs[0, 3]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_models(fig.add_subplot(gs[1, 0]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_residuals(fig.add_subplot(gs[1, 1]), r, C, result)
+            SuperCorrDecayAnalyzer._draw_panel_scan(fig.add_subplot(gs[1, 2]), result)
+            SuperCorrDecayAnalyzer._draw_panel_summary(fig.add_subplot(gs[1, 3]), result)
         if save_path is not None:
             fig.savefig(save_path, dpi=300, bbox_inches='tight')
         if show:
