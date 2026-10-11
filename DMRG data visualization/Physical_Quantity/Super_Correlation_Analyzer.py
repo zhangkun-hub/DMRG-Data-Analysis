@@ -1402,6 +1402,14 @@ class SuperCorrDecayAnalyzer:
         else:
             idx_spread = []
         candidates = sorted(set(idx_short) | set(idx_spread))
+        # hump 修正：峰后满足最小窗口的起点补入网格，保证推荐窗口参与稳定性评估
+        # （否则 hump 把推荐起点推到网格之外，主分析窗口从未被扫描）
+        hump_present = hump_peak is not None and np.isfinite(hump_peak)
+        if hump_present:
+            after_idx = [i for i in range(M)
+                         if r[i] > hump_peak + 1e-12
+                         and M - i >= config.n_min_hump_window]
+            candidates = sorted(set(candidates) | set(after_idx))
 
         rows = []
         for idx in candidates:
@@ -1409,9 +1417,13 @@ class SuperCorrDecayAnalyzer:
             r_win = r[idx:]
             C_win = C[idx:]
             n = len(r_win)
-            if n < config.n_min_fit:
+            # 峰后候选按 hump 窗口门槛（略低于 n_min_fit），近程候选维持 n_min_fit
+            n_min_w = (config.n_min_hump_window
+                       if hump_present and r_min > hump_peak + 1e-12
+                       else config.n_min_fit)
+            if n < n_min_w:
                 rows.append({'r_min': r_min, 'n_pts': n, 'skipped': True,
-                             'reason': f'n_pts={n} < n_min_fit({config.n_min_fit})'})
+                             'reason': f'n_pts={n} < n_min_w({n_min_w})'})
                 continue
             # 包络拟合（按 envelope_mode；'both' 时以主包络为准）
             env, _, _, _ = SuperCorrDecayAnalyzer._fit_envelope_with_mode(
