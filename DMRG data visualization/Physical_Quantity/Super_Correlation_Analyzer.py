@@ -1956,38 +1956,81 @@ class SuperCorrDecayAnalyzer:
     # ----------------------------------------------------------------------
     @staticmethod
     def _draw_panel_loglog(ax, r, C, result):
-        """面板 3：|C| 双对数 + 幂律包络（本面板固定检验 power 形式：
-        幂律在双对数下为直线，数据偏离直线的程度即 power 假设的失效程度）"""
+        """面板 3：|C| 双对数 + 幂律/指数两种包络同时比较。
+        两种拟合共用同一有效点掩码与窗口（公平比较：相同样本、相同 log 空间
+        目标函数、k=2 复杂度惩罚已含于 AICc）；比较结论复用
+        fit_envelope_logspace 已计算的 FitResult.aicc，不引入新比较指标。"""
         r = np.asarray(r, dtype=float)
         if len(r) == 0:
             ax.text(0.5, 0.5, 'no data provided', transform=ax.transAxes,
                     ha='center', va='center', fontsize=13)
             return ax
         in_win = _window_mask(r, result.r_min, result.r_max)
-        ax.loglog(r, np.abs(C), 'o', color='tab:blue', ms=5, label='|C(r)|')
-        # 固定对该窗口做 power 形式拟合（无论最终选中的是哪种形式）
-        if in_win.sum() >= 3:
+        C_abs = np.abs(np.asarray(C, dtype=float))
+        ax.loglog(r, C_abs, 'o', color='tab:blue', ms=5, label='|C(r)|')
+        # 统一有效点筛选（同一掩码用于两种形式，保证公平比较）
+        valid = in_win & (C_abs > 0) & np.isfinite(C_abs)
+        n_drop = int(in_win.sum() - valid.sum())
+        if valid.sum() >= 3:
+            rv, cv = r[valid], C_abs[valid]
             f_p = SuperCorrDecayAnalyzer.fit_envelope_logspace(
-                r[in_win], np.abs(C[in_win]), 'power', result.config)
-            rr = np.linspace(result.r_min, result.r_max, 200)
-            ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(f_p, rr),
-                      'r-', linewidth=2, label='power fit')
-            # 参数与拟合区间标注（全部来自该次拟合的实际结果，无硬编码）
-            txt = (f"K = {f_p.params.get('K', np.nan):.4g} "
-                   f"± {f_p.param_errors.get('K', np.nan):.4g}\n"
-                   f"$R^2_{{log}}$ = {f_p.r2:.4f}\n"
-                   f"window: [{result.r_min:.6g}, {result.r_max:.6g}]")
-            ax.text(0.03, 0.03, txt, transform=ax.transAxes, fontsize=10,
-                    va='bottom', ha='left',
-                    bbox=dict(boxstyle='round,pad=0.4', fc='white', ec='gray',
-                              alpha=0.85))
-            # 指数包络对比曲线（浅灰虚线，帮助判断 power vs exp，避免图例拥挤）
+                rv, cv, 'power', result.config)
             f_e = SuperCorrDecayAnalyzer.fit_envelope_logspace(
-                r[in_win], np.abs(C[in_win]), 'exp', result.config)
-            if np.isfinite(f_e.params.get('xi', np.nan)):
+                rv, cv, 'exp', result.config)
+            rr = np.linspace(result.r_min, result.r_max, 200)
+            # 两种拟合曲线：power 红色实线、exp 蓝色虚线（颜色+线型双重区分）
+            K = f_p.params.get('K', np.nan)
+            K_ok = bool(np.isfinite(K) and K >= 0)
+            if K_ok:
+                ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(f_p, rr),
+                          'r-', linewidth=2, label='power fit')
+            xi = f_e.params.get('xi', np.nan)
+            xi_ok = bool(np.isfinite(xi) and xi > 0)
+            if xi_ok:
                 ax.loglog(rr, SuperCorrDecayAnalyzer._envelope_value(f_e, rr),
-                          'gray', linestyle='--', linewidth=1.2, alpha=0.8,
-                          label=f"exp comparison (ξ={f_e.params['xi']:.3g})")
+                          'b--', linewidth=2, label='exp fit')
+            # 标注框（全部来自该次拟合的实际结果；无效参数如实标注，不伪造曲线）
+            # 图内文字统一用英文：默认字体 DejaVu Sans 不含中文字形
+            lines = []
+            if K_ok:
+                lines.append(f"K = {K:.4g} ± {f_p.param_errors.get('K', np.nan):.4g}"
+                             f"   $R^2_{{log}}$ = {f_p.r2:.4f}")
+            else:
+                lines.append("power fit invalid (unidentifiable)")
+            if xi_ok:
+                lines.append(f"ξ = {xi:.4g} ± {f_e.param_errors.get('xi', np.nan):.4g}"
+                             f"   $R^2_{{log}}$ = {f_e.r2:.4f}")
+            else:
+                lines.append("exp fit invalid (unidentifiable or ξ<=0)")
+            # 模型比较（复用既有 AICc 口径；仅当两种形式都有效时才比较，
+            # ΔAICc < delta_aicc_tie 视为统计并列；单侧无效时如实标注不参与比较）
+            if K_ok and xi_ok and np.isfinite(f_p.aicc) and np.isfinite(f_e.aicc):
+                d = f_p.aicc - f_e.aicc
+                if abs(d) < result.config.delta_aicc_tie:
+                    lines.append(f"AICc: power {f_p.aicc:.1f} vs exp {f_e.aicc:.1f}"
+                                 " -> statistical tie")
+                elif d < 0:
+                    lines.append(f"AICc: power {f_p.aicc:.1f} vs exp {f_e.aicc:.1f}"
+                                 f" -> power preferred (dAICc={-d:.2f})")
+                else:
+                    lines.append(f"AICc: power {f_p.aicc:.1f} vs exp {f_e.aicc:.1f}"
+                                 f" -> exp preferred (dAICc={d:.2f})")
+            elif K_ok and np.isfinite(f_p.aicc):
+                lines.append(f"AICc: power {f_p.aicc:.1f} (exp invalid, excluded)")
+            elif xi_ok and np.isfinite(f_e.aicc):
+                lines.append(f"AICc: exp {f_e.aicc:.1f} (power invalid, excluded)")
+            # 两种形式均无效时不输出比较行（避免对无效拟合给出误导性结论）
+            lines.append(f"window: [{result.r_min:.6g}, {result.r_max:.6g}], "
+                         f"n = {int(valid.sum())}")
+            if n_drop > 0:
+                lines.append(f"dropped {n_drop} non-positive/non-finite points")
+            ax.text(0.03, 0.03, "\n".join(lines), transform=ax.transAxes,
+                    fontsize=9.5, va='bottom', ha='left',
+                    bbox=dict(boxstyle='round,pad=0.4', fc='white', ec='gray',
+                              alpha=0.9))
+        else:
+            ax.text(0.5, 0.5, 'no valid positive data in window',
+                    transform=ax.transAxes, ha='center', va='center', fontsize=13)
         # 峰值法参与拟合的极值点高亮（envelope_mode='extrema'/'both' 时非空）
         # 白底品红粗描边空心圆：与蓝色数据点、红色包络线均有强对比，且会覆盖住底下的线
         if len(result.envelope_extrema_r) > 0:
@@ -1995,7 +2038,7 @@ class SuperCorrDecayAnalyzer:
                       'o', ms=9, mfc='white', mec='magenta', mew=2.0, zorder=6,
                       label=f'extrema in envelope fit (n={len(result.envelope_extrema_r)})')
         ax.axvspan(result.r_min, result.r_max, color='gray', alpha=0.12)
-        ax.set_title(r'$|C(r)|$ Log-Log (power-law check)', fontsize=13)
+        ax.set_title(r'$|C(r)|$ Log-Log (power vs exponential)', fontsize=13)
         ax.set_xlabel('distance r', fontsize=12)
         ax.set_ylabel(r'$|\langle \Delta^\dagger \Delta \rangle|$', fontsize=12)
         ax.grid(True, alpha=0.3, linestyle='--', which='both')
