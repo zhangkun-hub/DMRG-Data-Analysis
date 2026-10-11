@@ -2525,13 +2525,15 @@ class SuperCorrDecayAnalyzer:
     def Decay_Visualization(result: DecayAnalysisResult, r: np.ndarray = None,
                             C: np.ndarray = None, show: bool = True,
                             save_path: str = None,
-                            visualization_mode: str = 'standard'):
+                            visualization_mode: str = 'standard',
+                            title: str = ''):
         """按展示级别生成综合分析图。r/C 为预处理后的数据（同距离平均序列，
         可由 group_by_distance 获得）。visualization_mode 可选：
         - 'standard'（默认）：2×2 四核心面板（signed C(r) / |C| log-log / detrended / r_min scan）
         - 'diagnostic'：1×3 辅助诊断面板（log-lin 指数检验 / 候选模型比较 / 残差）
         - 'summary'：不画图，打印简洁文本摘要并返回 None
         - 'full'：原有 8 面板完整图（兼容旧调用）
+        title：主标题前缀标注（如键方向 "A key (blue bond)"），空串则不显示
         """
         if visualization_mode not in ('summary', 'standard', 'diagnostic', 'full'):
             raise ValueError(
@@ -2543,11 +2545,12 @@ class SuperCorrDecayAnalyzer:
         if r is None or C is None:
             r = np.array([])
             C = np.array([])
+        title_prefix = f"{title} — " if title else ""
         if visualization_mode == 'standard':
             fig = plt.figure(figsize=(16, 11))
             gs = fig.add_gridspec(2, 2, hspace=0.42, wspace=0.30)
             fig.suptitle(
-                f'Superconducting Correlation Decay Analysis — '
+                f'{title_prefix}Superconducting Correlation Decay Analysis — '
                 f'classification: {result.classification} (evidence: {result.evidence_level})',
                 fontsize=18, fontweight='bold')
             SuperCorrDecayAnalyzer._draw_panel_signed(fig.add_subplot(gs[0, 0]), r, C, result)
@@ -2558,7 +2561,8 @@ class SuperCorrDecayAnalyzer:
             fig = plt.figure(figsize=(20, 7))
             gs = fig.add_gridspec(1, 3, hspace=0.4, wspace=0.28)
             fig.suptitle(
-                f'Decay Analysis Diagnostics — classification: {result.classification} '
+                f'{title_prefix}Decay Analysis Diagnostics — '
+                f'classification: {result.classification} '
                 f'(evidence: {result.evidence_level})',
                 fontsize=16, fontweight='bold')
             SuperCorrDecayAnalyzer._draw_panel_loglin(fig.add_subplot(gs[0, 0]), r, C, result)
@@ -2568,7 +2572,7 @@ class SuperCorrDecayAnalyzer:
             fig = plt.figure(figsize=(28, 16))
             gs = fig.add_gridspec(2, 4, hspace=0.5, wspace=0.32)
             fig.suptitle(
-                f'Superconducting Correlation Decay Analysis — '
+                f'{title_prefix}Superconducting Correlation Decay Analysis — '
                 f'classification: {result.classification} (evidence: {result.evidence_level})',
                 fontsize=24, fontweight='bold')
             SuperCorrDecayAnalyzer._draw_panel_signed(fig.add_subplot(gs[0, 0]), r, C, result)
