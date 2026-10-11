@@ -65,6 +65,9 @@ class AnalyzerConfig:
     # ---- 模型比较 ----
     delta_aicc_tie: float = 2.0          # ΔAICc 小于此值视为不可区分
     delta_aicc_osc_min: float = 6.0      # 振荡模型须胜出的幅度(同空间比较时)
+    # ---- 常数项 C_inf 约束（带常数项模型） ----
+    constrain_cinf_abs: bool = True      # |C| 空间：C_inf ≥ 0（默认启用；对应凝聚体背景 |<Δ>|² 非负）
+    constrain_cinf_signed: bool = False  # signed C(r) 空间：默认自由（可为负）；True 时施加 C_inf ≥ 0
     # ---- 稳定性 ----
     k_stab_max: float = 0.30             # 稳定/中等分界
     k_stab_moderate: float = 0.60        # 中等/不稳定分界
@@ -94,6 +97,7 @@ class FitResult:
     valid: bool = True
     error_source: str = 'pcov'           # 'pcov' | 'bootstrap' | 'lstsq_cov'
     message: str = ''
+    bound_hits: list = field(default_factory=list)   # 触及 bounds 的参数名列表
 
 
 @dataclass
@@ -285,6 +289,20 @@ def _r2_in_space(y: np.ndarray, yhat: np.ndarray) -> float:
     if ss_tot == 0.0:
         return np.nan
     return 1.0 - ss_res / ss_tot
+
+
+def _scaled_fit_problem(f, param_names: list, scale: float):
+    """构造幅度缩放后的模型函数：缩放空间拟合 f_s = f/scale，
+    幅度类参数（A / C_inf）在缩放空间为原值的 1/scale（非线性参数不变）。
+    用于消除小量级数据下 trf 优化器的数值病态（浮点相消使收敛判据失效）。"""
+    amp_idx = [i for i, n in enumerate(param_names) if n in ('A', 'C_inf')]
+
+    def f_s(x, *p):
+        p = list(p)
+        for i in amp_idx:
+            p[i] = p[i] * scale      # 缩放空间幅度参数 → 原空间
+        return f(x, *p) / scale
+    return f_s, amp_idx
 
 
 def _aicc_bic_core(rss: float, n: int, k: int) -> tuple:
@@ -1033,26 +1051,43 @@ class SuperCorrDecayAnalyzer:
     # ----------------------------------------------------------------------
     @staticmethod
     def bootstrap_errors(f, x: np.ndarray, y: np.ndarray, p_opt: np.ndarray,
-                         bounds: tuple = None,
+                         bounds: tuple = None, param_names: list = None,
                          config: AnalyzerConfig = None) -> np.ndarray:
         """残差 bootstrap 参数不确定度。仅作 pcov 失效时的兜底，
         不作为主要物理证据，不参与模型选择与分类决策。
-        与主拟合使用同一参数边界，避免参数试探越界（如 ξ<0 导致 exp 溢出）。"""
+        与主拟合使用同一参数边界（避免参数试探越界，如 ξ<0 导致 exp 溢出），
+        并做同样的幅度缩放（避免小量级数据的数值病态）。"""
         import warnings as _warnings
         config = config or AnalyzerConfig()
         x = np.asarray(x, dtype=float)
         y = np.asarray(y, dtype=float)
         yhat = np.asarray(f(x, *p_opt), dtype=float)
         resid = y - yhat
+        scale = float(np.max(np.abs(y))) or 1.0
+        f_s, amp_idx = _scaled_fit_problem(f, param_names or [], scale)
+        lo = np.asarray(bounds[0], dtype=float) if bounds else None
+        hi = np.asarray(bounds[1], dtype=float) if bounds else None
         rng = np.random.default_rng(42)
         params = []
         with _warnings.catch_warnings():
             _warnings.simplefilter('ignore')   # 越界试探产生的数值警告属预期，静默
             for _ in range(config.bootstrap_n):
-                ys = yhat + rng.choice(resid, size=len(y), replace=True)
+                ys = (yhat + rng.choice(resid, size=len(y), replace=True)) / scale
                 try:
-                    popt, _ = optimize.curve_fit(f, x, ys, p0=p_opt,
-                                                 bounds=bounds, maxfev=20000)
+                    p0_s = np.array(p_opt, dtype=float)
+                    p0_s[amp_idx] /= scale
+                    if bounds is not None:
+                        lo_s = np.array(bounds[0], dtype=float)
+                        hi_s = np.array(bounds[1], dtype=float)
+                        lo_s[amp_idx] /= scale
+                        hi_s[amp_idx] /= scale
+                        b = (lo_s, hi_s)
+                    else:
+                        b = (-np.inf, np.inf)
+                    popt, _ = optimize.curve_fit(f_s, x, ys, p0=p0_s,
+                                                 bounds=b, maxfev=20000)
+                    popt = np.array(popt)
+                    popt[amp_idx] *= scale
                     params.append(popt)
                 except Exception:
                     continue
@@ -1079,25 +1114,64 @@ class SuperCorrDecayAnalyzer:
             return res
         if k == 4 and n < config.n_min_osc_fit:
             res.message += f"；n={n} < n_min_osc_fit({config.n_min_osc_fit})，4 参数模型自由度紧张"
-        lo, hi = bounds
+        lo = np.asarray(bounds[0], dtype=float)
+        hi = np.asarray(bounds[1], dtype=float)
         p0 = np.clip(np.asarray(p0, dtype=float), lo, hi)
+        # 幅度缩放：小量级数据下 trf 优化器的收敛判据会被浮点相消淹没
+        # （表现为 popt 完全不动、停在 p0）。缩放空间拟合后，
+        # 幅度类参数 (A / C_inf) 线性反变换，非线性参数 (K/xi/Q/phi) 不变。
+        scale = float(np.max(np.abs(y_win)))
+        if scale <= 0 or not np.isfinite(scale):
+            scale = 1.0
+        y_s = y_win / scale
+        f_s, amp_idx = _scaled_fit_problem(f, param_names, scale)
+        p0_s, lo_s, hi_s = p0.copy(), lo.copy(), hi.copy()
+        p0_s[amp_idx] /= scale
+        lo_s[amp_idx] /= scale
+        hi_s[amp_idx] /= scale
         import warnings as _warnings
         try:
             # pcov 估计失败/数值溢出属预期情形（参数顶边界），已由后续兜底处理，静默警告
             with _warnings.catch_warnings():
                 _warnings.simplefilter('ignore')
-                popt, pcov = optimize.curve_fit(f, r_win, y_win, p0=p0,
-                                                bounds=(lo, hi), max_nfev=20000)
+                popt, pcov = optimize.curve_fit(f_s, r_win, y_s, p0=p0_s,
+                                                bounds=(lo_s, hi_s), max_nfev=20000)
         except Exception as e:
             res.valid = False
             res.message += f"；拟合失败: {type(e).__name__}"
             return res
+        # 幅度参数反变换 + 协方差反变换（D_ii = scale 或 1 的对角变换）
+        popt = np.asarray(popt, dtype=float)
+        popt[amp_idx] *= scale
+        if pcov is not None and np.all(np.isfinite(pcov)):
+            D = np.ones(len(popt))
+            D[amp_idx] = scale
+            pcov = pcov * np.outer(D, D)
         yhat = np.asarray(f(r_win, *popt), dtype=float)
         rss = float(np.sum((y_win - yhat) ** 2))
         r2 = _r2_in_space(y_win, yhat)
         aic, aicc, bic = _aicc_bic_core(rss, n, k)
         res.rss, res.rmse, res.r2 = rss, float(np.sqrt(rss / n)), r2
         res.aic, res.aicc, res.bic = aic, aicc, bic
+        # 触及边界报告（相对容差 1%）：以参数自身最优值尺度为准，
+        # 边界为 0 时改用对侧边界尺度（机器残差如 1e-26 相对自身无法判定）。
+        # 若把 bounds 跨度混入尺度，跨度巨大的参数（如放宽后的 A 上界）
+        # 会把所有拟合都误报为"触及边界"
+        hit_names = []
+        for pname, v, l, h in zip(param_names, popt, lo, hi):
+            if np.isfinite(l):
+                denom_l = max(abs(v), abs(l), 1e-300) if l != 0 else max(abs(h), 1e-300)
+                if abs(v - l) <= 0.01 * denom_l:
+                    hit_names.append(f"参数 {pname} 触及下界 {l:.4g}")
+                    res.bound_hits.append(pname)
+                    continue
+            if np.isfinite(h):
+                denom_h = max(abs(v), abs(h), 1e-300) if h != 0 else max(abs(l), 1e-300)
+                if abs(v - h) <= 0.01 * denom_h:
+                    hit_names.append(f"参数 {pname} 触及上界 {h:.4g}")
+                    res.bound_hits.append(pname)
+        if hit_names:
+            res.message = ((res.message + "；") if res.message else "") + "；".join(hit_names)
         # 参数不确定度：主来源 pcov；异常 → bootstrap 兜底
         err = np.full(k, np.nan)
         err_src = 'pcov'
@@ -1111,11 +1185,11 @@ class SuperCorrDecayAnalyzer:
                 err = np.sqrt(diag)
             else:
                 err = SuperCorrDecayAnalyzer.bootstrap_errors(
-                    f, r_win, y_win, popt, (lo, hi), config)
+                    f, r_win, y_win, popt, (lo, hi), param_names, config)
                 err_src = 'bootstrap'
         else:
             err = SuperCorrDecayAnalyzer.bootstrap_errors(
-                f, r_win, y_win, popt, (lo, hi), config)
+                f, r_win, y_win, popt, (lo, hi), param_names, config)
             err_src = 'bootstrap'
         res.params = {name: float(v) for name, v in zip(param_names, popt)}
         res.param_errors = {name: float(e) for name, e in zip(param_names, err)}
@@ -1145,6 +1219,18 @@ class SuperCorrDecayAnalyzer:
         A_lo, A_hi = 0.1 * max_abs, 10.0 * max_abs
         if A_lo <= 0 or A_hi <= A_lo:
             A_lo, A_hi = 1e-300, max(1.0, 10 * max_abs)
+        # A 上界放宽：窗口起点 r_min 较大时真实幅度可远超窗口内 max|C|
+        # （A·r_min^(-K) = max|C| → A = max|C|·r_min^K）。取 max(r)^8 覆盖 K ≤ 8 的任意窗口，
+        # 避免幅度被边界卡住后用其它参数（如负 C_inf）错误补偿。
+        A_hi = max(A_hi, max_abs * float(np.max(r)) ** 8)
+        # ---- 常数项 C_inf 约束规则（带常数项模型） ----
+        # |C| 空间：constrain_cinf_abs=True 时 C_inf ∈ [0, max]；否则 [-max, max]
+        # signed 空间：默认自由 [-max, max]；constrain_cinf_signed=True 时 [0, max]
+        # 振荡模型只约束非振荡背景 C_inf，不约束整个振荡函数值
+        c_hi = max_abs
+        c_lo_abs = 0.0 if config.constrain_cinf_abs else -max_abs
+        c_lo_signed = 0.0 if config.constrain_cinf_signed else -max_abs
+        c_lo_non = c_lo_abs if n_cross > 0 else c_lo_signed
 
         # constant
         fits['constant'] = SuperCorrDecayAnalyzer._fit_one(
@@ -1180,6 +1266,18 @@ class SuperCorrDecayAnalyzer:
             ([A_lo, 0.1], [A_hi, 10.0 * span]), 2, window,
             ['A', 'xi'], fit_space_non, config)
 
+        # ---- 带常数项的非振荡模型（C_inf + 衰减；C_inf 约束随拟合空间） ----
+        fits['power_law_C'] = SuperCorrDecayAnalyzer._fit_one(
+            'power_law_C', lambda rr, C0, A, K: C0 + A * rr ** (-K),
+            r, y_non, [0.0, A0_p, np.clip(K0, 0.1, 8.0)],
+            ([c_lo_non, A_lo, 0.0], [c_hi, A_hi, 8.0]), 3, window,
+            ['C_inf', 'A', 'K'], fit_space_non, config)
+        fits['exponential_C'] = SuperCorrDecayAnalyzer._fit_one(
+            'exponential_C', lambda rr, C0, A, xi: C0 + A * np.exp(-rr / xi),
+            r, y_non, [0.0, A0_e, np.clip(xi0, 0.1, 10 * span)],
+            ([c_lo_non, A_lo, 0.1], [c_hi, A_hi, 10.0 * span]), 3, window,
+            ['C_inf', 'A', 'xi'], fit_space_non, config)
+
         # ---- 振荡组：拟 signed C(r) ----
         env = envelope_fit if envelope_fit is not None else fits['power_law']
         A0 = float(env.params.get('A', max_abs))
@@ -1200,6 +1298,30 @@ class SuperCorrDecayAnalyzer:
             r, C, [A0, np.clip(xi_env, 0.1, 10 * span), Q0, phi0],
             ([A_lo, 0.1, Q_lo, -np.pi], [A_hi, 10.0 * span, Q_hi, np.pi]), 4, window,
             ['A', 'xi', 'Q', 'phi'], 'linear_C', config)
+
+        # ---- 带常数项的振荡模型（只约束非振荡背景 C_inf，不约束函数值） ----
+        fits['osc_power_C'] = SuperCorrDecayAnalyzer._fit_one(
+            'osc_power_C',
+            lambda rr, C0, A, K, Q, phi: C0 + A * rr ** (-K) * np.cos(Q * rr + phi),
+            r, C, [0.0, A0, np.clip(K_env, 0.0, 8.0), Q0, phi0],
+            ([c_lo_signed, A_lo, 0.0, Q_lo, -np.pi],
+             [c_hi, A_hi, 8.0, Q_hi, np.pi]), 5, window,
+            ['C_inf', 'A', 'K', 'Q', 'phi'], 'linear_C', config)
+        fits['osc_exp_C'] = SuperCorrDecayAnalyzer._fit_one(
+            'osc_exp_C',
+            lambda rr, C0, A, xi, Q, phi: C0 + A * np.exp(-rr / xi) * np.cos(Q * rr + phi),
+            r, C, [0.0, A0, np.clip(xi_env, 0.1, 10 * span), Q0, phi0],
+            ([c_lo_signed, A_lo, 0.1, Q_lo, -np.pi],
+             [c_hi, A_hi, 10.0 * span, Q_hi, np.pi]), 5, window,
+            ['C_inf', 'A', 'xi', 'Q', 'phi'], 'linear_C', config)
+
+        # 约束启用状态写入 message（报告约束是否启用；print_summary 自动透出）
+        for name in ('power_law_C', 'exponential_C', 'osc_power_C', 'osc_exp_C'):
+            f = fits[name]
+            clo = c_lo_non if name in ('power_law_C', 'exponential_C') else c_lo_signed
+            tag = (f"C_inf ∈ [{clo:.4g}, {c_hi:.4g}]"
+                   f"（{'非负约束启用' if clo >= 0 else '无符号约束'}）")
+            f.message = ((f.message + "；") if f.message else "") + tag
         return fits
 
     # ----------------------------------------------------------------------
@@ -1485,10 +1607,50 @@ class SuperCorrDecayAnalyzer:
         art = osc.structural_artifact_suspected
         span = float(np.max(prep.r) - np.min(prep.r))
 
-        valid_non = {m: fits[m] for m in ('constant', 'power_law', 'exponential')
+        valid_non = {m: fits[m] for m in ('constant', 'power_law', 'exponential',
+                                          'power_law_C', 'exponential_C')
                      if m in fits and fits[m] is not None and fits[m].valid}
-        valid_osc = {m: fits[m] for m in ('osc_power', 'osc_exp')
+        valid_osc = {m: fits[m] for m in ('osc_power', 'osc_exp',
+                                          'osc_power_C', 'osc_exp_C')
                      if m in fits and fits[m] is not None and fits[m].valid}
+
+        def _bg_note(fit, fit_dict=None):
+            """带常数项模型胜出时的背景说明（仅胜出者含 C_inf 时调用）。
+            显著性判据：|C_inf| 与该模型衰减部分在最远距离处的值比较
+            （用噪声底判据会自相矛盾——平台数据本身会把噪声底抬高）。
+            fit_dict 给非振荡分支用：两族 _C 模型互相竞争，真实的凝聚体背景
+            应被两族同号恢复；异号是噪声/模型误指定的伪背景标志。"""
+            c = fit.params.get('C_inf', 0.0)
+            ce = fit.param_errors.get('C_inf', np.nan)
+            rmax = fit.window[1] if fit.window is not None else np.nan
+            if 'K' in fit.params and np.isfinite(rmax):
+                tail_model = fit.params['A'] * rmax ** (-fit.params['K'])
+            elif 'xi' in fit.params and np.isfinite(rmax):
+                tail_model = fit.params['A'] * np.exp(-rmax / fit.params['xi'])
+            else:
+                tail_model = np.nan
+            # 退化守卫：衰减部分在窗口内实际为零（如 xi 触下界 → tail_model≈0）时，
+            # "|C_inf| > 0.3×tail_model" 恒真，会把纯噪声常数项误报为显著背景
+            A_fit = fit.params.get('A', np.nan)
+            decay_alive = (np.isfinite(tail_model) and np.isfinite(A_fit)
+                           and tail_model > 1e-6 * A_fit)
+            # 跨形式符号一致性（仅非振荡分支）
+            same_sign = True
+            if fit_dict is not None:
+                sib_name = ('exponential_C' if 'power' in fit.model
+                            else 'power_law_C')
+                sib = fit_dict.get(sib_name)
+                same_sign = (sib is None or not sib.valid
+                             or sib.params.get('C_inf', 0.0) * c >= 0)
+            if decay_alive and same_sign and abs(c) > 0.3 * tail_model:
+                warnings.append(f"带常数项模型胜出：C_inf = {c:.4g} ± {ce:.4g}，"
+                                f"为最远距离衰减值的 {abs(c) / tail_model:.2f} 倍"
+                                f"（可能为凝聚体背景 |<Δ>|²）")
+            elif decay_alive and not same_sign:
+                warnings.append(f"带常数项模型胜出但常数项与零一致"
+                                f"（C_inf = {c:.4g}，另一形式模型给出异号，符号冲突）")
+            else:
+                warnings.append(f"带常数项模型胜出但常数项与零一致（C_inf = {c:.4g}）")
 
         # ---- 物理管线：振荡证据 ----
         if phys_osc:
@@ -1500,15 +1662,29 @@ class SuperCorrDecayAnalyzer:
             env_form = envelope_fit.model.replace('envelope_', '')
             match = {'power': 'osc_power', 'exp': 'osc_exp'}[env_form]
             if match in valid_osc:
-                winner = min(valid_osc, key=lambda m:
-                             valid_osc[m].aicc if np.isfinite(valid_osc[m].aicc) else np.inf)
-                if winner == match:
+                # 振幅 A 或相位 phi 触及边界的振荡候选是边界退化解
+                # （A 触界→振幅不可辨识；phi 钉在 ±π 配超大 A→A·cos 简并，
+                # 模型靠相位补偿拟合，AICc 优势是数值巧合），不参与组内竞争
+                contenders = {m: f for m, f in valid_osc.items()
+                              if not ({'A', 'phi'} & set(f.bound_hits))}
+                if not contenders:
+                    warnings.append("振荡候选模型振幅全部触及边界（振幅不可辨识），"
+                                    "采纳物理管线并降档")
+                    classification = ('oscillatory_power_law' if env_form == 'power'
+                                      else 'oscillatory_exponential')
+                    return {'classification': classification, 'evidence_level': 'weak',
+                            'nonmonotonic_reason': ''}
+                winner = min(contenders, key=lambda m:
+                             contenders[m].aicc if np.isfinite(contenders[m].aicc) else np.inf)
+                if winner.replace('_C', '') == match:
                     classification = ('oscillatory_power_law' if match == 'osc_power'
                                       else 'oscillatory_exponential')
                     evidence = osc.evidence
                     if stability.verdict == 'unstable':
                         evidence = 'weak'
                         warnings.append("稳定性 verdict=unstable，evidence 降为 weak")
+                    if winner.endswith('_C'):
+                        _bg_note(valid_osc[winner])
                     return {'classification': classification, 'evidence_level': evidence,
                             'nonmonotonic_reason': ''}
                 warnings.append("振荡证据 ≥ moderate 但候选模型组内首选与包络形式矛盾 → 冲突")
@@ -1561,7 +1737,11 @@ class SuperCorrDecayAnalyzer:
         # ---- 非振荡组内模型选择（同空间同窗口，AICc 辅助证据） ----
         ranked = sorted(valid_non, key=lambda m:
                         valid_non[m].aicc if np.isfinite(valid_non[m].aicc) else np.inf)
-        best, second = ranked[0], (ranked[1] if len(ranked) > 1 else None)
+        best = ranked[0]
+        # 并列判定只在不同形式族之间进行：嵌套对（X vs X_C）在零背景下
+        # ΔAICc 天然≈0，是同一模型族的多余参数而非"模型不可区分"，AICc 罚已足够
+        _family = lambda m: m.replace('_C', '')
+        second = next((m for m in ranked[1:] if _family(m) != _family(best)), None)
         daicc = ((valid_non[second].aicc - valid_non[best].aicc) if second is not None
                  else np.inf)
         # 平坦度判据：衰减斜率实为零（|K|<0.1 或 ξ>10×span）→ constant 候选
@@ -1576,15 +1756,20 @@ class SuperCorrDecayAnalyzer:
                 return {'classification': 'constant',
                         'evidence_level': 'moderate' if d_const >= 4 else 'weak',
                         'nonmonotonic_reason': ''}
-        if best in ('power_law', 'exponential'):
+        if best in ('power_law', 'exponential', 'power_law_C', 'exponential_C'):
+            best_base = best.replace('_C', '')
             if stability.verdict == 'unstable':
                 warnings.append("分类依赖漂移参数且稳定性 verdict=unstable")
                 return {'classification': 'INCONCLUSIVE', 'evidence_level': 'insufficient',
                         'nonmonotonic_reason': ''}
             if daicc >= config.delta_aicc_tie:
                 evidence = 'moderate' if daicc >= 4 else 'weak'
-                return {'classification': best, 'evidence_level': evidence,
+                if best.endswith('_C'):
+                    _bg_note(valid_non[best], valid_non)
+                return {'classification': best_base, 'evidence_level': evidence,
                         'nonmonotonic_reason': ''}
+            if best.endswith('_C'):
+                _bg_note(valid_non[best], valid_non)
             warnings.append(f"power_law 与 exponential 统计并列（ΔAICc={daicc:.3f} < "
                             f"{config.delta_aicc_tie}），不可区分")
             return {'classification': 'INCONCLUSIVE', 'evidence_level': 'insufficient',
@@ -2092,7 +2277,10 @@ class SuperCorrDecayAnalyzer:
         rr = np.linspace(result.r_min, result.r_max, 300)
         colors = {'constant': 'tab:gray', 'power_law': 'tab:green',
                   'exponential': 'tab:orange', 'osc_power': 'tab:purple',
-                  'osc_exp': 'tab:brown'}
+                  'osc_exp': 'tab:brown',
+                  # _C 族用浅色变体区分（带常数项版本）
+                  'power_law_C': 'lightgreen', 'exponential_C': 'moccasin',
+                  'osc_power_C': 'plum', 'osc_exp_C': 'lightcoral'}
         n_cross = result.oscillation.n_cross if result.oscillation is not None else 0
         y_plot = C if n_cross == 0 else np.abs(C)
         best_names = set(result.comparison.get('best_per_group', {}).values())
