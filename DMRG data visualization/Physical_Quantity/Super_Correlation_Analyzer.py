@@ -192,6 +192,8 @@ class DecayAnalysisResult:
     envelope_fit_alt: FitResult = None   # envelope_mode='both' 时的对比包络（另一种模式）
     envelope_extrema_r: np.ndarray = field(default_factory=lambda: np.array([]))   # 峰值法参与拟合的极值点位置
     envelope_extrema_abs: np.ndarray = field(default_factory=lambda: np.array([])) # 对应 |C| 值（可视化高亮用）
+    envelope_extrema_excluded: list = field(default_factory=list)   # 峰值法按噪声底筛选剔除的极值点 [(r, C, 原因)]
+    envelope_mode_used: str = ''         # 实际生效的包络模式：'all_points' | 'extrema'
     detrended_fit: FitResult = None
     candidate_fits: dict = field(default_factory=dict)
     comparison: dict = field(default_factory=dict)
@@ -238,6 +240,20 @@ class DecayAnalysisResult:
 # ==========================================================================
 # 10. 工具（模块级私有小函数）
 # ==========================================================================
+def _fmt_sci(x: float) -> str:
+    """物理参数打印格式：|指数| > 3 时用科学计数法（如 4.079838×10^(−6)），
+    普通数量级保持常规小数（6 位）；nan/inf 原样输出。"""
+    x = float(x)
+    if not np.isfinite(x):
+        return f"{x}"
+    if x == 0:
+        return "0"
+    exp = int(np.floor(np.log10(abs(x))))
+    if abs(exp) > 3:
+        return f"{x / 10.0 ** exp:.6f}×10^({exp:+d})"
+    return f"{x:.6f}"
+
+
 def _rel_mad(x: np.ndarray) -> float:
     """鲁棒相对离散度 rel_mad = 1.4826·median(|x−median|)/|median|"""
     x = np.asarray(x, dtype=float)
@@ -617,8 +633,9 @@ class SuperCorrDecayAnalyzer:
                                 config: AnalyzerConfig) -> tuple:
         """按 config.envelope_mode 拟合包络，
         返回 (envelope_fit, alt_fit, warnings, extrema_data)：
-        extrema_data = (ext_r, |ext_C|)——峰值法参与拟合的极值点（供可视化高亮），
-        all_points 模式或无有效极值时为空数组。
+        extrema_data = (ext_r, |ext_C|, excluded)——峰值法参与拟合的极值点
+        （供可视化高亮）与按噪声底筛选剔除的极值点 [(r, C, 原因)]，
+        all_points 模式时 ext_r 为空数组。
         - 'all_points'：全点 |C(r)| 对数空间拟合（谷底点会系统性拉低包络）
         - 'extrema'：峰值法——斜率符号法找到的局部极值点做对数空间拟合（不受谷底拉低，但样本少）
         - 'both'：两种都算，AICc 优者为主包络，另一个作为对比结果返回
@@ -627,20 +644,32 @@ class SuperCorrDecayAnalyzer:
         C = np.asarray(C, dtype=float)
         warnings = []
         absC = np.abs(C)
-        empty = (np.array([]), np.array([]))
+        empty = (np.array([]), np.array([]), [])
         f_p_all = SuperCorrDecayAnalyzer.fit_envelope_logspace(r, absC, 'power', config)
         f_e_all = SuperCorrDecayAnalyzer.fit_envelope_logspace(r, absC, 'exp', config)
         env_all = (f_p_all if np.isfinite(f_p_all.aicc) and
                    (not np.isfinite(f_e_all.aicc) or f_p_all.aicc <= f_e_all.aicc)
                    else f_e_all)
+        tag_all = f"全点包络（all_points，n={len(r)} 个点）"
+        env_all.message = (tag_all if not env_all.message
+                           else env_all.message + "；" + tag_all)
         if config.envelope_mode == 'all_points':
             return (env_all, None, warnings, empty)
 
         ext_r, ext_v = SuperCorrDecayAnalyzer.detect_extrema(r, C, noise_floor, config)
+        # 原始（未筛选）极值 vs 筛选后极值：记录剔除的极值点及原因
+        # （振荡诊断的"极值数"是未筛选原始计数，与峰值法拟合样本口径不同）
+        raw_r, raw_v = SuperCorrDecayAnalyzer.detect_extrema(r, C, 0.0, config)
+        excluded = []
+        for rr, vv in zip(raw_r, raw_v):
+            if not np.any(np.isclose(ext_r, rr)):
+                reason = ('幅度不足' if abs(vv) <= noise_floor * config.prom_factor
+                          else '与相邻异类极值落差不足')
+                excluded.append((float(rr), float(vv), reason))
         if len(ext_r) < 4:
             warnings.append(f"envelope_mode='{config.envelope_mode}' 但极值点仅 "
                             f"{len(ext_r)} 个（<4），退化回全点包络")
-            return (env_all, None, warnings, empty)
+            return (env_all, None, warnings, (np.array([]), np.array([]), excluded))
         ext_abs = np.abs(ext_v)
         f_p_ext = SuperCorrDecayAnalyzer.fit_envelope_logspace(
             ext_r, ext_abs, 'power', config)
@@ -652,13 +681,13 @@ class SuperCorrDecayAnalyzer:
         tag = f"极值点包络（峰值法，n={len(ext_r)} 个极值点）"
         env_ext.message = tag if not env_ext.message else env_ext.message + "；" + tag
         if config.envelope_mode == 'extrema':
-            return (env_ext, None, warnings, (ext_r, ext_abs))
+            return (env_ext, None, warnings, (ext_r, ext_abs, excluded))
 
-        # both：AICc 优者为主
+        # both：AICc 优者为主（并列时按规则峰值法胜出）
         if np.isfinite(env_ext.aicc) and (not np.isfinite(env_all.aicc)
                                           or env_ext.aicc <= env_all.aicc):
-            return (env_ext, env_all, warnings, (ext_r, ext_abs))
-        return (env_all, env_ext, warnings, (ext_r, ext_abs))
+            return (env_ext, env_all, warnings, (ext_r, ext_abs, excluded))
+        return (env_all, env_ext, warnings, (ext_r, ext_abs, excluded))
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -1655,14 +1684,14 @@ class SuperCorrDecayAnalyzer:
                 same_sign = (sib is None or not sib.valid
                              or sib.params.get('C_inf', 0.0) * c >= 0)
             if decay_alive and same_sign and abs(c) > 0.3 * tail_model:
-                warnings.append(f"带常数项模型胜出：C_inf = {c:.4g} ± {ce:.4g}，"
+                warnings.append(f"带常数项模型胜出：C_inf = {_fmt_sci(c)} ± {_fmt_sci(ce)}，"
                                 f"为最远距离衰减值的 {abs(c) / tail_model:.2f} 倍"
                                 f"（可能为凝聚体背景 |<Δ>|²）")
             elif decay_alive and not same_sign:
                 warnings.append(f"带常数项模型胜出但常数项与零一致"
-                                f"（C_inf = {c:.4g}，另一形式模型给出异号，符号冲突）")
+                                f"（C_inf = {_fmt_sci(c)}，另一形式模型给出异号，符号冲突）")
             else:
-                warnings.append(f"带常数项模型胜出但常数项与零一致（C_inf = {c:.4g}）")
+                warnings.append(f"带常数项模型胜出但常数项与零一致（C_inf = {_fmt_sci(c)}）")
 
         # ---- 物理管线：振荡证据 ----
         if phys_osc:
@@ -1851,7 +1880,10 @@ class SuperCorrDecayAnalyzer:
                 r_win, C_win, prep.final_noise_floor, config)
         result.envelope_fit = envelope_fit
         result.envelope_fit_alt = envelope_fit_alt
-        result.envelope_extrema_r, result.envelope_extrema_abs = ext_data
+        (result.envelope_extrema_r, result.envelope_extrema_abs,
+         result.envelope_extrema_excluded) = ext_data
+        result.envelope_mode_used = ('extrema' if '极值点' in envelope_fit.message
+                                     else 'all_points')
         warnings.extend(env_warnings)
         if envelope_fit.message:
             warnings.append(f"包络拟合: {envelope_fit.message}")
@@ -1935,19 +1967,24 @@ class SuperCorrDecayAnalyzer:
         if result.nonmonotonic_reason:
             print(f"nonmono_reason : {result.nonmonotonic_reason}")
         if env is not None and env.params:
+            mode_used = (result.envelope_mode_used
+                         or ('extrema' if '极值点' in env.message else 'all_points'))
+            mode_tag = '[峰值法]' if mode_used == 'extrema' else '[全点]'
             if 'K' in env.params:
-                print(f"envelope       : power-law, K = {env.params['K']:.4g} "
-                      f"± {env.param_errors.get('K', np.nan):.4g} "
+                print(f"envelope       : {mode_tag} power-law, K = "
+                      f"{_fmt_sci(env.params['K'])} ± "
+                      f"{_fmt_sci(env.param_errors.get('K', np.nan))} "
                       f"(R2_log = {env.r2:.4f})")
             elif 'xi' in env.params:
-                print(f"envelope       : exponential, xi = {env.params['xi']:.4g} "
-                      f"± {env.param_errors.get('xi', np.nan):.4g} "
+                print(f"envelope       : {mode_tag} exponential, ξ = "
+                      f"{_fmt_sci(env.params['xi'])} ± "
+                      f"{_fmt_sci(env.param_errors.get('xi', np.nan))} "
                       f"(R2_log = {env.r2:.4f})")
         # 仅在振荡有实际证据（非 none/inconclusive）时才输出振荡参数：
         # 无振荡数据上 Q 也会有数值解，输出会误导
         if (osc is not None and np.isfinite(osc.Q)
                 and osc.evidence in ('strong', 'moderate', 'weak', 'possible')):
-            print(f"oscillation    : Q = {osc.Q:.4g}, phi = {osc.phi:.4g}, "
+            print(f"oscillation    : Q = {_fmt_sci(osc.Q)}, phi = {_fmt_sci(osc.phi)}, "
                   f"R2_cos = {osc.r2_cos:.4f} (evidence: {osc.evidence})")
             if osc.structural_artifact_suspected:
                 print("artifact       : possible structural/geometric artifact")
@@ -1999,11 +2036,23 @@ class SuperCorrDecayAnalyzer:
         env = result.envelope_fit
         if env is not None:
             print("-" * 72)
-            print(f"包络拟合（log 空间，envelope_mode={result.config.envelope_mode}）:")
+            # 实际生效模式：优先用 result.envelope_mode_used（analyze 记录），
+            # 兼容旧结果用 message 标记反推；退化 = 配置非 all_points 但无峰值法极值点
+            mode_used = (result.envelope_mode_used
+                         or ('extrema' if '极值点' in env.message else 'all_points'))
+            degraded = (result.config.envelope_mode != 'all_points'
+                        and len(result.envelope_extrema_r) == 0)
+            mode_name = '峰值法 extrema' if mode_used == 'extrema' else '全点拟合 all_points'
+            degrade_note = '——峰值法因极值点不足退化' if degraded else ''
+            print(f"包络拟合（log 空间，envelope_mode={result.config.envelope_mode}"
+                  f"，实际生效：{mode_name}{degrade_note}）:")
             print(f"  模型: {env.model}   R2_log = {env.r2:.6f}  "
                   f"RSS(log) = {env.rss:.3e}  AICc = {env.aicc:.3f}  BIC = {env.bic:.3f}")
             for name, val in env.params.items():
-                print(f"  {name} = {val:.6e} ± {env.param_errors.get(name, float('nan')):.3e}")
+                # 参数显示名：关联长度用希腊字母 ξ（内部键名仍为 'xi'）
+                disp = 'ξ' if name == 'xi' else name
+                print(f"  {disp} = {_fmt_sci(val)} ± "
+                      f"{_fmt_sci(env.param_errors.get(name, float('nan')))}")
             # envelope_mode='both' 的对比包络
             alt = result.envelope_fit_alt
             if alt is not None:
@@ -2013,15 +2062,46 @@ class SuperCorrDecayAnalyzer:
                 print(f"    {kind_alt}: {alt.model}  R2_log = {alt.r2:.6f}  "
                       f"AICc = {alt.aicc:.3f}  "
                       f"params = " + ", ".join(
-                          f"{k}={v:.4e}" for k, v in alt.params.items()))
+                          f"{('ξ' if k == 'xi' else k)}={_fmt_sci(v)}"
+                          for k, v in alt.params.items()))
+                # 主包络获胜原因（both 规则：AICc 优者为主，并列时峰值法胜出）
+                if np.isfinite(alt.aicc) and np.isfinite(env.aicc):
+                    daicc = alt.aicc - env.aicc
+                    if daicc > 1e-9:
+                        print(f"    获胜原因: {kind_env} AICc 更优（ΔAICc = 对比 − 主 = {daicc:.3f}）")
+                    else:
+                        print(f"    获胜原因: AICc 并列（ΔAICc = {daicc:.3f}），"
+                              f"按规则峰值法胜出")
+                else:
+                    print(f"    获胜原因: 对比包络 AICc 不可用，主包络为唯一有效结果")
         # 振荡
         osc = result.oscillation
         if osc is not None:
             print("-" * 72)
             print(f"振荡诊断（8 项 diagnostic checks，证据聚合）: evidence = {osc.evidence}")
-            print(f"  过零数 = {osc.n_cross}  极值数 = {osc.n_ext}")
-            print(f"  Q = {osc.Q:.6g}  φ = {osc.phi:.6g}  amplitude = {osc.amplitude:.3e}  "
-                  f"R2_cos = {osc.r2_cos:.6f}")
+            # 极值数口径：诊断计数为未筛选原始检出数；峰值法参与拟合的
+            # 极值点经噪声底筛选（|C| > nf×prom_factor 及相邻落差），口径不同如实注明
+            ext_line = f"  过零数 = {osc.n_cross}  极值数 = {osc.n_ext}"
+            n_peak = len(result.envelope_extrema_r)
+            excl = result.envelope_extrema_excluded
+            if result.config.envelope_mode != 'all_points' and (n_peak > 0 or excl):
+                if n_peak > 0:
+                    ext_line += f"（峰值法参与拟合的极值点 n={n_peak}"
+                    if excl:
+                        ext_line += "，剔除的极值点：" + "、".join(
+                            f"r={rr:.4g}（|C|={_fmt_sci(abs(vv))}，{reason}）"
+                            for rr, vv, reason in excl)
+                    ext_line += "）"
+                else:
+                    ext_line += "（峰值法退化：筛选后极值点 < 4"
+                    if excl:
+                        ext_line += "，剔除的极值点：" + "、".join(
+                            f"r={rr:.4g}（|C|={_fmt_sci(abs(vv))}，{reason}）"
+                            for rr, vv, reason in excl)
+                    ext_line += "）"
+            print(ext_line)
+            print(f"  Q = {_fmt_sci(osc.Q)}  φ = {_fmt_sci(osc.phi)}  "
+                  f"amplitude = {_fmt_sci(osc.amplitude)}  R2_cos = {osc.r2_cos:.6f}")
             print(f"  过零间距一致性 = {osc.cross_spacing_regularity:.3f}   "
                   f"极值间距一致性 = {osc.ext_spacing_regularity:.3f}")
             print(f"  Q_rel_mad = {osc.Q_rel_mad:.3f}  φ_MAD = {osc.phi_mad:.3f} rad")
