@@ -2146,7 +2146,21 @@ class SuperCorrDecayAnalyzer:
             for w in result.warnings:
                 print(f"  - {w}")
         print("-" * 72)
-        print(f"物理形式: {result.physical_form}")
+        # 物理形式（结构化多行；result.physical_form 字段保持单行以兼容 to_dict）
+        form_str = (result.physical_form.split("≈ ", 1)[1]
+                    if "≈ " in result.physical_form else "A·r^(−K)")
+        p_env = result.envelope_fit.params
+        err_env = result.envelope_fit.param_errors
+        print(f"拟合形式：C(r) ≈ {form_str}")
+        if 'A' in p_env:
+            print(f"振幅因子：A = {_fmt_sci(p_env['A'])} ± "
+                  f"{_fmt_sci(err_env.get('A', np.nan))}")
+        if 'xi' in p_env:
+            print(f"关联长度：ξ = {_fmt_sci(p_env['xi'])} ± "
+                  f"{_fmt_sci(err_env.get('xi', np.nan))}")
+        elif 'K' in p_env:
+            print(f"衰减指数：K = {_fmt_sci(p_env['K'])} ± "
+                  f"{_fmt_sci(err_env.get('K', np.nan))}")
         print("=" * 72)
 
     # ----------------------------------------------------------------------
