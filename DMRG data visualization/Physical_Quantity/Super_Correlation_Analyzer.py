@@ -146,7 +146,8 @@ class StabilityReport:
     rel_mad_Q: float = np.nan
     model_consistency: float = np.nan
     spearman_rho: float = np.nan
-    verdict: str = 'unstable'             # 'stable' | 'moderate' | 'unstable'
+    post_hump_windows: int = 0            # 峰后合法窗口起点数（无 hump 时为 0）
+    verdict: str = 'unstable'             # 'stable' | 'moderate' | 'unstable' | 'insufficient'
     messages: list = field(default_factory=list)
 
 
@@ -667,8 +668,17 @@ class SuperCorrDecayAnalyzer:
                           else '与相邻异类极值落差不足')
                 excluded.append((float(rr), float(vv), reason))
         if len(ext_r) < 4:
-            warnings.append(f"envelope_mode='{config.envelope_mode}' 但极值点仅 "
-                            f"{len(ext_r)} 个（<4），退化回全点包络")
+            # 退化分级：原始极值充足但被噪声标尺筛掉 = 极值幅度不确定（小动态
+            # 范围数据下噪声底与信号同量级，绝对阈值失效），全点拟合仅作对照；
+            # 原始极值本身不足 = 噪声主导，全点拟合为主结果
+            if len(raw_r) >= 4:
+                warnings.append(
+                    f"envelope_mode='{config.envelope_mode}' 极值幅度与噪声底同量级："
+                    f"原始极值 {len(raw_r)} 个，通过幅度筛选的仅 {len(ext_r)} 个（<4），"
+                    f"峰值法不可用，全点拟合仅作对照")
+            else:
+                warnings.append(f"envelope_mode='{config.envelope_mode}' 但极值点仅 "
+                                f"{len(ext_r)} 个（<4），退化回全点包络")
             return (env_all, None, warnings, (np.array([]), np.array([]), excluded))
         ext_abs = np.abs(ext_v)
         f_p_ext = SuperCorrDecayAnalyzer.fit_envelope_logspace(
@@ -1502,7 +1512,7 @@ class SuperCorrDecayAnalyzer:
                            if row['envelope_model'] == best_model])
         rep.spearman_rho = _spearman(r_mins, params)
 
-        # verdict
+        # verdict（基础档：只由参数相对离散度决定）
         if np.isfinite(rel_mad):
             if rel_mad <= config.k_stab_max:
                 rep.verdict = 'stable'
@@ -1512,6 +1522,14 @@ class SuperCorrDecayAnalyzer:
                 rep.verdict = 'unstable'
         else:
             rep.verdict = 'unstable'
+        # Spearman 单调漂移降档（与 insufficient 分开：这是窗口依赖问题）
+        if (np.isfinite(rep.spearman_rho) and abs(rep.spearman_rho) >= 0.8
+                and len(valid_rows) >= 4):
+            if rep.verdict == 'stable':
+                rep.verdict = 'moderate'
+            rep.messages.append(
+                f"参数随 r_min 单调漂移（Spearman ρ={rep.spearman_rho:.2f}），"
+                f"verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）")
 
         # 推荐 r_min（自动产生；语义 = 当前稳定性准则下的推荐分析窗口起点）
         in_band = [row for row in valid_rows
@@ -1523,25 +1541,42 @@ class SuperCorrDecayAnalyzer:
             rep.recommended_r_min = float(min(valid_rows,
                                               key=lambda row: row['aicc'])['r_min'])
             rep.messages.append("无候选满足参数带与模型一致性要求，推荐值取 AICc 最优候选，证据降档")
-        # hump 修正：数据存在包络 hump 时，推荐窗口起点设在 hump 峰值之后（拟合衰减段），
-        # 避免单调包络被迫去拟合"先升后降"的 hump 形态
+        # hump 修正：峰后合法窗口数分级（与稳定性降档语义分开）——
+        # 峰后窗口可拟合 ≠ 峰后拟合稳定；峰后不足 ≠ 静默退回全区间
         if hump_peak is not None and np.isfinite(hump_peak):
-            after = r[r > hump_peak + 1e-12]
-            if len(after) >= config.n_min_hump_window:
-                rep.recommended_r_min = float(after[0])
+            after_idx = [i for i in range(M)
+                         if r[i] > hump_peak + 1e-12
+                         and M - i >= config.n_min_hump_window]
+            rep.post_hump_windows = len(after_idx)
+            if rep.post_hump_windows == 0:
+                # 峰后点数不足：不给出推荐起点（不静默退回全区间当衰减窗口），
+                # verdict 独立记 insufficient（数据不足，非稳定性降档）
+                rep.recommended_r_min = np.nan
+                rep.verdict = 'insufficient'
+                rep.messages.append(
+                    f"检测到包络 hump（峰值 r≈{hump_peak:.6g}）但峰后点数不足 "
+                    f"n_min_hump_window({config.n_min_hump_window})，衰减段证据不足："
+                    f"不推荐全区间作为衰减窗口，包络参数仅作对照")
+            elif rep.post_hump_windows == 1:
+                rep.recommended_r_min = float(r[after_idx[0]])
+                if rep.verdict == 'stable':
+                    rep.verdict = 'moderate'
+                rep.messages.append(
+                    f"数据存在包络 hump（峰值 r≈{hump_peak:.6g}），推荐窗口起点设在 "
+                    f"hump 之后；峰后仅 1 个合法窗口起点：峰后窗口可拟合，"
+                    f"但稳定性无法评估（verdict 最多 moderate）")
+            else:
+                rep.recommended_r_min = float(r[after_idx[0]])
                 rep.messages.append(
                     f"数据存在包络 hump（峰值 r≈{hump_peak:.6g}），"
                     f"推荐窗口起点设在 hump 之后以拟合衰减段"
-                    f"（峰后 {len(after)} 个点，满足衰减窗口门槛 "
-                    f"n_min_hump_window={config.n_min_hump_window}）")
-            else:
-                rep.messages.append(
-                    f"检测到包络 hump（峰值 r≈{hump_peak:.6g}）但峰后点数不足 "
-                    f"n_min_hump_window({config.n_min_hump_window})，维持原推荐窗口")
-        if np.isfinite(rep.spearman_rho) and abs(rep.spearman_rho) > 0.8:
-            rep.messages.append(
-                f"参数随 r_min 单调漂移（Spearman ρ={rep.spearman_rho:.2f}），"
-                "可能存在未被模型描述的近程贡献/边界效应，证据降档")
+                    f"（峰后 {len(after_idx)} 个合法窗口起点）")
+        # 推荐窗口覆盖检查（安全网）：推荐起点必须在扫描网格内
+        if (np.isfinite(rep.recommended_r_min)
+                and not any(abs(row['r_min'] - rep.recommended_r_min) < 1e-9
+                            for row in valid_rows)):
+            rep.verdict = 'unstable'
+            rep.messages.append("推荐窗口起点不在扫描网格内，稳定性无法评估")
         return rep
 
     # ----------------------------------------------------------------------
@@ -1552,7 +1587,12 @@ class SuperCorrDecayAnalyzer:
         """包络 hump 检测（相对判据，不依赖噪声标尺——小动态范围数据下
         noise floor 可能与信号同量级，绝对阈值会失效）。
         判据：ln|C| 的局域斜率由正转负（峰值）＋ 峰后 ≥3 个点单调衰减
-        ＋ 峰为此前全局最大值。振荡数据的峰后斜率不会全为负，不会被误判。
+        ＋ 峰相对**此前最近谷点**的上升 ≥ 10%（相对谷值上升条件，替代旧的
+        "峰为此前全局最大值"——近端边界高峰高于次级 hump 时旧判据会漏检）
+        ＋ 峰前上升段为 ≥3 段连续正斜率（系统趋势，防单段噪声毛刺）
+        ＋ 峰不低于此前全局最大值的 50%（"主要结构"要求——拦截远端噪声
+        小起伏被误判为 hump）。
+        振荡数据的峰后斜率不会全为负，不会被误判。
         返回 (hump_detected, hump_peak_r)。"""
         r = np.asarray(r, dtype=float)
         C_abs = np.asarray(C_abs, dtype=float)
@@ -1568,8 +1608,18 @@ class SuperCorrDecayAnalyzer:
                 tail = s[i:]                        # 峰后所有斜率
                 if len(tail) < 3 or np.any(tail > 0):
                     continue                        # 峰后不是单调衰减（振荡/噪声）
-                if yy[i] < np.max(yy[:i]):
-                    continue                        # 峰不是前段最大值
+                if yy[i] < np.log(1.10) + np.min(yy[:i]):
+                    continue                        # 峰相对此前最近谷点上升 < 10%
+                if yy[i] < np.log(0.5) + np.max(yy[:i]):
+                    continue                        # 峰低于此前全局最大值一半（非主要结构）
+                # 上升段长度：峰前连续正斜率段数 ≥3（系统趋势，防单段噪声毛刺）
+                k = i - 1
+                rise_seg = 0
+                while k >= 0 and s[k] > 0:
+                    rise_seg += 1
+                    k -= 1
+                if rise_seg < 3:
+                    continue
                 return (True, float(rr[i]))
         return (False, np.nan)
 
@@ -1721,9 +1771,13 @@ class SuperCorrDecayAnalyzer:
                     classification = ('oscillatory_power_law' if match == 'osc_power'
                                       else 'oscillatory_exponential')
                     evidence = osc.evidence
-                    if stability.verdict == 'unstable':
+                    if stability.verdict in ('unstable', 'insufficient'):
                         evidence = 'weak'
-                        warnings.append("稳定性 verdict=unstable，evidence 降为 weak")
+                        if stability.verdict == 'insufficient':
+                            warnings.append("峰后衰减段数据不足（verdict=insufficient），"
+                                            "evidence 降为 weak，包络参数仅作对照")
+                        else:
+                            warnings.append("稳定性 verdict=unstable，evidence 降为 weak")
                     if winner.endswith('_C'):
                         _bg_note(valid_osc[winner])
                     return {'classification': classification, 'evidence_level': evidence,
@@ -1768,6 +1822,9 @@ class SuperCorrDecayAnalyzer:
                       else ('envelope_hump' if hump else 'sign_change'))
             if osc.evidence in ('weak', 'possible'):
                 warnings.append("存在振荡迹象但证据不足，summary 保留 possible oscillation 信息")
+            if stability.verdict == 'insufficient':
+                warnings.append("峰后衰减段点数不足（< n_min_hump_window），衰减参数证据不足，"
+                                "全点包络仅作对照")
             return {'classification': 'non_monotonic', 'evidence_level': 'weak',
                     'nonmonotonic_reason': reason}
         if not valid_non:
@@ -1988,6 +2045,8 @@ class SuperCorrDecayAnalyzer:
                   f"R2_cos = {osc.r2_cos:.4f} (evidence: {osc.evidence})")
             if osc.structural_artifact_suspected:
                 print("artifact       : possible structural/geometric artifact")
+        if stab is not None and stab.verdict == 'insufficient':
+            print("note           : 峰后衰减段数据不足，包络参数仅作对照（证据不足）")
         if np.isfinite(result.r_min):
             print(f"fit window     : r ∈ [{result.r_min:.6g}, {result.r_max:.6g}], "
                   f"n = {result.n_points} ({result.distance_aggregation})")
@@ -2046,6 +2105,9 @@ class SuperCorrDecayAnalyzer:
             degrade_note = '——峰值法因极值点不足退化' if degraded else ''
             print(f"包络拟合（log 空间，envelope_mode={result.config.envelope_mode}"
                   f"，实际生效：{mode_name}{degrade_note}）:")
+            if (result.stability is not None
+                    and result.stability.verdict == 'insufficient'):
+                print("  （峰后衰减段数据不足，上述包络参数为全区间拟合值，仅作对照）")
             print(f"  模型: {env.model}   R2_log = {env.r2:.6f}  "
                   f"RSS(log) = {env.rss:.3e}  AICc = {env.aicc:.3f}  BIC = {env.bic:.3f}")
             for name, val in env.params.items():
