@@ -21,10 +21,11 @@
 
 from .Analysis_Contract import (
     AnalysisReport, from_decay_result, from_structure_factor, from_peak_report,
-    from_energy_extrapolation,
+    from_energy_extrapolation, OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
 )
 from .Spin_Structure_Factor_Analyzer import SpinStructureFactorPeakAnalyzer
 from .Energy_Process import EnergyProcessor
+from .Charge_Structure_Factor import ChargeStructureFactorEstimator
 
 # 拟合质量指标：按 FitResult 实际字段名（r2/rss/rmse/aic/aicc/bic）提取，
 # 存在才收录；不编造缺失数值
@@ -141,3 +142,22 @@ def energy_extrapolation_report(records, power: int = 1,
     e_inf = EnergyProcessor.extrapolate(records, power, threshold)
     return from_energy_extrapolation(
         e_inf, [r.N for r in records], power, threshold)
+
+
+def charge_structure_factor_report(nf_path, corr_paths, q_list, N,
+                                   a=1.0, sequences=None) -> AnalysisReport:
+    """调用 ChargeStructureFactorEstimator.estimate_from_files 并包装为
+    AnalysisReport。
+
+    契约适配器 from_structure_factor 的 analyzer/observable 按自旋结构因子
+    硬编码；本包装在适配后覆写为电荷标识（不改契约适配器签名）。
+    其余语义与 from_structure_factor 一致：status 与 data_restricted 正交
+    （受限数据仍 status='ok'）、missing_pairs 空、warnings 由实际计数构造、
+    payload 保留原始 dict（含复数 S_q，默认不序列化）。
+    """
+    sf_result = ChargeStructureFactorEstimator.estimate_from_files(
+        nf_path, corr_paths, q_list, N, a, sequences)
+    report = from_structure_factor(sf_result)
+    report.observable = OBSERVABLE_CHARGE_STRUCTURE_FACTOR
+    report.analyzer = 'ChargeStructureFactorEstimator'
+    return report

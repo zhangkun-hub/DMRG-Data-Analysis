@@ -48,6 +48,7 @@ OBSERVABLE_SUPERCONDUCTING_CORRELATION = 'superconducting_correlation'
 OBSERVABLE_SPIN_CORRELATION = 'spin_correlation'
 OBSERVABLE_CHARGE_CORRELATION = 'charge_correlation'
 OBSERVABLE_SPIN_STRUCTURE_FACTOR = 'spin_structure_factor'
+OBSERVABLE_CHARGE_STRUCTURE_FACTOR = 'charge_structure_factor'
 OBSERVABLE_ENERGY = 'energy'
 
 
