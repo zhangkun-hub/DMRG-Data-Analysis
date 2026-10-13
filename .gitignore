@@ -3,7 +3,9 @@ Data_N*/
 model and visual/
 
 # 测试文件
-*test*
+# 测试产物与 Python 缓存（正式测试代码与基线纳入版本控制）
+DMRG data visualization/tests/artifacts/
+__pycache__/
 
 # AI 工具本地配置
 *settings.local.json

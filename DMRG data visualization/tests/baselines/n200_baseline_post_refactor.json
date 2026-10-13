@@ -1,0 +1,5569 @@
+{
+ "d1_10_49_50_A": {
+  "classification": "oscillatory_power_law",
+  "recommended_model": "oscillatory_power_law",
+  "evidence_level": "strong",
+  "distance_aggregation": "mean_by_distance",
+  "nonmonotonic_reason": "",
+  "full_range": [
+   3.0,
+   36.0
+  ],
+  "r_min": 3.0,
+  "r_max": 36.0,
+  "n_points": 12,
+  "n_raw_points": 12,
+  "n_distances": 12,
+  "fit_space": "",
+  "envelope_fit": {
+   "model": "envelope_power",
+   "fit_space": "log_absC",
+   "r2_space": "log",
+   "params": {
+    "A": 0.002230759802705685,
+    "K": 2.753762277262289
+   },
+   "param_errors": {
+    "A": 0.0015239494124533657,
+    "K": 0.23908449258469336
+   },
+   "n": 12,
+   "k": 2,
+   "rss": 3.592123781681333,
+   "rmse": 0.5471230651996354,
+   "r2": 0.9299047799838621,
+   "aic": -10.473956474753624,
+   "aicc": -9.14062314142029,
+   "bic": -9.504143175177624,
+   "window": [
+    3.0,
+    36.0
+   ],
+   "valid": true,
+   "error_source": "lstsq_cov",
+   "message": "全点包络（all_points，n=12 个点）",
+   "bound_hits": []
+  },
+  "envelope_fit_alt": null,
+  "envelope_extrema_r": [],
+  "envelope_extrema_abs": [],
+  "envelope_extrema_excluded": [],
+  "envelope_mode_used": "all_points",
+  "detrended_fit": {
+   "model": "cosine_detrended",
+   "fit_space": "linear_detrended",
+   "r2_space": "linear",
+   "params": {
+    "Q": 0.8953951450023643,
+    "phi": 3.0578268764047687,
+    "amplitude": 1.8805191001443888
+   },
+   "param_errors": {},
+   "n": 12,
+   "k": 2,
+   "rss": null,
+   "rmse": null,
+   "r2": 0.9828402049969686,
+   "aic": null,
+   "aicc": null,
+   "bic": null,
+   "window": [
+    3.0,
+    36.0
+   ],
+   "valid": true,
+   "error_source": "pcov",
+   "message": "",
+   "bound_hits": []
+  },
+  "candidate_fits": {
+   "constant": {
+    "model": "constant",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 1.62717627745518e-05
+    },
+    "param_errors": {
+     "A": 1.4272715564968386e-05
+    },
+    "n": 12,
+    "k": 1,
+    "rss": 2.6889774067000785e-08,
+    "rmse": 4.733724226846552e-05,
+    "r2": 1.1102230246251565e-16,
+    "aic": -236.99711702330387,
+    "aicc": -236.59711702330387,
+    "bic": -236.51221037351587,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law": {
+    "model": "power_law",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.009708298321152727,
+     "K": 3.66690022635554
+    },
+    "param_errors": {
+     "A": 0.0007599513767372501,
+     "K": 0.07085017326337699
+    },
+    "n": 12,
+    "k": 2,
+    "rss": 5.160916728936353e-12,
+    "rmse": 6.558020997816562e-07,
+    "r2": 0.9998080713985891,
+    "aic": -337.69776249627535,
+    "aicc": -336.36442916294203,
+    "bic": -336.72794919669934,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "exponential": {
+    "model": "exponential",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.0021475202889328507,
+     "xi": 1.1905356789866905
+    },
+    "param_errors": {
+     "A": 0.0001460681531520729,
+     "xi": 0.03182430235708734
+    },
+    "n": 12,
+    "k": 2,
+    "rss": 8.946634134333992e-12,
+    "rmse": 8.634540199268474e-07,
+    "r2": 0.9996672848900834,
+    "aic": -331.0958045424749,
+    "aicc": -329.7624712091416,
+    "bic": -330.1259912428989,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law_C": {
+    "model": "power_law_C",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 4.2448379823022076e-07,
+     "A": 0.010397928597024193,
+     "K": 3.731563077309137
+    },
+    "param_errors": {
+     "C_inf": 2.1694634432181666e-07,
+     "A": 0.0008427837865034927,
+     "K": 0.07397838108513
+    },
+    "n": 12,
+    "k": 3,
+    "rss": 3.622945658396435e-12,
+    "rmse": 5.494653202884627e-07,
+    "r2": 0.999865266786944,
+    "aic": -339.9436842357436,
+    "aicc": -336.9436842357436,
+    "bic": -338.4889642863796,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0001728]（非负约束启用）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "exponential_C": {
+    "model": "exponential_C",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 7.59373962397602e-07,
+     "A": 0.002272720046081192,
+     "xi": 1.1623802522097098
+    },
+    "param_errors": {
+     "C_inf": 1.9701261788436267e-07,
+     "A": 0.0001122370604106761,
+     "xi": 0.022231463902495092
+    },
+    "n": 12,
+    "k": 3,
+    "rss": 3.3788104016895904e-12,
+    "rmse": 5.306293748692513e-07,
+    "r2": 0.9998743458984345,
+    "aic": -340.78084884400994,
+    "aicc": -337.78084884400994,
+    "bic": -339.32612889464593,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0001728]（非负约束启用）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "osc_power": {
+    "model": "osc_power",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.005681676704515226,
+     "K": 2.8936034960203254,
+     "Q": 0.926432566165331,
+     "phi": 2.7522955432594043
+    },
+    "param_errors": {
+     "A": 0.0009112609379960099,
+     "K": 0.06778646695888633,
+     "Q": 0.03129496324086403,
+     "phi": 0.29318636889583216
+    },
+    "n": 12,
+    "k": 4,
+    "rss": 1.7156453299930643e-12,
+    "rmse": 3.781143268458479e-07,
+    "r2": 0.999938444540064,
+    "aic": -346.91366164199343,
+    "aicc": -341.1993759277077,
+    "bic": -344.9740350428414,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "osc_exp": {
+    "model": "osc_exp",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.0031327069074205127,
+     "xi": 1.188052666815943,
+     "Q": 1.0472084817231968,
+     "phi": 2.3310808716206495
+    },
+    "param_errors": {
+     "A": 734938.7014812161,
+     "xi": 0.2549112518326903,
+     "Q": 0.031798577198726835,
+     "phi": 0.40377103544358306
+    },
+    "n": 12,
+    "k": 4,
+    "rss": 9.609333311759183e-12,
+    "rmse": 8.948618753639759e-07,
+    "r2": 0.9996552277318957,
+    "aic": -326.238315034811,
+    "aicc": -320.5240293205253,
+    "bic": -324.298688435659,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "",
+    "bound_hits": []
+   },
+   "osc_power_C": {
+    "model": "osc_power_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 2.1477551990667825e-07,
+     "A": 0.005442269375762806,
+     "K": 2.8793861026389753,
+     "Q": 0.9217284151102477,
+     "phi": 2.7952569249641828
+    },
+    "param_errors": {
+     "C_inf": 9.77949453176286e-08,
+     "A": 0.0008747651818629459,
+     "K": 0.048021789797874755,
+     "Q": 0.020411481288728422,
+     "phi": 0.18989314617474387
+    },
+    "n": 12,
+    "k": 5,
+    "rss": 1.2425123034071259e-12,
+    "rmse": 3.2178050275085626e-07,
+    "r2": 0.9999554200306,
+    "aic": -348.7855086156607,
+    "aicc": -338.7855086156607,
+    "bic": -346.3609753667207,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "C_inf ∈ [-0.0001728, 0.0001728]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_exp_C": {
+    "model": "osc_exp_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 2.2414044521116414e-07,
+     "A": 0.003106143794675819,
+     "xi": 1.1950456057460683,
+     "Q": 1.047195799796334,
+     "phi": 2.3239892975556105
+    },
+    "param_errors": {
+     "C_inf": 2.869389963176463e-07,
+     "A": 119158.41733899328,
+     "xi": 0.25266406990836465,
+     "Q": 0.05483366587795646,
+     "phi": 0.45944497678009033
+    },
+    "n": 12,
+    "k": 5,
+    "rss": 9.092001365383055e-12,
+    "rmse": 8.704405668674846e-07,
+    "r2": 0.9996737890308671,
+    "aic": -324.9023925146258,
+    "aicc": -314.9023925146258,
+    "bic": -322.47785926568577,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "C_inf ∈ [-0.0001728, 0.0001728]（无符号约束）",
+    "bound_hits": []
+   }
+  },
+  "comparison": {
+   "groups": {
+    "linear_absC @ (3.0, 36.0)": {
+     "best_model": "exponential_C",
+     "rows": [
+      {
+       "model": "exponential_C",
+       "aicc": -337.78084884400994,
+       "bic": -339.32612889464593,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 3,
+       "r2": 0.9998743458984345
+      },
+      {
+       "model": "power_law_C",
+       "aicc": -336.9436842357436,
+       "bic": -338.4889642863796,
+       "delta_aicc": 0.8371646082663347,
+       "delta_bic": 0.8371646082663347,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 3,
+       "r2": 0.999865266786944
+      },
+      {
+       "model": "power_law",
+       "aicc": -336.36442916294203,
+       "bic": -336.72794919669934,
+       "delta_aicc": 1.4164196810679073,
+       "delta_bic": 2.598179697946591,
+       "bic_evidence": "正证据",
+       "n": 12,
+       "k": 2,
+       "r2": 0.9998080713985891
+      },
+      {
+       "model": "exponential",
+       "aicc": -329.7624712091416,
+       "bic": -330.1259912428989,
+       "delta_aicc": 8.01837763486833,
+       "delta_bic": 9.200137651747013,
+       "bic_evidence": "强证据",
+       "n": 12,
+       "k": 2,
+       "r2": 0.9996672848900834
+      },
+      {
+       "model": "constant",
+       "aicc": -236.59711702330387,
+       "bic": -236.51221037351587,
+       "delta_aicc": 101.18373182070607,
+       "delta_bic": 102.81391852113006,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 1,
+       "r2": 1.1102230246251565e-16
+      }
+     ]
+    },
+    "linear_C @ (3.0, 36.0)": {
+     "best_model": "osc_power",
+     "rows": [
+      {
+       "model": "osc_power",
+       "aicc": -341.1993759277077,
+       "bic": -344.9740350428414,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 4,
+       "r2": 0.999938444540064
+      },
+      {
+       "model": "osc_power_C",
+       "aicc": -338.7855086156607,
+       "bic": -346.3609753667207,
+       "delta_aicc": 2.413867312046989,
+       "delta_bic": -1.386940323879287,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 5,
+       "r2": 0.9999554200306
+      },
+      {
+       "model": "osc_exp",
+       "aicc": -320.5240293205253,
+       "bic": -324.298688435659,
+       "delta_aicc": 20.675346607182405,
+       "delta_bic": 20.675346607182405,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 4,
+       "r2": 0.9996552277318957
+      },
+      {
+       "model": "osc_exp_C",
+       "aicc": -314.9023925146258,
+       "bic": -322.47785926568577,
+       "delta_aicc": 26.296983413081932,
+       "delta_bic": 22.496175777155656,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 5,
+       "r2": 0.9996737890308671
+      }
+     ]
+    }
+   },
+   "best_per_group": {
+    "('linear_absC', (3.0, 36.0))": "exponential_C",
+    "('linear_C', (3.0, 36.0))": "osc_power"
+   }
+  },
+  "oscillation": {
+   "detected": true,
+   "n_cross": 9,
+   "cross_positions": [
+    5.779057409636735,
+    8.629607003355748,
+    13.611387795595922,
+    16.512866290031017,
+    19.883263560155026,
+    22.729123222881572,
+    26.22237204097922,
+    29.303412926130047,
+    34.42840215365587
+   ],
+   "cross_spacing_regularity": 0.16073088520043605,
+   "n_ext": 8,
+   "ext_positions": [
+    6.0,
+    9.0,
+    15.0,
+    18.0,
+    21.0,
+    24.0,
+    27.0,
+    33.0
+   ],
+   "ext_spacing_regularity": 0.0,
+   "Q": 0.8953951450023643,
+   "Q_rel_mad": 0.005390356778797497,
+   "phi": 3.0578268764047687,
+   "phi_mad": 0.12713987926230882,
+   "amplitude": 1.8805191001443888,
+   "r2_cos": 0.9828402049969686,
+   "envelope_form": "power",
+   "r2_env_log": 0.9299047799838621,
+   "subwindow_Qs": [
+    0.9521992015376628,
+    0.8972201760868475,
+    0.9004941439223793
+   ],
+   "criterion_checks": {
+    "n_cross": true,
+    "n_ext": true,
+    "cross_spacing": true,
+    "ext_spacing": true,
+    "r2_cos": true,
+    "r2_env_log": true,
+    "q_stable": true,
+    "phi_stable": true
+   },
+   "evidence": "strong",
+   "structural_artifact_suspected": false,
+   "structural_warning": "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估"
+  },
+  "family_diagnostics": {
+   "family_r": {
+    "0": [
+     3.0,
+     6.0,
+     9.0,
+     12.0,
+     15.0,
+     18.0,
+     21.0,
+     24.0,
+     27.0,
+     30.0,
+     33.0,
+     36.0
+    ]
+   },
+   "family_C": {
+    "0": [
+     0.0001728175933603,
+     -1.37394667001e-05,
+     1.9352710259935e-06,
+     1.7251652193195e-06,
+     -1.486659812559e-06,
+     1.4613729825835e-06,
+     -8.66564030858e-07,
+     6.369101334885e-07,
+     -2.2286058231999996e-07,
+     6.73964269099e-08,
+     1.4374147731975e-07,
+     -1.5815139707530002e-07
+    ]
+   },
+   "per_family": {
+    "0": {
+     "n": 12,
+     "sign_purity": 0.5833333333333334,
+     "n_cross": 9,
+     "envelope_form": "power",
+     "envelope_param": 2.753762277262289,
+     "r2_env_log": 0.9299047799838621,
+     "Q": 0.8953951450023643,
+     "phi": 3.0578268764047687,
+     "r2_cos": 0.9828402049969686
+    },
+    "note": "仅一个距离族有数据，族分解诊断降级"
+   },
+   "consistency": {
+    "0": true
+   },
+   "structural_artifact_suspected": false,
+   "insufficient": true
+  },
+  "stability": {
+   "scan_table": [
+    {
+     "r_min": 3.0,
+     "n_pts": 12,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.753762277262289,
+     "param_err": 0.23908449258469336,
+     "r2_env_log": 0.9299047799838621,
+     "aicc": -9.14062314142029,
+     "bic": -9.504143175177624,
+     "osc_flag": true,
+     "osc_evidence": "strong",
+     "Q": 0.8953951450023643,
+     "phi": 3.0578268764047687,
+     "r2_cos": 0.9828402049969686
+    },
+    {
+     "r_min": 6.0,
+     "n_pts": 11,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.4930370676887796,
+     "param_err": 0.3268518412404578,
+     "r2_env_log": 0.8660267170686058,
+     "aicc": -8.317441988082093,
+     "bic": -9.021651442485352,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.8945592199536827,
+     "phi": 3.097765851196064,
+     "r2_cos": 0.9803945421102426
+    },
+    {
+     "r_min": 9.0,
+     "n_pts": 10,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 8.067983613043841,
+     "param_err": 1.2509857367044919,
+     "r2_env_log": 0.8386884854688772,
+     "aicc": -9.454428053387252,
+     "bic": -10.563543581684874,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.8853341499863396,
+     "phi": -3.0237360668406135,
+     "r2_cos": 0.9538931908839221
+    },
+    {
+     "r_min": 12.0,
+     "n_pts": 9,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 7.475709393611393,
+     "param_err": 1.2864825181656616,
+     "r2_env_log": 0.8282939864891866,
+     "aicc": -7.523020456507579,
+     "bic": -9.12857130183514,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.8873344391757892,
+     "phi": -3.1072831658395526,
+     "r2_cos": 0.9511981713158495
+    }
+   ],
+   "recommended_r_min": 3.0,
+   "rel_mad_K": 0.07367371425889552,
+   "rel_mad_xi": null,
+   "rel_mad_Q": 0.006706798914318263,
+   "model_consistency": 0.5,
+   "spearman_rho": null,
+   "post_hump_windows": 0,
+   "verdict": "stable",
+   "messages": []
+  },
+  "initial_noise_floor": 1.4374147731975e-07,
+  "initial_noise_floor_components": {
+   "tail_median": 1.4374147731975e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "final_noise_floor": 1.4374147731975e-07,
+  "final_noise_floor_components": {
+   "tail_median": 1.4374147731975e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "analysis_version": "1.0",
+  "physical_form": "C(r) ≈ A·r^(−2.75)·cos(0.895·r + 3.06)",
+  "warnings": [
+   "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 12 个 bond 数据点保留在 group_raw",
+   "包络拟合: 全点包络（all_points，n=12 个点）",
+   "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
+   "候选模型 power_law_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0001728]（非负约束启用）",
+   "候选模型 exponential_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0001728]（非负约束启用）",
+   "候选模型 osc_power_C: C_inf ∈ [-0.0001728, 0.0001728]（无符号约束）",
+   "候选模型 osc_exp_C: C_inf ∈ [-0.0001728, 0.0001728]（无符号约束）"
+  ],
+  "config": {
+   "rtol_group": 1e-09,
+   "atol_group": 1e-12,
+   "n_min_fit": 8,
+   "n_min_hump_window": 6,
+   "n_min_osc_fit": 10,
+   "n_min_osc": 12,
+   "n_min_abs": 6,
+   "r_min_override": null,
+   "r_max_frac": 1.0,
+   "r_max_auto": true,
+   "r_max_noise_cut": 3.0,
+   "r_max_noise_run": 3,
+   "n_rmin_candidates": 20,
+   "envelope_mode": "all_points",
+   "tail_frac_noise": 0.25,
+   "noise_floor_abs_min": 1e-15,
+   "prom_factor": 3.0,
+   "n_cross_min": 4,
+   "n_extrema_min": 4,
+   "spacing_regularity_max": 0.4,
+   "r2_cos_min": 0.6,
+   "r2_env_log_min": 0.85,
+   "q_stab_max": 0.2,
+   "phi_stab_max": 0.5,
+   "q_grid_points": 400,
+   "q_refine_points": 200,
+   "family_sign_purity_warn": 0.8,
+   "delta_aicc_tie": 2.0,
+   "delta_aicc_osc_min": 6.0,
+   "constrain_cinf_abs": true,
+   "constrain_cinf_signed": false,
+   "k_stab_max": 0.3,
+   "k_stab_moderate": 0.6,
+   "model_consistency_min": 0.6,
+   "bootstrap_n": 200,
+   "pcov_max_cond": 1000000000000.0
+  }
+ },
+ "d1_10_50_54_C": {
+  "classification": "non_monotonic",
+  "recommended_model": "non_monotonic",
+  "evidence_level": "weak",
+  "distance_aggregation": "mean_by_distance",
+  "nonmonotonic_reason": "sign_change",
+  "full_range": [
+   3.0,
+   33.0
+  ],
+  "r_min": 3.0,
+  "r_max": 33.0,
+  "n_points": 11,
+  "n_raw_points": 11,
+  "n_distances": 11,
+  "fit_space": "",
+  "envelope_fit": {
+   "model": "envelope_power",
+   "fit_space": "log_absC",
+   "r2_space": "log",
+   "params": {
+    "A": 0.00963868738777829,
+    "K": 3.083332995232478
+   },
+   "param_errors": {
+    "A": 0.01278728833900278,
+    "K": 0.47687847483007817
+   },
+   "n": 11,
+   "k": 2,
+   "rss": 11.36315741307313,
+   "rmse": 1.0163731156811338,
+   "r2": 0.8228511394559362,
+   "aic": 4.357291474845341,
+   "aicc": 5.857291474845341,
+   "bic": 5.153082020442082,
+   "window": [
+    3.0,
+    33.0
+   ],
+   "valid": true,
+   "error_source": "lstsq_cov",
+   "message": "全点包络（all_points，n=11 个点）",
+   "bound_hits": []
+  },
+  "envelope_fit_alt": null,
+  "envelope_extrema_r": [],
+  "envelope_extrema_abs": [],
+  "envelope_extrema_excluded": [],
+  "envelope_mode_used": "all_points",
+  "detrended_fit": {
+   "model": "cosine_detrended",
+   "fit_space": "linear_detrended",
+   "r2_space": "linear",
+   "params": {
+    "Q": 0.8567276406076239,
+    "phi": -3.0374445606064664,
+    "amplitude": 2.1449061286270292
+   },
+   "param_errors": {},
+   "n": 11,
+   "k": 2,
+   "rss": null,
+   "rmse": null,
+   "r2": 0.9282595616506365,
+   "aic": null,
+   "aicc": null,
+   "bic": null,
+   "window": [
+    3.0,
+    33.0
+   ],
+   "valid": true,
+   "error_source": "pcov",
+   "message": "",
+   "bound_hits": []
+  },
+  "candidate_fits": {
+   "constant": {
+    "model": "constant",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 6.043470478991192e-05
+    },
+    "param_errors": {
+     "A": 5.373580080335497e-05
+    },
+    "n": 11,
+    "k": 1,
+    "rss": 3.17628991677563e-07,
+    "rmse": 0.0001699275224317075,
+    "r2": 0.0,
+    "aic": -188.96304811010202,
+    "aicc": -188.51860366565757,
+    "bic": -188.56515283730366,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law": {
+    "model": "power_law",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.03328898349453468,
+     "K": 3.661527633354097
+    },
+    "param_errors": {
+     "A": 0.004093963415134843,
+     "K": 0.11130693928395355
+    },
+    "n": 11,
+    "k": 2,
+    "rss": 1.3749830069687133e-10,
+    "rmse": 3.5355120587967727e-06,
+    "r2": 0.999567110357368,
+    "aic": -272.1583531329136,
+    "aicc": -270.6583531329136,
+    "bic": -271.36256258731686,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "exponential": {
+    "model": "exponential",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.007204627180593285,
+     "xi": 1.2037665610651012
+    },
+    "param_errors": {
+     "A": 0.00048126022669389847,
+     "xi": 0.031935079794392154
+    },
+    "n": 11,
+    "k": 2,
+    "rss": 9.764882150907623e-11,
+    "rmse": 2.979457264626261e-06,
+    "r2": 0.9996925695573526,
+    "aic": -275.9229267999615,
+    "aicc": -274.4229267999615,
+    "bic": -275.12713625436476,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law_C": {
+    "model": "power_law_C",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 4.6633901822797263e-07,
+     "A": 0.03399483883372824,
+     "K": 3.6813270776463556
+    },
+    "param_errors": {
+     "C_inf": 1.5032410323489874e-06,
+     "A": 0.005061363716430173,
+     "K": 0.13600740659658414
+    },
+    "n": 11,
+    "k": 3,
+    "rss": 1.3585560360638572e-10,
+    "rmse": 3.514329156291758e-06,
+    "r2": 0.9995722821053303,
+    "aic": -270.29056185744724,
+    "aicc": -266.8619904288758,
+    "bic": -269.0968760390521,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 C_inf 触及下界 0；C_inf ∈ [0, 0.000596]（非负约束启用）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "exponential_C": {
+    "model": "exponential_C",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 1.7315711553525012e-06,
+     "A": 0.007463463671061502,
+     "xi": 1.1855992902507007
+    },
+    "param_errors": {
+     "C_inf": 1.0175592825184431e-06,
+     "A": 0.000498272714932499,
+     "xi": 0.03128149443833135
+    },
+    "n": 11,
+    "k": 3,
+    "rss": 7.168403153900726e-11,
+    "rmse": 2.552788698641106e-06,
+    "r2": 0.9997743152123476,
+    "aic": -277.32313215880424,
+    "aicc": -273.8945607302328,
+    "bic": -276.1294463404091,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 C_inf 触及下界 0；C_inf ∈ [0, 0.000596]（非负约束启用）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "osc_power": {
+    "model": "osc_power",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.01517561213001576,
+     "K": 2.892205488667461,
+     "Q": 0.845589724567987,
+     "phi": -2.879049724001957
+    },
+    "param_errors": {
+     "A": 0.0001620622710282609,
+     "K": 0.014835783392170595,
+     "Q": 0.005156982300741847,
+     "phi": 0.04429214648835588
+    },
+    "n": 11,
+    "k": 4,
+    "rss": 5.564964266029845e-13,
+    "rmse": 2.2492350752341328e-07,
+    "r2": 0.9999983150162377,
+    "aic": -328.7651201003393,
+    "aicc": -322.0984534336726,
+    "bic": -327.1735390091458,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "osc_exp": {
+    "model": "osc_exp",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.004314565315280632,
+     "xi": 1.6528276650502187,
+     "Q": 0.8612183430329478,
+     "phi": -3.141592653589782
+    },
+    "param_errors": {
+     "A": 0.00456100136354439,
+     "xi": 0.6656080223913571,
+     "Q": 0.5374308856733303,
+     "phi": 4.438384697528419
+    },
+    "n": 11,
+    "k": 4,
+    "rss": 7.194739936304578e-11,
+    "rmse": 2.5574738843960457e-06,
+    "r2": 0.9997821545766138,
+    "aic": -275.28279211215744,
+    "aicc": -268.61612544549075,
+    "bic": -273.691211020964,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 phi 触及下界 -3.142",
+    "bound_hits": [
+     "phi"
+    ]
+   },
+   "osc_power_C": {
+    "model": "osc_power_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 3.6332843848915344e-08,
+     "A": 0.015160912918866265,
+     "K": 2.891928337224601,
+     "Q": 0.8452764950580328,
+     "phi": -2.876409974911314
+    },
+    "param_errors": {
+     "C_inf": 9.92258743243176e-08,
+     "A": 0.0001777006733759398,
+     "K": 0.01588316825513037,
+     "Q": 0.005559849051664999,
+     "phi": 0.04772622799492528
+    },
+    "n": 11,
+    "k": 5,
+    "rss": 5.443570445054129e-13,
+    "rmse": 2.224567464608494e-07,
+    "r2": 0.9999983517723797,
+    "aic": -327.0077293476654,
+    "aicc": -315.0077293476654,
+    "bic": -325.01825298367356,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "C_inf ∈ [-0.000596, 0.000596]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_exp_C": {
+    "model": "osc_exp_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 5.867641532704668e-07,
+     "A": 0.004204721681087302,
+     "xi": 1.6782922314550925,
+     "Q": 0.859763874780969,
+     "phi": -3.1415926535897594
+    },
+    "param_errors": {
+     "C_inf": 8.823088892757129e-07,
+     "A": 2064.4152513311155,
+     "xi": 0.2152872735163564,
+     "Q": 0.08560064360387006,
+     "phi": 0.6441757798537446
+    },
+    "n": 11,
+    "k": 5,
+    "rss": 6.895851110109335e-11,
+    "rmse": 2.5037882407753356e-06,
+    "r2": 0.9997912044607603,
+    "aic": -273.7495248870257,
+    "aicc": -261.7495248870257,
+    "bic": -271.76004852303384,
+    "window": [
+     3.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 phi 触及下界 -3.142；C_inf ∈ [-0.000596, 0.000596]（无符号约束）",
+    "bound_hits": [
+     "phi"
+    ]
+   }
+  },
+  "comparison": {
+   "groups": {
+    "linear_absC @ (3.0, 33.0)": {
+     "best_model": "exponential",
+     "rows": [
+      {
+       "model": "exponential",
+       "aicc": -274.4229267999615,
+       "bic": -275.12713625436476,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 11,
+       "k": 2,
+       "r2": 0.9996925695573526
+      },
+      {
+       "model": "exponential_C",
+       "aicc": -273.8945607302328,
+       "bic": -276.1294463404091,
+       "delta_aicc": 0.5283660697286905,
+       "delta_bic": -1.0023100860443606,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 11,
+       "k": 3,
+       "r2": 0.9997743152123476
+      },
+      {
+       "model": "power_law",
+       "aicc": -270.6583531329136,
+       "bic": -271.36256258731686,
+       "delta_aicc": 3.764573667047898,
+       "delta_bic": 3.764573667047898,
+       "bic_evidence": "正证据",
+       "n": 11,
+       "k": 2,
+       "r2": 0.999567110357368
+      },
+      {
+       "model": "power_law_C",
+       "aicc": -266.8619904288758,
+       "bic": -269.0968760390521,
+       "delta_aicc": 7.560936371085688,
+       "delta_bic": 6.030260215312637,
+       "bic_evidence": "强证据",
+       "n": 11,
+       "k": 3,
+       "r2": 0.9995722821053303
+      },
+      {
+       "model": "constant",
+       "aicc": -188.51860366565757,
+       "bic": -188.56515283730366,
+       "delta_aicc": 85.90432313430392,
+       "delta_bic": 86.5619834170611,
+       "bic_evidence": "极强证据",
+       "n": 11,
+       "k": 1,
+       "r2": 0.0
+      }
+     ]
+    },
+    "linear_C @ (3.0, 33.0)": {
+     "best_model": "osc_power",
+     "rows": [
+      {
+       "model": "osc_power",
+       "aicc": -322.0984534336726,
+       "bic": -327.1735390091458,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 11,
+       "k": 4,
+       "r2": 0.9999983150162377
+      },
+      {
+       "model": "osc_power_C",
+       "aicc": -315.0077293476654,
+       "bic": -325.01825298367356,
+       "delta_aicc": 7.090724086007185,
+       "delta_bic": 2.1552860254722646,
+       "bic_evidence": "正证据",
+       "n": 11,
+       "k": 5,
+       "r2": 0.9999983517723797
+      },
+      {
+       "model": "osc_exp",
+       "aicc": -268.61612544549075,
+       "bic": -273.691211020964,
+       "delta_aicc": 53.48232798818185,
+       "delta_bic": 53.48232798818185,
+       "bic_evidence": "极强证据",
+       "n": 11,
+       "k": 4,
+       "r2": 0.9997821545766138
+      },
+      {
+       "model": "osc_exp_C",
+       "aicc": -261.7495248870257,
+       "bic": -271.76004852303384,
+       "delta_aicc": 60.3489285466469,
+       "delta_bic": 55.41349048611198,
+       "bic_evidence": "极强证据",
+       "n": 11,
+       "k": 5,
+       "r2": 0.9997912044607603
+      }
+     ]
+    }
+   },
+   "best_per_group": {
+    "('linear_absC', (3.0, 33.0))": "exponential",
+    "('linear_C', (3.0, 33.0))": "osc_power"
+   }
+  },
+  "oscillation": {
+   "detected": true,
+   "n_cross": 8,
+   "cross_positions": [
+    5.769051938561889,
+    8.95309557666739,
+    13.61364959568267,
+    16.882304538988908,
+    20.135639719492527,
+    23.704663868063765,
+    28.342039390095817,
+    31.902478585196544
+   ],
+   "cross_spacing_regularity": 0.12788096835586923,
+   "n_ext": 7,
+   "ext_positions": [
+    6.0,
+    12.0,
+    15.0,
+    18.0,
+    21.0,
+    27.0,
+    30.0
+   ],
+   "ext_spacing_regularity": 0.0,
+   "Q": 0.8567276406076239,
+   "Q_rel_mad": 0.03793205767137395,
+   "phi": -3.0374445606064664,
+   "phi_mad": 2.64087049890629,
+   "amplitude": 2.1449061286270292,
+   "r2_cos": 0.9282595616506365,
+   "envelope_form": "power",
+   "r2_env_log": 0.8228511394559362,
+   "subwindow_Qs": [
+    0.8767607786331597,
+    0.8548886055005236,
+    0.749553200934511
+   ],
+   "criterion_checks": {
+    "n_cross": true,
+    "n_ext": true,
+    "cross_spacing": true,
+    "ext_spacing": true,
+    "r2_cos": true,
+    "r2_env_log": false,
+    "q_stable": true,
+    "phi_stable": false
+   },
+   "evidence": "weak",
+   "structural_artifact_suspected": false,
+   "structural_warning": "φ 子窗口最大漂移 2.82 rad，振荡模型在远端不稳定，证据降为 weak；距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估"
+  },
+  "family_diagnostics": {
+   "family_r": {
+    "0": [
+     3.0,
+     6.0,
+     9.0,
+     12.0,
+     15.0,
+     18.0,
+     21.0,
+     24.0,
+     27.0,
+     30.0,
+     33.0
+    ]
+   },
+   "family_C": {
+    "0": [
+     0.0005960216102365,
+     -4.971016741955e-05,
+     7.89553428275e-07,
+     6.68055838762e-06,
+     -5.73953282455e-06,
+     3.4080828332749997e-06,
+     -1.3793578602585e-06,
+     1.506191655883e-07,
+     3.0605191939996e-07,
+     -3.7809771508605e-07,
+     2.1812089892845e-07
+    ]
+   },
+   "per_family": {
+    "0": {
+     "n": 11,
+     "sign_purity": 0.6363636363636364,
+     "n_cross": 8,
+     "envelope_form": "power",
+     "envelope_param": 3.083332995232478,
+     "r2_env_log": 0.8228511394559362,
+     "Q": 0.8567276406076239,
+     "phi": -3.0374445606064664,
+     "r2_cos": 0.9282595616506365
+    },
+    "note": "仅一个距离族有数据，族分解诊断降级"
+   },
+   "consistency": {
+    "0": false
+   },
+   "structural_artifact_suspected": false,
+   "insufficient": true
+  },
+  "stability": {
+   "scan_table": [
+    {
+     "r_min": 3.0,
+     "n_pts": 11,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 3.083332995232478,
+     "param_err": 0.47687847483007817,
+     "r2_env_log": 0.8228511394559362,
+     "aicc": 5.857291474845341,
+     "bic": 5.153082020442082,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.8567276406076239,
+     "phi": -3.0374445606064664,
+     "r2_cos": 0.9282595616506365
+    },
+    {
+     "r_min": 6.0,
+     "n_pts": 10,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.7012111994308152,
+     "param_err": 0.6906036536885096,
+     "r2_env_log": 0.6566357006495382,
+     "aicc": 6.256947276464591,
+     "bic": 5.147831748166968,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.8550364363968105,
+     "phi": -2.962284953537585,
+     "r2_cos": 0.8581161688503428
+    },
+    {
+     "r_min": 9.0,
+     "n_pts": 9,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 7.914525964132714,
+     "param_err": 2.8654920237289274,
+     "r2_env_log": 0.5214890816958904,
+     "aicc": 4.838420861869679,
+     "bic": 3.2328700165421185,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.8746125999308901,
+     "phi": 2.8552047668568306,
+     "r2_cos": 0.8737633275397775
+    }
+   ],
+   "recommended_r_min": 3.0,
+   "rel_mad_K": 0.09793922483611038,
+   "rel_mad_xi": null,
+   "rel_mad_Q": 0.002926693670316941,
+   "model_consistency": 0.6666666666666666,
+   "spearman_rho": null,
+   "post_hump_windows": 0,
+   "verdict": "stable",
+   "messages": []
+  },
+  "initial_noise_floor": 3.0605191939996e-07,
+  "initial_noise_floor_components": {
+   "tail_median": 3.0605191939996e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "final_noise_floor": 3.0605191939996e-07,
+  "final_noise_floor_components": {
+   "tail_median": 3.0605191939996e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "analysis_version": "1.0",
+  "physical_form": "C(r) ≈ A·r^(−3.08)·cos(0.857·r + -3.04)",
+  "warnings": [
+   "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 11 个 bond 数据点保留在 group_raw",
+   "包络拟合: 全点包络（all_points，n=11 个点）",
+   "φ 子窗口最大漂移 2.82 rad，振荡模型在远端不稳定，证据降为 weak；距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
+   "候选模型 power_law_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 0.000596]（非负约束启用）",
+   "候选模型 exponential_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 0.000596]（非负约束启用）",
+   "候选模型 osc_exp: 参数 phi 触及下界 -3.142",
+   "候选模型 osc_power_C: C_inf ∈ [-0.000596, 0.000596]（无符号约束）",
+   "候选模型 osc_exp_C: 参数 phi 触及下界 -3.142；C_inf ∈ [-0.000596, 0.000596]（无符号约束）",
+   "存在振荡迹象但证据不足，summary 保留 possible oscillation 信息"
+  ],
+  "config": {
+   "rtol_group": 1e-09,
+   "atol_group": 1e-12,
+   "n_min_fit": 8,
+   "n_min_hump_window": 6,
+   "n_min_osc_fit": 10,
+   "n_min_osc": 12,
+   "n_min_abs": 6,
+   "r_min_override": null,
+   "r_max_frac": 1.0,
+   "r_max_auto": true,
+   "r_max_noise_cut": 3.0,
+   "r_max_noise_run": 3,
+   "n_rmin_candidates": 20,
+   "envelope_mode": "all_points",
+   "tail_frac_noise": 0.25,
+   "noise_floor_abs_min": 1e-15,
+   "prom_factor": 3.0,
+   "n_cross_min": 4,
+   "n_extrema_min": 4,
+   "spacing_regularity_max": 0.4,
+   "r2_cos_min": 0.6,
+   "r2_env_log_min": 0.85,
+   "q_stab_max": 0.2,
+   "phi_stab_max": 0.5,
+   "q_grid_points": 400,
+   "q_refine_points": 200,
+   "family_sign_purity_warn": 0.8,
+   "delta_aicc_tie": 2.0,
+   "delta_aicc_osc_min": 6.0,
+   "constrain_cinf_abs": true,
+   "constrain_cinf_signed": false,
+   "k_stab_max": 0.3,
+   "k_stab_moderate": 0.6,
+   "model_consistency_min": 0.6,
+   "bootstrap_n": 200,
+   "pcov_max_cond": 1000000000000.0
+  }
+ },
+ "d1_100_49_50_A": {
+  "classification": "non_monotonic",
+  "recommended_model": "non_monotonic",
+  "evidence_level": "weak",
+  "distance_aggregation": "mean_by_distance",
+  "nonmonotonic_reason": "envelope_hump",
+  "full_range": [
+   3.0,
+   36.0
+  ],
+  "r_min": 18.0,
+  "r_max": 36.0,
+  "n_points": 7,
+  "n_raw_points": 12,
+  "n_distances": 12,
+  "fit_space": "",
+  "envelope_fit": {
+   "model": "envelope_exp",
+   "fit_space": "log_absC",
+   "r2_space": "log",
+   "params": {
+    "A": 4.07983772342932e-06,
+    "xi": 17.51550823733627
+   },
+   "param_errors": {
+    "A": 7.780868407124574e-07,
+    "xi": 2.115436291308472
+   },
+   "n": 7,
+   "k": 2,
+   "rss": 0.05990726217161038,
+   "rmse": 0.09251043352092808,
+   "r2": 0.9320245967888108,
+   "aic": -29.326073844052793,
+   "aicc": -26.326073844052793,
+   "bic": -29.434253545942166,
+   "window": [
+    18.0,
+    36.0
+   ],
+   "valid": true,
+   "error_source": "lstsq_cov",
+   "message": "全点包络（all_points，n=7 个点）",
+   "bound_hits": []
+  },
+  "envelope_fit_alt": null,
+  "envelope_extrema_r": [],
+  "envelope_extrema_abs": [],
+  "envelope_extrema_excluded": [],
+  "envelope_mode_used": "all_points",
+  "detrended_fit": {
+   "model": "cosine_detrended",
+   "fit_space": "linear_detrended",
+   "r2_space": "linear",
+   "params": {
+    "Q": 0.23061092271965178,
+    "phi": 0.05316185157648025,
+    "amplitude": 0.846816710109494
+   },
+   "param_errors": {},
+   "n": 7,
+   "k": 2,
+   "rss": null,
+   "rmse": null,
+   "r2": -88.56807910005789,
+   "aic": null,
+   "aicc": null,
+   "bic": null,
+   "window": [
+    18.0,
+    36.0
+   ],
+   "valid": true,
+   "error_source": "pcov",
+   "message": "",
+   "bound_hits": []
+  },
+  "candidate_fits": {
+   "constant": {
+    "model": "constant",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 9.251405984357143e-07
+    },
+    "param_errors": {
+     "A": 1.1794006165872877e-07
+    },
+    "n": 7,
+    "k": 1,
+    "rss": 5.842140420507193e-13,
+    "rmse": 2.888929712962717e-07,
+    "r2": -2.220446049250313e-16,
+    "aic": -208.80093382547824,
+    "aicc": -208.00093382547823,
+    "bic": -208.85502367642292,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law": {
+    "model": "power_law",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 4.249681969588054e-05,
+     "K": 1.1808263573056499
+    },
+    "param_errors": {
+     "A": 2.808764763160943e-05,
+     "K": 0.20969550932369466
+    },
+    "n": 7,
+    "k": 2,
+    "rss": 7.226339474804452e-14,
+    "rmse": 1.0160384887819704e-07,
+    "r2": 0.8763066452590147,
+    "aic": -221.43058187804198,
+    "aicc": -218.43058187804198,
+    "bic": -221.53876157993136,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "exponential": {
+    "model": "exponential",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 3.3261491729436073e-06,
+     "xi": 20.46621308697099
+    },
+    "param_errors": {
+     "A": 4.3499646107888867e-07,
+     "xi": 2.1659263968222415
+    },
+    "n": 7,
+    "k": 2,
+    "rss": 4.046168554043555e-14,
+    "rmse": 7.602789482479961e-08,
+    "r2": 0.9307416757762169,
+    "aic": -225.4903173756666,
+    "aicc": -222.4903173756666,
+    "bic": -225.59849707755598,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law_C": {
+    "model": "power_law_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": -1.2862591626414752e-06,
+     "A": 1.2316098326639913e-05,
+     "K": 0.5273619755217603
+    },
+    "param_errors": {
+     "C_inf": 7.074025873517314e-07,
+     "A": 0.004492400257116764,
+     "K": 0.7129993267859895
+    },
+    "n": 7,
+    "k": 3,
+    "rss": 4.8480519428733e-14,
+    "rmse": 8.322132232678714e-08,
+    "r2": 0.9170158264964742,
+    "aic": -222.22467141581302,
+    "aicc": -214.22467141581302,
+    "bic": -222.38694096864708,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 C_inf 触及下界 -1.286e-06；C_inf ∈ [-1.286e-06, 1.286e-06]（无符号约束）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "exponential_C": {
+    "model": "exponential_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": -1.2862591626412636e-06,
+     "A": 3.886331487823173e-06,
+     "xi": 47.22554185167121
+    },
+    "param_errors": {
+     "C_inf": 6.007982277796156e-07,
+     "A": 4.01342089438557e-07,
+     "xi": 12.931845978655351
+    },
+    "n": 7,
+    "k": 3,
+    "rss": 2.166672867680623e-14,
+    "rmse": 5.563494364003132e-08,
+    "r2": 0.9629130299560221,
+    "aic": -227.86236090515288,
+    "aicc": -219.86236090515288,
+    "bic": -228.02463045798694,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 C_inf 触及下界 -1.286e-06；C_inf ∈ [-1.286e-06, 1.286e-06]（无符号约束）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "osc_power": {
+    "model": "osc_power",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.126483757391249,
+     "K": 3.6254164668779696,
+     "Q": 0.18448873817572145,
+     "phi": 1.66959870627434
+    },
+    "param_errors": {
+     "A": 1.8248605164524432,
+     "K": 4.534491661703485,
+     "Q": 0.06188855134335232,
+     "phi": 1.2182874221398021
+    },
+    "n": 7,
+    "k": 4,
+    "rss": 1.129864966502418e-12,
+    "rmse": 4.017577391027046e-07,
+    "r2": -0.933991457200078,
+    "aic": -198.183831966494,
+    "aicc": -178.183831966494,
+    "bic": -198.40019137027275,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "；n=7 < n_min_osc_fit(10)，4 参数模型自由度紧张；参数 Q 触及下界 0.1845",
+    "bound_hits": [
+     "Q"
+    ]
+   },
+   "osc_exp": {
+    "model": "osc_exp",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 3.8367570799375716e-05,
+     "xi": 7.045838280747692,
+     "Q": 0.18448873817572145,
+     "phi": 1.7119258307385263
+    },
+    "param_errors": {
+     "A": 0.0001857254048700999,
+     "xi": 9.944781875081171,
+     "Q": 0.07035306296891597,
+     "phi": 1.3812604693485417
+    },
+    "n": 7,
+    "k": 4,
+    "rss": 1.1871742832610642e-12,
+    "rmse": 4.1182074520372576e-07,
+    "r2": -1.0320878955490742,
+    "aic": -197.83748733422792,
+    "aicc": -177.83748733422792,
+    "bic": -198.05384673800665,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "；n=7 < n_min_osc_fit(10)，4 参数模型自由度紧张；参数 Q 触及下界 0.1845",
+    "bound_hits": [
+     "Q"
+    ]
+   },
+   "osc_power_C": {
+    "model": "osc_power_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 7,
+    "k": 5,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=7 不足以约束 5 参数模型；C_inf ∈ [-1.286e-06, 1.286e-06]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_exp_C": {
+    "model": "osc_exp_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 7,
+    "k": 5,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     18.0,
+     36.0
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=7 不足以约束 5 参数模型；C_inf ∈ [-1.286e-06, 1.286e-06]（无符号约束）",
+    "bound_hits": []
+   }
+  },
+  "comparison": {
+   "groups": {
+    "linear_C @ (18.0, 36.0)": {
+     "best_model": "exponential",
+     "rows": [
+      {
+       "model": "exponential",
+       "aicc": -222.4903173756666,
+       "bic": -225.59849707755598,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 7,
+       "k": 2,
+       "r2": 0.9307416757762169
+      },
+      {
+       "model": "exponential_C",
+       "aicc": -219.86236090515288,
+       "bic": -228.02463045798694,
+       "delta_aicc": 2.627956470513709,
+       "delta_bic": -2.4261333804309686,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 7,
+       "k": 3,
+       "r2": 0.9629130299560221
+      },
+      {
+       "model": "power_law",
+       "aicc": -218.43058187804198,
+       "bic": -221.53876157993136,
+       "delta_aicc": 4.059735497624615,
+       "delta_bic": 4.059735497624615,
+       "bic_evidence": "正证据",
+       "n": 7,
+       "k": 2,
+       "r2": 0.8763066452590147
+      },
+      {
+       "model": "power_law_C",
+       "aicc": -214.22467141581302,
+       "bic": -222.38694096864708,
+       "delta_aicc": 8.265645959853572,
+       "delta_bic": 3.211556108908894,
+       "bic_evidence": "正证据",
+       "n": 7,
+       "k": 3,
+       "r2": 0.9170158264964742
+      },
+      {
+       "model": "constant",
+       "aicc": -208.00093382547823,
+       "bic": -208.85502367642292,
+       "delta_aicc": 14.489383550188364,
+       "delta_bic": 16.74347340113306,
+       "bic_evidence": "极强证据",
+       "n": 7,
+       "k": 1,
+       "r2": -2.220446049250313e-16
+      },
+      {
+       "model": "osc_power",
+       "aicc": -178.183831966494,
+       "bic": -198.40019137027275,
+       "delta_aicc": 44.30648540917258,
+       "delta_bic": 27.198305707283225,
+       "bic_evidence": "极强证据",
+       "n": 7,
+       "k": 4,
+       "r2": -0.933991457200078
+      },
+      {
+       "model": "osc_exp",
+       "aicc": -177.83748733422792,
+       "bic": -198.05384673800665,
+       "delta_aicc": 44.652830041438676,
+       "delta_bic": 27.54465033954932,
+       "bic_evidence": "极强证据",
+       "n": 7,
+       "k": 4,
+       "r2": -1.0320878955490742
+      }
+     ]
+    }
+   },
+   "best_per_group": {
+    "('linear_C', (18.0, 36.0))": "exponential"
+   }
+  },
+  "oscillation": {
+   "detected": false,
+   "n_cross": 0,
+   "cross_positions": [],
+   "cross_spacing_regularity": null,
+   "n_ext": 0,
+   "ext_positions": [],
+   "ext_spacing_regularity": null,
+   "Q": 0.23061092271965178,
+   "Q_rel_mad": null,
+   "phi": 0.05316185157648025,
+   "phi_mad": null,
+   "amplitude": 0.846816710109494,
+   "r2_cos": -88.56807910005789,
+   "envelope_form": "exp",
+   "r2_env_log": 0.9320245967888108,
+   "subwindow_Qs": [],
+   "criterion_checks": {
+    "n_cross": false,
+    "n_ext": false,
+    "cross_spacing": false,
+    "ext_spacing": false,
+    "r2_cos": false,
+    "r2_env_log": true,
+    "q_stable": false,
+    "phi_stable": false
+   },
+   "evidence": "none",
+   "structural_artifact_suspected": false,
+   "structural_warning": "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估"
+  },
+  "family_diagnostics": {
+   "family_r": {
+    "0": [
+     3.0,
+     6.0,
+     9.0,
+     12.0,
+     15.0,
+     18.0,
+     21.0,
+     24.0,
+     27.0,
+     30.0,
+     33.0,
+     36.0
+    ]
+   },
+   "family_C": {
+    "0": [
+     1.13474892315e-06,
+     1.128538723537e-06,
+     1.20128632006e-06,
+     1.269348483772e-06,
+     1.3010750114694998e-06,
+     1.2862591626415e-06,
+     1.222904509863e-06,
+     1.1147598395285e-06,
+     9.705227681224999e-07,
+     8.024841535470001e-07,
+     6.252257487795e-07,
+     4.53828006568e-07
+    ]
+   },
+   "per_family": {
+    "0": {
+     "n": 12,
+     "sign_purity": 1.0,
+     "n_cross": 0,
+     "envelope_form": "exp",
+     "envelope_param": 42.73681785998024,
+     "r2_env_log": 0.5871737064292822,
+     "Q": 0.13724038082667644,
+     "phi": -2.700392747538862,
+     "r2_cos": -18.17443816194211
+    },
+    "note": "仅一个距离族有数据，族分解诊断降级"
+   },
+   "consistency": {
+    "0": false
+   },
+   "structural_artifact_suspected": false,
+   "insufficient": true
+  },
+  "stability": {
+   "scan_table": [
+    {
+     "r_min": 3.0,
+     "n_pts": 12,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 42.73681785998024,
+     "param_err": 11.331895405068979,
+     "r2_env_log": 0.5871737064292822,
+     "aicc": -32.91370050864228,
+     "bic": -33.27722054239961,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.13724038082667644,
+     "phi": -2.700392747538862,
+     "r2_cos": -18.17443816194211
+    },
+    {
+     "r_min": 6.0,
+     "n_pts": 11,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 35.591382758173765,
+     "param_err": 8.49547239866442,
+     "r2_env_log": 0.6610363149517404,
+     "aicc": -30.93544555133441,
+     "bic": -31.63965500573767,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.14613523721961544,
+     "phi": -3.0805491476119893,
+     "r2_cos": -19.598635921573745
+    },
+    {
+     "r_min": 9.0,
+     "n_pts": 10,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 28.99547622796374,
+     "param_err": 5.766319265039685,
+     "r2_env_log": 0.7596515642120533,
+     "aicc": -30.06183475997326,
+     "bic": -31.17095028827088,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.1602728415866472,
+     "phi": 2.669085974181736,
+     "r2_cos": -25.814281701512478
+    },
+    {
+     "r_min": 12.0,
+     "n_pts": 9,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 24.040468518384834,
+     "param_err": 3.9812705428790465,
+     "r2_env_log": 0.8389403815552275,
+     "aicc": -29.239479143735664,
+     "bic": -30.845029989063224,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.17820730257205258,
+     "phi": 2.0000455367909367,
+     "r2_cos": -36.784007355162174
+    },
+    {
+     "r_min": 18.0,
+     "n_pts": 7,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 17.51550823733627,
+     "param_err": 2.115436291308472,
+     "r2_env_log": 0.9320245967888108,
+     "aicc": -26.326073844052793,
+     "bic": -29.434253545942166,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.23061092271965178,
+     "phi": 0.05316185157648025,
+     "r2_cos": -88.56807910005789
+    },
+    {
+     "r_min": 21.0,
+     "n_pts": 6,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 15.258753458510988,
+     "param_err": 1.6056470371982756,
+     "r2_env_log": 0.9575868790956724,
+     "aicc": -23.7975961894629,
+     "bic": -28.214077251006792,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.2716939611525609,
+     "phi": -1.4625293409950388,
+     "r2_cos": -155.60336998908267
+    }
+   ],
+   "recommended_r_min": 18.0,
+   "rel_mad_K": null,
+   "rel_mad_xi": 0.5053043118731047,
+   "rel_mad_Q": 0.2413670988510068,
+   "model_consistency": 1.0,
+   "spearman_rho": -1.0,
+   "post_hump_windows": 2,
+   "verdict": "moderate",
+   "messages": [
+    "参数随 r_min 单调漂移（Spearman ρ=-1.00），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
+    "数据存在包络 hump（峰值 r≈15），推荐窗口起点设在 hump 之后以拟合衰减段（峰后 2 个合法窗口起点）"
+   ]
+  },
+  "initial_noise_floor": 6.252257487795e-07,
+  "initial_noise_floor_components": {
+   "tail_median": 6.252257487795e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "final_noise_floor": 6.252257487795e-07,
+  "final_noise_floor_components": {
+   "tail_median": 6.252257487795e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "analysis_version": "1.0",
+  "physical_form": "C(r) ≈ A·exp(−r/17.5)",
+  "warnings": [
+   "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 12 个 bond 数据点保留在 group_raw",
+   "参数随 r_min 单调漂移（Spearman ρ=-1.00），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
+   "数据存在包络 hump（峰值 r≈15），推荐窗口起点设在 hump 之后以拟合衰减段（峰后 2 个合法窗口起点）",
+   "包络拟合: 全点包络（all_points，n=7 个点）",
+   "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
+   "候选模型 power_law_C: 参数 C_inf 触及下界 -1.286e-06；C_inf ∈ [-1.286e-06, 1.286e-06]（无符号约束）",
+   "候选模型 exponential_C: 参数 C_inf 触及下界 -1.286e-06；C_inf ∈ [-1.286e-06, 1.286e-06]（无符号约束）",
+   "候选模型 osc_power: ；n=7 < n_min_osc_fit(10)，4 参数模型自由度紧张；参数 Q 触及下界 0.1845",
+   "候选模型 osc_exp: ；n=7 < n_min_osc_fit(10)，4 参数模型自由度紧张；参数 Q 触及下界 0.1845",
+   "候选模型 osc_power_C: 无效点数 n=7 不足以约束 5 参数模型；C_inf ∈ [-1.286e-06, 1.286e-06]（无符号约束）",
+   "候选模型 osc_exp_C: 无效点数 n=7 不足以约束 5 参数模型；C_inf ∈ [-1.286e-06, 1.286e-06]（无符号约束）"
+  ],
+  "config": {
+   "rtol_group": 1e-09,
+   "atol_group": 1e-12,
+   "n_min_fit": 8,
+   "n_min_hump_window": 6,
+   "n_min_osc_fit": 10,
+   "n_min_osc": 12,
+   "n_min_abs": 6,
+   "r_min_override": null,
+   "r_max_frac": 1.0,
+   "r_max_auto": true,
+   "r_max_noise_cut": 3.0,
+   "r_max_noise_run": 3,
+   "n_rmin_candidates": 20,
+   "envelope_mode": "all_points",
+   "tail_frac_noise": 0.25,
+   "noise_floor_abs_min": 1e-15,
+   "prom_factor": 3.0,
+   "n_cross_min": 4,
+   "n_extrema_min": 4,
+   "spacing_regularity_max": 0.4,
+   "r2_cos_min": 0.6,
+   "r2_env_log_min": 0.85,
+   "q_stab_max": 0.2,
+   "phi_stab_max": 0.5,
+   "q_grid_points": 400,
+   "q_refine_points": 200,
+   "family_sign_purity_warn": 0.8,
+   "delta_aicc_tie": 2.0,
+   "delta_aicc_osc_min": 6.0,
+   "constrain_cinf_abs": true,
+   "constrain_cinf_signed": false,
+   "k_stab_max": 0.3,
+   "k_stab_moderate": 0.6,
+   "model_consistency_min": 0.6,
+   "bootstrap_n": 200,
+   "pcov_max_cond": 1000000000000.0
+  }
+ },
+ "d1_100_50_51_A": {
+  "classification": "non_monotonic",
+  "recommended_model": "non_monotonic",
+  "evidence_level": "weak",
+  "distance_aggregation": "mean_by_distance",
+  "nonmonotonic_reason": "envelope_hump",
+  "full_range": [
+   1.5,
+   34.5
+  ],
+  "r_min": 19.5,
+  "r_max": 34.5,
+  "n_points": 6,
+  "n_raw_points": 12,
+  "n_distances": 12,
+  "fit_space": "",
+  "envelope_fit": {
+   "model": "envelope_exp",
+   "fit_space": "log_absC",
+   "r2_space": "log",
+   "params": {
+    "A": 4.112877964611977e-06,
+    "xi": 17.759750893094207
+   },
+   "param_errors": {
+    "A": 7.269402987499712e-07,
+    "xi": 2.0285293436060394
+   },
+   "n": 6,
+   "k": 2,
+   "rss": 0.0260588747644743,
+   "rmse": 0.0659025477055254,
+   "r2": 0.9504028663961928,
+   "aic": -28.634938136552826,
+   "aicc": -24.634938136552826,
+   "bic": -29.051419198096717,
+   "window": [
+    19.5,
+    34.5
+   ],
+   "valid": true,
+   "error_source": "lstsq_cov",
+   "message": "全点包络（all_points，n=6 个点）",
+   "bound_hits": []
+  },
+  "envelope_fit_alt": null,
+  "envelope_extrema_r": [],
+  "envelope_extrema_abs": [],
+  "envelope_extrema_excluded": [],
+  "envelope_mode_used": "all_points",
+  "detrended_fit": {
+   "model": "cosine_detrended",
+   "fit_space": "linear_detrended",
+   "r2_space": "linear",
+   "params": {
+    "Q": 0.2700142457822205,
+    "phi": -1.0091613400424282,
+    "amplitude": 0.8100560948789687
+   },
+   "param_errors": {},
+   "n": 6,
+   "k": 2,
+   "rss": null,
+   "rmse": null,
+   "r2": -176.96051723196473,
+   "aic": null,
+   "aicc": null,
+   "bic": null,
+   "window": [
+    19.5,
+    34.5
+   ],
+   "valid": true,
+   "error_source": "pcov",
+   "message": "",
+   "bound_hits": []
+  },
+  "candidate_fits": {
+   "constant": {
+    "model": "constant",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 9.3700953374725e-07
+    },
+    "param_errors": {
+     "A": 1.1314848161919891e-07
+    },
+    "n": 6,
+    "k": 1,
+    "rss": 3.840773667819058e-13,
+    "rmse": 2.5300769645141427e-07,
+    "r2": 0.0,
+    "aic": -180.2781511351002,
+    "aicc": -179.2781511351002,
+    "bic": -180.48639166587213,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law": {
+    "model": "power_law",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 5.589381906144296e-05,
+     "K": 1.2561396815180028
+    },
+    "param_errors": {
+     "A": 3.6820170505779034e-05,
+     "K": 0.20665401040711714
+    },
+    "n": 6,
+    "k": 2,
+    "rss": 3.456794467493349e-14,
+    "rmse": 7.59033866997311e-08,
+    "r2": 0.909997444096823,
+    "aic": -192.72565439588573,
+    "aicc": -188.72565439588573,
+    "bic": -193.14213545742962,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "exponential": {
+    "model": "exponential",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 3.540816811237831e-06,
+     "xi": 19.840691718089122
+    },
+    "param_errors": {
+     "A": 4.4625709969127024e-07,
+     "xi": 2.054229377680171
+    },
+    "n": 6,
+    "k": 2,
+    "rss": 1.9315380871394435e-14,
+    "rmse": 5.673825997713012e-08,
+    "r2": 0.949709661276754,
+    "aic": -196.2178048956282,
+    "aicc": -192.2178048956282,
+    "bic": -196.6342859571721,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law_C": {
+    "model": "power_law_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": -1.2604854763564997e-06,
+     "A": 1.3757591964574541e-05,
+     "K": 0.5614887706095582
+    },
+    "param_errors": {
+     "C_inf": 6.860207193896382e-07,
+     "A": 0.0091375743012068,
+     "K": 0.7241424717838197
+    },
+    "n": 6,
+    "k": 3,
+    "rss": 2.2755595239439202e-14,
+    "rmse": 6.158408241236692e-08,
+    "r2": 0.9407525743313047,
+    "aic": -193.23434882634274,
+    "aicc": -181.23434882634274,
+    "bic": -193.85907041865858,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 C_inf 触及下界 -1.26e-06；C_inf ∈ [-1.26e-06, 1.26e-06]（无符号约束）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "exponential_C": {
+    "model": "exponential_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": -1.2604854763564997e-06,
+     "A": 3.958379301156331e-06,
+     "xi": 45.395227294699154
+    },
+    "param_errors": {
+     "C_inf": 5.904243955527598e-07,
+     "A": 5.136004519753476e-07,
+     "xi": 12.72147942287834
+    },
+    "n": 6,
+    "k": 3,
+    "rss": 1.0199609430567932e-14,
+    "rmse": 4.1230266856942066e-08,
+    "r2": 0.9734438675310965,
+    "aic": -198.04911861421456,
+    "aicc": -186.04911861421456,
+    "bic": -198.6738402065304,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 C_inf 触及下界 -1.26e-06；C_inf ∈ [-1.26e-06, 1.26e-06]（无符号约束）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "osc_power": {
+    "model": "osc_power",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 6,
+    "k": 4,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=6 不足以约束 4 参数模型",
+    "bound_hits": []
+   },
+   "osc_exp": {
+    "model": "osc_exp",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 6,
+    "k": 4,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=6 不足以约束 4 参数模型",
+    "bound_hits": []
+   },
+   "osc_power_C": {
+    "model": "osc_power_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 6,
+    "k": 5,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=6 不足以约束 5 参数模型；C_inf ∈ [-1.26e-06, 1.26e-06]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_exp_C": {
+    "model": "osc_exp_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 6,
+    "k": 5,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     19.5,
+     34.5
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=6 不足以约束 5 参数模型；C_inf ∈ [-1.26e-06, 1.26e-06]（无符号约束）",
+    "bound_hits": []
+   }
+  },
+  "comparison": {
+   "groups": {
+    "linear_C @ (19.5, 34.5)": {
+     "best_model": "exponential",
+     "rows": [
+      {
+       "model": "exponential",
+       "aicc": -192.2178048956282,
+       "bic": -196.6342859571721,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 6,
+       "k": 2,
+       "r2": 0.949709661276754
+      },
+      {
+       "model": "power_law",
+       "aicc": -188.72565439588573,
+       "bic": -193.14213545742962,
+       "delta_aicc": 3.492150499742479,
+       "delta_bic": 3.492150499742479,
+       "bic_evidence": "正证据",
+       "n": 6,
+       "k": 2,
+       "r2": 0.909997444096823
+      },
+      {
+       "model": "exponential_C",
+       "aicc": -186.04911861421456,
+       "bic": -198.6738402065304,
+       "delta_aicc": 6.168686281413642,
+       "delta_bic": -2.0395542493583037,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 6,
+       "k": 3,
+       "r2": 0.9734438675310965
+      },
+      {
+       "model": "power_law_C",
+       "aicc": -181.23434882634274,
+       "bic": -193.85907041865858,
+       "delta_aicc": 10.983456069285467,
+       "delta_bic": 2.775215538513521,
+       "bic_evidence": "正证据",
+       "n": 6,
+       "k": 3,
+       "r2": 0.9407525743313047
+      },
+      {
+       "model": "constant",
+       "aicc": -179.2781511351002,
+       "bic": -180.48639166587213,
+       "delta_aicc": 12.939653760528017,
+       "delta_bic": 16.147894291299963,
+       "bic_evidence": "极强证据",
+       "n": 6,
+       "k": 1,
+       "r2": 0.0
+      }
+     ]
+    }
+   },
+   "best_per_group": {
+    "('linear_C', (19.5, 34.5))": "exponential"
+   }
+  },
+  "oscillation": {
+   "detected": false,
+   "n_cross": 0,
+   "cross_positions": [],
+   "cross_spacing_regularity": null,
+   "n_ext": 0,
+   "ext_positions": [],
+   "ext_spacing_regularity": null,
+   "Q": 0.2700142457822205,
+   "Q_rel_mad": null,
+   "phi": -1.0091613400424282,
+   "phi_mad": null,
+   "amplitude": 0.8100560948789687,
+   "r2_cos": -176.96051723196473,
+   "envelope_form": "exp",
+   "r2_env_log": 0.9504028663961928,
+   "subwindow_Qs": [],
+   "criterion_checks": {
+    "n_cross": false,
+    "n_ext": false,
+    "cross_spacing": false,
+    "ext_spacing": false,
+    "r2_cos": false,
+    "r2_env_log": true,
+    "q_stable": false,
+    "phi_stable": false
+   },
+   "evidence": "none",
+   "structural_artifact_suspected": false,
+   "structural_warning": "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估"
+  },
+  "family_diagnostics": {
+   "family_r": {
+    "0": [
+     1.5,
+     4.5,
+     7.5,
+     10.5,
+     13.5,
+     16.5,
+     19.5,
+     22.5,
+     25.5,
+     28.5,
+     31.5,
+     34.5
+    ]
+   },
+   "family_C": {
+    "0": [
+     1.6402697428164999e-06,
+     1.11619903422e-06,
+     1.1615864092885e-06,
+     1.2384212720634999e-06,
+     1.2904334744549999e-06,
+     1.2996032157214998e-06,
+     1.2604854763565e-06,
+     1.1740268423414998e-06,
+     1.046663313109e-06,
+     8.88774388225e-07,
+     7.14160627809e-07,
+     5.379465546425e-07
+    ]
+   },
+   "per_family": {
+    "0": {
+     "n": 12,
+     "sign_purity": 1.0,
+     "n_cross": 0,
+     "envelope_form": "exp",
+     "envelope_param": 44.42872221342186,
+     "r2_env_log": 0.6573446848999431,
+     "Q": 0.2602604440294483,
+     "phi": -1.1893336529447331,
+     "r2_cos": -37.479978313119574
+    },
+    "note": "仅一个距离族有数据，族分解诊断降级"
+   },
+   "consistency": {
+    "0": false
+   },
+   "structural_artifact_suspected": false,
+   "insufficient": true
+  },
+  "stability": {
+   "scan_table": [
+    {
+     "r_min": 1.5,
+     "n_pts": 12,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 44.42872221342186,
+     "param_err": 10.143690307344677,
+     "r2_env_log": 0.6573446848999431,
+     "aicc": -37.43578557036915,
+     "bic": -37.79930560412648,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.2602604440294483,
+     "phi": -1.1893336529447331,
+     "r2_cos": -37.479978313119574
+    },
+    {
+     "r_min": 4.5,
+     "n_pts": 11,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 46.40716177855636,
+     "param_err": 13.223616774817767,
+     "r2_env_log": 0.5777818504420565,
+     "aicc": -32.87649392683943,
+     "bic": -33.580703381242685,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.1480249170112484,
+     "phi": -2.9010497786447553,
+     "r2_cos": -24.35369880858842
+    },
+    {
+     "r_min": 7.5,
+     "n_pts": 10,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 37.03343303611045,
+     "param_err": 8.854057275568021,
+     "r2_env_log": 0.686207700622405,
+     "aicc": -31.27224903719354,
+     "bic": -32.38136456549116,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.1602728415866472,
+     "phi": 2.9099209287502057,
+     "r2_cos": -29.279233956649538
+    },
+    {
+     "r_min": 10.5,
+     "n_pts": 9,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 29.72238353880797,
+     "param_err": 5.751429279051704,
+     "r2_env_log": 0.7923244392310883,
+     "aicc": -30.256051495596523,
+     "bic": -31.861602340924083,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.17820730257205258,
+     "phi": 2.2681609483283998,
+     "r2_cos": -41.3770353307593
+    },
+    {
+     "r_min": 19.5,
+     "n_pts": 6,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 17.759750893094207,
+     "param_err": 2.0285293436060394,
+     "r2_env_log": 0.9504028663961928,
+     "aicc": -24.634938136552826,
+     "bic": -29.051419198096717,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.2700142457822205,
+     "phi": -1.0091613400424282,
+     "r2_cos": -176.96051723196473
+    }
+   ],
+   "recommended_r_min": 19.5,
+   "rel_mad_K": null,
+   "rel_mad_xi": 0.2960637142009193,
+   "rel_mad_Q": 0.25110309278350507,
+   "model_consistency": 1.0,
+   "spearman_rho": -0.8999999999999998,
+   "post_hump_windows": 1,
+   "verdict": "moderate",
+   "messages": [
+    "参数随 r_min 单调漂移（Spearman ρ=-0.90），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
+    "数据存在包络 hump（峰值 r≈16.5），推荐窗口起点设在 hump 之后；峰后仅 1 个合法窗口起点：峰后窗口可拟合，但稳定性无法评估（verdict 最多 moderate）"
+   ]
+  },
+  "initial_noise_floor": 7.14160627809e-07,
+  "initial_noise_floor_components": {
+   "tail_median": 7.14160627809e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "final_noise_floor": 7.14160627809e-07,
+  "final_noise_floor_components": {
+   "tail_median": 7.14160627809e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "analysis_version": "1.0",
+  "physical_form": "C(r) ≈ A·exp(−r/17.8)",
+  "warnings": [
+   "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 12 个 bond 数据点保留在 group_raw",
+   "参数随 r_min 单调漂移（Spearman ρ=-0.90），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
+   "数据存在包络 hump（峰值 r≈16.5），推荐窗口起点设在 hump 之后；峰后仅 1 个合法窗口起点：峰后窗口可拟合，但稳定性无法评估（verdict 最多 moderate）",
+   "envelope_mode='both' 但极值点仅 0 个（<4），退化回全点包络",
+   "包络拟合: 全点包络（all_points，n=6 个点）",
+   "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
+   "候选模型 power_law_C: 参数 C_inf 触及下界 -1.26e-06；C_inf ∈ [-1.26e-06, 1.26e-06]（无符号约束）",
+   "候选模型 exponential_C: 参数 C_inf 触及下界 -1.26e-06；C_inf ∈ [-1.26e-06, 1.26e-06]（无符号约束）",
+   "候选模型 osc_power: 无效点数 n=6 不足以约束 4 参数模型",
+   "候选模型 osc_exp: 无效点数 n=6 不足以约束 4 参数模型",
+   "候选模型 osc_power_C: 无效点数 n=6 不足以约束 5 参数模型；C_inf ∈ [-1.26e-06, 1.26e-06]（无符号约束）",
+   "候选模型 osc_exp_C: 无效点数 n=6 不足以约束 5 参数模型；C_inf ∈ [-1.26e-06, 1.26e-06]（无符号约束）"
+  ],
+  "config": {
+   "rtol_group": 1e-09,
+   "atol_group": 1e-12,
+   "n_min_fit": 8,
+   "n_min_hump_window": 6,
+   "n_min_osc_fit": 10,
+   "n_min_osc": 12,
+   "n_min_abs": 6,
+   "r_min_override": null,
+   "r_max_frac": 1.0,
+   "r_max_auto": true,
+   "r_max_noise_cut": 3.0,
+   "r_max_noise_run": 3,
+   "n_rmin_candidates": 20,
+   "envelope_mode": "both",
+   "tail_frac_noise": 0.25,
+   "noise_floor_abs_min": 1e-15,
+   "prom_factor": 3.0,
+   "n_cross_min": 4,
+   "n_extrema_min": 4,
+   "spacing_regularity_max": 0.4,
+   "r2_cos_min": 0.6,
+   "r2_env_log_min": 0.85,
+   "q_stab_max": 0.2,
+   "phi_stab_max": 0.5,
+   "q_grid_points": 400,
+   "q_refine_points": 200,
+   "family_sign_purity_warn": 0.8,
+   "delta_aicc_tie": 2.0,
+   "delta_aicc_osc_min": 6.0,
+   "constrain_cinf_abs": true,
+   "constrain_cinf_signed": false,
+   "k_stab_max": 0.3,
+   "k_stab_moderate": 0.6,
+   "model_consistency_min": 0.6,
+   "bootstrap_n": 200,
+   "pcov_max_cond": 1000000000000.0
+  }
+ },
+ "d1_100_50_51_C": {
+  "classification": "non_monotonic",
+  "recommended_model": "non_monotonic",
+  "evidence_level": "weak",
+  "distance_aggregation": "mean_by_distance",
+  "nonmonotonic_reason": "envelope_hump",
+  "full_range": [
+   2.29128784747792,
+   35.25265947414464
+  ],
+  "r_min": 17.255433926737396,
+  "r_max": 35.25265947414464,
+  "n_points": 7,
+  "n_raw_points": 12,
+  "n_distances": 12,
+  "fit_space": "",
+  "envelope_fit": {
+   "model": "envelope_exp",
+   "fit_space": "log_absC",
+   "r2_space": "log",
+   "params": {
+    "A": 6.283124204010419e-06,
+    "xi": 18.99378649400942
+   },
+   "param_errors": {
+    "A": 1.1301374577431234e-06,
+    "xi": 2.409543991505683
+   },
+   "n": 7,
+   "k": 2,
+   "rss": 0.05619061855791994,
+   "rmse": 0.0895948169402672,
+   "r2": 0.9255259106282072,
+   "aic": -29.774409302525328,
+   "aicc": -26.774409302525328,
+   "bic": -29.8825890044147,
+   "window": [
+    17.255433926737396,
+    35.25265947414464
+   ],
+   "valid": true,
+   "error_source": "lstsq_cov",
+   "message": "全点包络（all_points，n=7 个点）",
+   "bound_hits": []
+  },
+  "envelope_fit_alt": null,
+  "envelope_extrema_r": [],
+  "envelope_extrema_abs": [],
+  "envelope_extrema_excluded": [],
+  "envelope_mode_used": "all_points",
+  "detrended_fit": {
+   "model": "cosine_detrended",
+   "fit_space": "linear_detrended",
+   "r2_space": "linear",
+   "params": {
+    "Q": 0.23065894085236557,
+    "phi": -2.917295861810882,
+    "amplitude": 0.8424937218916803
+   },
+   "param_errors": {},
+   "n": 7,
+   "k": 2,
+   "rss": null,
+   "rmse": null,
+   "r2": -94.61552319647765,
+   "aic": null,
+   "aicc": null,
+   "bic": null,
+   "window": [
+    17.255433926737396,
+    35.25265947414464
+   ],
+   "valid": true,
+   "error_source": "pcov",
+   "message": "",
+   "bound_hits": []
+  },
+  "candidate_fits": {
+   "constant": {
+    "model": "constant",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": -1.6572905512830002e-06
+    },
+    "param_errors": {
+     "A": 1.965844310565489e-07
+    },
+    "n": 7,
+    "k": 1,
+    "rss": 1.6231084184207353e-12,
+    "rmse": 4.815315474638834e-07,
+    "r2": 0.0,
+    "aic": -201.64811724206214,
+    "aicc": -200.84811724206213,
+    "bic": -201.70220709300682,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law": {
+    "model": "power_law",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 9.89031002042472e-07,
+     "K": 6.600577425541317
+    },
+    "param_errors": {
+     "A": 1.3050871105205055e-07,
+     "K": 0.23872360464493184
+    },
+    "n": 7,
+    "k": 2,
+    "rss": 2.08493922646788e-11,
+    "rmse": 1.725828673200161e-06,
+    "r2": -11.845347869592718,
+    "aic": -181.7772452559863,
+    "aicc": -178.7772452559863,
+    "bic": -181.88542495787567,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "",
+    "bound_hits": []
+   },
+   "exponential": {
+    "model": "exponential",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 2.728955638158091e-07,
+     "xi": 0.5191555952871365
+    },
+    "param_errors": {
+     "A": 1.0587911840678754e-21,
+     "xi": 1.2212453270876722e-15
+    },
+    "n": 7,
+    "k": 2,
+    "rss": 2.084939221802411e-11,
+    "rmse": 1.7258286712692175e-06,
+    "r2": -11.845347840848682,
+    "aic": -181.77724527165017,
+    "aicc": -178.77724527165017,
+    "bic": -181.88542497353956,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law_C": {
+    "model": "power_law_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": -1.6572903504891593e-06,
+     "A": 4.961808294266597e-07,
+     "K": 7.999821773628771
+    },
+    "param_errors": {
+     "C_inf": 1.7442290389852722e-07,
+     "A": 1.0587911840678754e-21,
+     "K": 2.398081733190338e-14
+    },
+    "n": 7,
+    "k": 3,
+    "rss": 1.6231084185149699e-12,
+    "rmse": 4.815315474778618e-07,
+    "r2": -5.8058002849747936e-11,
+    "aic": -197.64811724165574,
+    "aicc": -189.64811724165574,
+    "bic": -197.8103867944898,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 K 触及上界 8；C_inf ∈ [-2.24e-06, 2.24e-06]（无符号约束）",
+    "bound_hits": [
+     "K"
+    ]
+   },
+   "exponential_C": {
+    "model": "exponential_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": -1.657290551282605e-06,
+     "A": 2.678825594811815e-07,
+     "xi": 0.5941460899396764
+    },
+    "param_errors": {
+     "C_inf": 1.744236373815441e-07,
+     "A": 2.6469779601696886e-22,
+     "xi": 2.4424906541753444e-15
+    },
+    "n": 7,
+    "k": 3,
+    "rss": 1.6231084184208116e-12,
+    "rmse": 4.815315474638947e-07,
+    "r2": -4.707345624410664e-14,
+    "aic": -197.64811724206183,
+    "aicc": -189.64811724206183,
+    "bic": -197.8103867948959,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "C_inf ∈ [-2.24e-06, 2.24e-06]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_power": {
+    "model": "osc_power",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.1159846017303668,
+     "K": 3.4484668080795227,
+     "Q": 0.1845271526818925,
+     "phi": -1.3458675553077453
+    },
+    "param_errors": {
+     "A": 1.6225511755029318,
+     "K": 4.438162340793392,
+     "Q": 0.06235796374530585,
+     "phi": 1.1849007936891662
+    },
+    "n": 7,
+    "k": 4,
+    "rss": 3.819194209902742e-12,
+    "rmse": 7.386468525914457e-07,
+    "r2": -1.3530123844830841,
+    "aic": -189.65824263102644,
+    "aicc": -169.65824263102644,
+    "bic": -189.87460203480518,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "；n=7 < n_min_osc_fit(10)，4 参数模型自由度紧张；参数 Q 触及下界 0.1845",
+    "bound_hits": [
+     "Q"
+    ]
+   },
+   "osc_exp": {
+    "model": "osc_exp",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 5.749245884633732e-05,
+     "xi": 7.209363726382724,
+     "Q": 0.1845271526818925,
+     "phi": -1.3050041267915966
+    },
+    "param_errors": {
+     "A": 0.00027182444660014916,
+     "xi": 10.46692474226312,
+     "Q": 0.07086506263918964,
+     "phi": 1.3442477009740763
+    },
+    "n": 7,
+    "k": 4,
+    "rss": 4.004360220687768e-12,
+    "rmse": 7.563408359319577e-07,
+    "r2": -1.4670934949520884,
+    "aic": -189.32683209659544,
+    "aicc": -169.32683209659544,
+    "bic": -189.54319150037418,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "；n=7 < n_min_osc_fit(10)，4 参数模型自由度紧张；参数 Q 触及下界 0.1845",
+    "bound_hits": [
+     "Q"
+    ]
+   },
+   "osc_power_C": {
+    "model": "osc_power_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 7,
+    "k": 5,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=7 不足以约束 5 参数模型；C_inf ∈ [-2.24e-06, 2.24e-06]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_exp_C": {
+    "model": "osc_exp_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 7,
+    "k": 5,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     17.255433926737396,
+     35.25265947414464
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=7 不足以约束 5 参数模型；C_inf ∈ [-2.24e-06, 2.24e-06]（无符号约束）",
+    "bound_hits": []
+   }
+  },
+  "comparison": {
+   "groups": {
+    "linear_C @ (17.255433926737396, 35.25265947414464)": {
+     "best_model": "constant",
+     "rows": [
+      {
+       "model": "constant",
+       "aicc": -200.84811724206213,
+       "bic": -201.70220709300682,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 7,
+       "k": 1,
+       "r2": 0.0
+      },
+      {
+       "model": "exponential_C",
+       "aicc": -189.64811724206183,
+       "bic": -197.8103867948959,
+       "delta_aicc": 11.200000000000301,
+       "delta_bic": 3.891820298110929,
+       "bic_evidence": "正证据",
+       "n": 7,
+       "k": 3,
+       "r2": -4.707345624410664e-14
+      },
+      {
+       "model": "power_law_C",
+       "aicc": -189.64811724165574,
+       "bic": -197.8103867944898,
+       "delta_aicc": 11.20000000040639,
+       "delta_bic": 3.8918202985170183,
+       "bic_evidence": "正证据",
+       "n": 7,
+       "k": 3,
+       "r2": -5.8058002849747936e-11
+      },
+      {
+       "model": "exponential",
+       "aicc": -178.77724527165017,
+       "bic": -181.88542497353956,
+       "delta_aicc": 22.070871970411957,
+       "delta_bic": 19.816782119467263,
+       "bic_evidence": "极强证据",
+       "n": 7,
+       "k": 2,
+       "r2": -11.845347840848682
+      },
+      {
+       "model": "power_law",
+       "aicc": -178.7772452559863,
+       "bic": -181.88542495787567,
+       "delta_aicc": 22.070871986075844,
+       "delta_bic": 19.81678213513115,
+       "bic_evidence": "极强证据",
+       "n": 7,
+       "k": 2,
+       "r2": -11.845347869592718
+      },
+      {
+       "model": "osc_power",
+       "aicc": -169.65824263102644,
+       "bic": -189.87460203480518,
+       "delta_aicc": 31.18987461103569,
+       "delta_bic": 11.827605058201641,
+       "bic_evidence": "极强证据",
+       "n": 7,
+       "k": 4,
+       "r2": -1.3530123844830841
+      },
+      {
+       "model": "osc_exp",
+       "aicc": -169.32683209659544,
+       "bic": -189.54319150037418,
+       "delta_aicc": 31.521285145466692,
+       "delta_bic": 12.159015592632642,
+       "bic_evidence": "极强证据",
+       "n": 7,
+       "k": 4,
+       "r2": -1.4670934949520884
+      }
+     ]
+    }
+   },
+   "best_per_group": {
+    "('linear_C', (17.255433926737396, 35.25265947414464))": "constant"
+   }
+  },
+  "oscillation": {
+   "detected": false,
+   "n_cross": 0,
+   "cross_positions": [],
+   "cross_spacing_regularity": null,
+   "n_ext": 0,
+   "ext_positions": [],
+   "ext_spacing_regularity": null,
+   "Q": 0.23065894085236557,
+   "Q_rel_mad": null,
+   "phi": -2.917295861810882,
+   "phi_mad": null,
+   "amplitude": 0.8424937218916803,
+   "r2_cos": -94.61552319647765,
+   "envelope_form": "exp",
+   "r2_env_log": 0.9255259106282072,
+   "subwindow_Qs": [],
+   "criterion_checks": {
+    "n_cross": false,
+    "n_ext": false,
+    "cross_spacing": false,
+    "ext_spacing": false,
+    "r2_cos": false,
+    "r2_env_log": true,
+    "q_stable": false,
+    "phi_stable": false
+   },
+   "evidence": "none",
+   "structural_artifact_suspected": false,
+   "structural_warning": "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估"
+  },
+  "family_diagnostics": {
+   "family_r": {
+    "1": [
+     2.29128784747792,
+     5.267826876426369,
+     8.261355820929152,
+     11.258330249197702,
+     14.256577429383253,
+     17.255433926737396,
+     20.254629100529094,
+     23.25403190846697,
+     26.253571185650152,
+     29.25320495262015,
+     32.25290684574028,
+     35.25265947414464
+    ]
+   },
+   "family_C": {
+    "1": [
+     -2.2096953476665e-06,
+     -1.9633514174254998e-06,
+     -2.044718537823e-06,
+     -2.170340828405e-06,
+     -2.2439449931850003e-06,
+     -2.2397537273800003e-06,
+     -2.151219643155e-06,
+     -1.982736843726e-06,
+     -1.7470765888995e-06,
+     -1.4642275911660002e-06,
+     -1.1588371618645e-06,
+     -8.5718230279e-07
+    ]
+   },
+   "per_family": {
+    "1": {
+     "n": 12,
+     "sign_purity": 1.0,
+     "n_cross": 0,
+     "envelope_form": "exp",
+     "envelope_param": 45.122148503119526,
+     "r2_env_log": 0.6155346830301891,
+     "Q": 0.14170224086322009,
+     "phi": 0.44330275650779016,
+     "r2_cos": -24.92316271815969
+    },
+    "note": "仅一个距离族有数据，族分解诊断降级"
+   },
+   "consistency": {
+    "1": false
+   },
+   "structural_artifact_suspected": false,
+   "insufficient": true
+  },
+  "stability": {
+   "scan_table": [
+    {
+     "r_min": 2.29128784747792,
+     "n_pts": 12,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 45.122148503119526,
+     "param_err": 11.27696129868543,
+     "r2_env_log": 0.6155346830301891,
+     "aicc": -35.65546664502826,
+     "bic": -36.018986678785595,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.14170224086322009,
+     "phi": 0.44330275650779016,
+     "r2_cos": -24.92316271815969
+    },
+    {
+     "r_min": 5.267826876426369,
+     "n_pts": 11,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 40.13237373657673,
+     "param_err": 10.264597219579997,
+     "r2_env_log": 0.6294225780107308,
+     "aicc": -32.066101502968856,
+     "bic": -32.77031095737212,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.1482180006521396,
+     "phi": 0.12498067290025713,
+     "r2_cos": -22.619176413384388
+    },
+    {
+     "r_min": 8.261355820929152,
+     "n_pts": 10,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 32.60183318200667,
+     "param_err": 7.07714289896771,
+     "r2_env_log": 0.7262253284983495,
+     "aicc": -30.659884318188958,
+     "bic": -31.76899984648658,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.16037643496375908,
+     "phi": -0.35515227568788216,
+     "r2_cos": -27.498175481622177
+    },
+    {
+     "r_min": 11.258330249197702,
+     "n_pts": 9,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 26.634049691851867,
+     "param_err": 4.753848145882526,
+     "r2_env_log": 0.8176582696848052,
+     "aicc": -29.73930596984352,
+     "bic": -31.34485681517108,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.17827867004097336,
+     "phi": -1.0099145307321429,
+     "r2_cos": -38.99520560106866
+    },
+    {
+     "r_min": 17.255433926737396,
+     "n_pts": 7,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 18.99378649400942,
+     "param_err": 2.409543991505683,
+     "r2_env_log": 0.9255259106282072,
+     "aicc": -26.774409302525328,
+     "bic": -29.8825890044147,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.23065894085236557,
+     "phi": -2.917295861810882,
+     "r2_cos": -94.61552319647765
+    },
+    {
+     "r_min": 20.254629100529094,
+     "n_pts": 6,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 16.433588432474867,
+     "param_err": 1.7987261647011032,
+     "r2_env_log": 0.9542704669827787,
+     "aicc": -24.216701924350026,
+     "bic": -28.633182985893917,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.2700583864728312,
+     "phi": 1.927581967927,
+     "r2_cos": -164.7942855061914
+    }
+   ],
+   "recommended_r_min": 17.255433926737396,
+   "rel_mad_K": null,
+   "rel_mad_xi": 0.529072378520436,
+   "rel_mad_Q": 0.21335662017654905,
+   "model_consistency": 1.0,
+   "spearman_rho": -1.0,
+   "post_hump_windows": 2,
+   "verdict": "moderate",
+   "messages": [
+    "参数随 r_min 单调漂移（Spearman ρ=-1.00），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
+    "数据存在包络 hump（峰值 r≈14.2566），推荐窗口起点设在 hump 之后以拟合衰减段（峰后 2 个合法窗口起点）"
+   ]
+  },
+  "initial_noise_floor": 1.1588371618645e-06,
+  "initial_noise_floor_components": {
+   "tail_median": 1.1588371618645e-06,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "final_noise_floor": 1.1588371618645e-06,
+  "final_noise_floor_components": {
+   "tail_median": 1.1588371618645e-06,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "analysis_version": "1.0",
+  "physical_form": "C(r) ≈ A·exp(−r/19)",
+  "warnings": [
+   "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 12 个 bond 数据点保留在 group_raw",
+   "参数随 r_min 单调漂移（Spearman ρ=-1.00），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
+   "数据存在包络 hump（峰值 r≈14.2566），推荐窗口起点设在 hump 之后以拟合衰减段（峰后 2 个合法窗口起点）",
+   "envelope_mode='both' 但极值点仅 0 个（<4），退化回全点包络",
+   "包络拟合: 全点包络（all_points，n=7 个点）",
+   "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
+   "候选模型 power_law_C: 参数 K 触及上界 8；C_inf ∈ [-2.24e-06, 2.24e-06]（无符号约束）",
+   "候选模型 exponential_C: C_inf ∈ [-2.24e-06, 2.24e-06]（无符号约束）",
+   "候选模型 osc_power: ；n=7 < n_min_osc_fit(10)，4 参数模型自由度紧张；参数 Q 触及下界 0.1845",
+   "候选模型 osc_exp: ；n=7 < n_min_osc_fit(10)，4 参数模型自由度紧张；参数 Q 触及下界 0.1845",
+   "候选模型 osc_power_C: 无效点数 n=7 不足以约束 5 参数模型；C_inf ∈ [-2.24e-06, 2.24e-06]（无符号约束）",
+   "候选模型 osc_exp_C: 无效点数 n=7 不足以约束 5 参数模型；C_inf ∈ [-2.24e-06, 2.24e-06]（无符号约束）"
+  ],
+  "config": {
+   "rtol_group": 1e-09,
+   "atol_group": 1e-12,
+   "n_min_fit": 8,
+   "n_min_hump_window": 6,
+   "n_min_osc_fit": 10,
+   "n_min_osc": 12,
+   "n_min_abs": 6,
+   "r_min_override": null,
+   "r_max_frac": 1.0,
+   "r_max_auto": true,
+   "r_max_noise_cut": 3.0,
+   "r_max_noise_run": 3,
+   "n_rmin_candidates": 20,
+   "envelope_mode": "both",
+   "tail_frac_noise": 0.25,
+   "noise_floor_abs_min": 1e-15,
+   "prom_factor": 3.0,
+   "n_cross_min": 4,
+   "n_extrema_min": 4,
+   "spacing_regularity_max": 0.4,
+   "r2_cos_min": 0.6,
+   "r2_env_log_min": 0.85,
+   "q_stab_max": 0.2,
+   "phi_stab_max": 0.5,
+   "q_grid_points": 400,
+   "q_refine_points": 200,
+   "family_sign_purity_warn": 0.8,
+   "delta_aicc_tie": 2.0,
+   "delta_aicc_osc_min": 6.0,
+   "constrain_cinf_abs": true,
+   "constrain_cinf_signed": false,
+   "k_stab_max": 0.3,
+   "k_stab_moderate": 0.6,
+   "model_consistency_min": 0.6,
+   "bootstrap_n": 200,
+   "pcov_max_cond": 1000000000000.0
+  }
+ },
+ "d1_100_50_54_C": {
+  "classification": "non_monotonic",
+  "recommended_model": "non_monotonic",
+  "evidence_level": "weak",
+  "distance_aggregation": "mean_by_distance",
+  "nonmonotonic_reason": "envelope_hump",
+  "full_range": [
+   3.0,
+   33.0
+  ],
+  "r_min": 18.0,
+  "r_max": 33.0,
+  "n_points": 6,
+  "n_raw_points": 11,
+  "n_distances": 11,
+  "fit_space": "",
+  "envelope_fit": {
+   "model": "envelope_exp",
+   "fit_space": "log_absC",
+   "r2_space": "log",
+   "params": {
+    "A": 1.1838522682404366e-05,
+    "xi": 19.075806842990676
+   },
+   "param_errors": {
+    "A": 1.9051452380310797e-06,
+    "xi": 2.251451059172838
+   },
+   "n": 6,
+   "k": 2,
+   "rss": 0.024117589921325566,
+   "rmse": 0.06340030220922395,
+   "r2": 0.9472199246870715,
+   "aic": -29.099439810119783,
+   "aicc": -25.099439810119783,
+   "bic": -29.515920871663674,
+   "window": [
+    18.0,
+    33.0
+   ],
+   "valid": true,
+   "error_source": "lstsq_cov",
+   "message": "全点包络（all_points，n=6 个点）",
+   "bound_hits": []
+  },
+  "envelope_fit_alt": null,
+  "envelope_extrema_r": [],
+  "envelope_extrema_abs": [],
+  "envelope_extrema_excluded": [],
+  "envelope_mode_used": "all_points",
+  "detrended_fit": {
+   "model": "cosine_detrended",
+   "fit_space": "linear_detrended",
+   "r2_space": "linear",
+   "params": {
+    "Q": 0.2700142457822205,
+    "phi": -0.6039929171231108,
+    "amplitude": 0.8064382856837509
+   },
+   "param_errors": {},
+   "n": 6,
+   "k": 2,
+   "rss": null,
+   "rmse": null,
+   "r2": -191.54292053791096,
+   "aic": null,
+   "aicc": null,
+   "bic": null,
+   "window": [
+    18.0,
+    33.0
+   ],
+   "valid": true,
+   "error_source": "pcov",
+   "message": "",
+   "bound_hits": []
+  },
+  "candidate_fits": {
+   "constant": {
+    "model": "constant",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 3.2234536204560002e-06
+    },
+    "param_errors": {
+     "A": 3.6459490555663677e-07
+    },
+    "n": 6,
+    "k": 1,
+    "rss": 3.987883354735588e-12,
+    "rmse": 8.152589930747558e-07,
+    "r2": 0.0,
+    "aic": -166.2371198952884,
+    "aicc": -165.2371198952884,
+    "bic": -166.44536042606035,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law": {
+    "model": "power_law",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.00010945767478391237,
+     "K": 1.1031443852921754
+    },
+    "param_errors": {
+     "A": 6.478326613806207e-05,
+     "K": 0.18912279867308873
+    },
+    "n": 6,
+    "k": 2,
+    "rss": 3.90585851067706e-13,
+    "rmse": 2.5514239523179533e-07,
+    "r2": 0.9020568516368745,
+    "aic": -178.1773284196234,
+    "aicc": -174.1773284196234,
+    "bic": -178.59380948116728,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "exponential": {
+    "model": "exponential",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 1.0426461970154393e-05,
+     "xi": 21.224998313870593
+    },
+    "param_errors": {
+     "A": 1.1954085532467087e-06,
+     "xi": 2.271083185386149
+    },
+    "n": 6,
+    "k": 2,
+    "rss": 2.1541830848206256e-13,
+    "rmse": 1.8948100541657755e-07,
+    "r2": 0.9459817930165247,
+    "aic": -181.74772463259848,
+    "aicc": -177.74772463259848,
+    "bic": -182.16420569414237,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law_C": {
+    "model": "power_law_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": -4.246944336049905e-06,
+     "A": 3.6963049143249405e-05,
+     "K": 0.4985422350387495
+    },
+    "param_errors": {
+     "C_inf": 2.420489639497773e-06,
+     "A": 0.01979187395709975,
+     "K": 0.730766270542432
+    },
+    "n": 6,
+    "k": 3,
+    "rss": 2.7136052371526276e-13,
+    "rmse": 2.1266582695050889e-07,
+    "r2": 0.931953745990834,
+    "aic": -178.36252548943327,
+    "aicc": -166.36252548943327,
+    "bic": -178.9872470817491,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 C_inf 触及下界 -4.247e-06；C_inf ∈ [-4.247e-06, 4.247e-06]（无符号约束）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "exponential_C": {
+    "model": "exponential_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": -4.246944336049999e-06,
+     "A": 1.263464205763152e-05,
+     "xi": 48.01464016804601
+    },
+    "param_errors": {
+     "C_inf": 2.1045075210540047e-06,
+     "A": 1.5298416059822304e-06,
+     "xi": 14.130048184828656
+    },
+    "n": 6,
+    "k": 3,
+    "rss": 1.2306783080488081e-13,
+    "rmse": 1.432176844322893e-07,
+    "r2": 0.9691395610509173,
+    "aic": -183.10680114486973,
+    "aicc": -171.10680114486973,
+    "bic": -183.73152273718557,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 C_inf 触及下界 -4.247e-06；C_inf ∈ [-4.247e-06, 4.247e-06]（无符号约束）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "osc_power": {
+    "model": "osc_power",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 6,
+    "k": 4,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=6 不足以约束 4 参数模型",
+    "bound_hits": []
+   },
+   "osc_exp": {
+    "model": "osc_exp",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 6,
+    "k": 4,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=6 不足以约束 4 参数模型",
+    "bound_hits": []
+   },
+   "osc_power_C": {
+    "model": "osc_power_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 6,
+    "k": 5,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=6 不足以约束 5 参数模型；C_inf ∈ [-4.247e-06, 4.247e-06]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_exp_C": {
+    "model": "osc_exp_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {},
+    "param_errors": {},
+    "n": 6,
+    "k": 5,
+    "rss": null,
+    "rmse": null,
+    "r2": null,
+    "aic": null,
+    "aicc": null,
+    "bic": null,
+    "window": [
+     18.0,
+     33.0
+    ],
+    "valid": false,
+    "error_source": "pcov",
+    "message": "点数 n=6 不足以约束 5 参数模型；C_inf ∈ [-4.247e-06, 4.247e-06]（无符号约束）",
+    "bound_hits": []
+   }
+  },
+  "comparison": {
+   "groups": {
+    "linear_C @ (18.0, 33.0)": {
+     "best_model": "exponential",
+     "rows": [
+      {
+       "model": "exponential",
+       "aicc": -177.74772463259848,
+       "bic": -182.16420569414237,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 6,
+       "k": 2,
+       "r2": 0.9459817930165247
+      },
+      {
+       "model": "power_law",
+       "aicc": -174.1773284196234,
+       "bic": -178.59380948116728,
+       "delta_aicc": 3.5703962129750835,
+       "delta_bic": 3.5703962129750835,
+       "bic_evidence": "正证据",
+       "n": 6,
+       "k": 2,
+       "r2": 0.9020568516368745
+      },
+      {
+       "model": "exponential_C",
+       "aicc": -171.10680114486973,
+       "bic": -183.73152273718557,
+       "delta_aicc": 6.640923487728742,
+       "delta_bic": -1.5673170430432037,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 6,
+       "k": 3,
+       "r2": 0.9691395610509173
+      },
+      {
+       "model": "power_law_C",
+       "aicc": -166.36252548943327,
+       "bic": -178.9872470817491,
+       "delta_aicc": 11.38519914316521,
+       "delta_bic": 3.176958612393264,
+       "bic_evidence": "正证据",
+       "n": 6,
+       "k": 3,
+       "r2": 0.931953745990834
+      },
+      {
+       "model": "constant",
+       "aicc": -165.2371198952884,
+       "bic": -166.44536042606035,
+       "delta_aicc": 12.510604737310075,
+       "delta_bic": 15.71884526808202,
+       "bic_evidence": "极强证据",
+       "n": 6,
+       "k": 1,
+       "r2": 0.0
+      }
+     ]
+    }
+   },
+   "best_per_group": {
+    "('linear_C', (18.0, 33.0))": "exponential"
+   }
+  },
+  "oscillation": {
+   "detected": false,
+   "n_cross": 0,
+   "cross_positions": [],
+   "cross_spacing_regularity": null,
+   "n_ext": 0,
+   "ext_positions": [],
+   "ext_spacing_regularity": null,
+   "Q": 0.2700142457822205,
+   "Q_rel_mad": null,
+   "phi": -0.6039929171231108,
+   "phi_mad": null,
+   "amplitude": 0.8064382856837509,
+   "r2_cos": -191.54292053791096,
+   "envelope_form": "exp",
+   "r2_env_log": 0.9472199246870715,
+   "subwindow_Qs": [],
+   "criterion_checks": {
+    "n_cross": false,
+    "n_ext": false,
+    "cross_spacing": false,
+    "ext_spacing": false,
+    "r2_cos": false,
+    "r2_env_log": true,
+    "q_stable": false,
+    "phi_stable": false
+   },
+   "evidence": "none",
+   "structural_artifact_suspected": false,
+   "structural_warning": "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估"
+  },
+  "family_diagnostics": {
+   "family_r": {
+    "0": [
+     3.0,
+     6.0,
+     9.0,
+     12.0,
+     15.0,
+     18.0,
+     21.0,
+     24.0,
+     27.0,
+     30.0,
+     33.0
+    ]
+   },
+   "family_C": {
+    "0": [
+     4.590083103425e-06,
+     3.979684496565e-06,
+     4.1244746101e-06,
+     4.29660312707e-06,
+     4.348914471745e-06,
+     4.24694433605e-06,
+     3.988364061235e-06,
+     3.58974663339e-06,
+     3.0828256411500003e-06,
+     2.5106007582e-06,
+     1.922240292711e-06
+    ]
+   },
+   "per_family": {
+    "0": {
+     "n": 11,
+     "sign_purity": 1.0,
+     "n_cross": 0,
+     "envelope_form": "exp",
+     "envelope_param": 43.91764894372144,
+     "r2_env_log": 0.6936805184556751,
+     "Q": 0.15936299576104618,
+     "phi": -2.914565836535542,
+     "r2_cos": -42.94006895453674
+    },
+    "note": "仅一个距离族有数据，族分解诊断降级"
+   },
+   "consistency": {
+    "0": false
+   },
+   "structural_artifact_suspected": false,
+   "insufficient": true
+  },
+  "stability": {
+   "scan_table": [
+    {
+     "r_min": 3.0,
+     "n_pts": 11,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 43.91764894372144,
+     "param_err": 9.728040911544864,
+     "r2_env_log": 0.6936805184556751,
+     "aicc": -37.20426327404248,
+     "bic": -37.908472728445744,
+     "osc_flag": false,
+     "osc_evidence": "possible",
+     "Q": 0.15936299576104618,
+     "phi": -2.914565836535542,
+     "r2_cos": -42.94006895453674
+    },
+    {
+     "r_min": 6.0,
+     "n_pts": 10,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 40.17022350986717,
+     "param_err": 9.668688068293699,
+     "r2_env_log": 0.6833099922466478,
+     "aicc": -32.76410899086759,
+     "bic": -33.87322451916521,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.16213919199813653,
+     "phi": 3.111105955078558,
+     "r2_cos": -35.146454763924645
+    },
+    {
+     "r_min": 9.0,
+     "n_pts": 9,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 32.59703420009645,
+     "param_err": 6.626877937924099,
+     "r2_env_log": 0.7756101171770144,
+     "aicc": -31.02926642188782,
+     "bic": -32.63481726721538,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.17820730257205258,
+     "phi": 2.535366514451124,
+     "r2_cos": -45.21767419240952
+    },
+    {
+     "r_min": 18.0,
+     "n_pts": 6,
+     "skipped": false,
+     "envelope_model": "exp",
+     "param": 19.075806842990676,
+     "param_err": 2.251451059172838,
+     "r2_env_log": 0.9472199246870715,
+     "aicc": -25.099439810119783,
+     "bic": -29.515920871663674,
+     "osc_flag": false,
+     "osc_evidence": "none",
+     "Q": 0.2700142457822205,
+     "phi": -0.6039929171231108,
+     "r2_cos": -191.54292053791096
+    }
+   ],
+   "recommended_r_min": 18.0,
+   "rel_mad_K": null,
+   "rel_mad_xi": 0.23065241081086227,
+   "rel_mad_Q": 0.08208860594636261,
+   "model_consistency": 1.0,
+   "spearman_rho": -1.0,
+   "post_hump_windows": 1,
+   "verdict": "moderate",
+   "messages": [
+    "参数随 r_min 单调漂移（Spearman ρ=-1.00），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
+    "数据存在包络 hump（峰值 r≈15），推荐窗口起点设在 hump 之后；峰后仅 1 个合法窗口起点：峰后窗口可拟合，但稳定性无法评估（verdict 最多 moderate）"
+   ]
+  },
+  "initial_noise_floor": 2.5106007582e-06,
+  "initial_noise_floor_components": {
+   "tail_median": 2.5106007582e-06,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "final_noise_floor": 2.5106007582e-06,
+  "final_noise_floor_components": {
+   "tail_median": 2.5106007582e-06,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "analysis_version": "1.0",
+  "physical_form": "C(r) ≈ A·exp(−r/19.1)",
+  "warnings": [
+   "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 11 个 bond 数据点保留在 group_raw",
+   "参数随 r_min 单调漂移（Spearman ρ=-1.00），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
+   "数据存在包络 hump（峰值 r≈15），推荐窗口起点设在 hump 之后；峰后仅 1 个合法窗口起点：峰后窗口可拟合，但稳定性无法评估（verdict 最多 moderate）",
+   "envelope_mode='both' 但极值点仅 0 个（<4），退化回全点包络",
+   "包络拟合: 全点包络（all_points，n=6 个点）",
+   "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
+   "候选模型 power_law_C: 参数 C_inf 触及下界 -4.247e-06；C_inf ∈ [-4.247e-06, 4.247e-06]（无符号约束）",
+   "候选模型 exponential_C: 参数 C_inf 触及下界 -4.247e-06；C_inf ∈ [-4.247e-06, 4.247e-06]（无符号约束）",
+   "候选模型 osc_power: 无效点数 n=6 不足以约束 4 参数模型",
+   "候选模型 osc_exp: 无效点数 n=6 不足以约束 4 参数模型",
+   "候选模型 osc_power_C: 无效点数 n=6 不足以约束 5 参数模型；C_inf ∈ [-4.247e-06, 4.247e-06]（无符号约束）",
+   "候选模型 osc_exp_C: 无效点数 n=6 不足以约束 5 参数模型；C_inf ∈ [-4.247e-06, 4.247e-06]（无符号约束）"
+  ],
+  "config": {
+   "rtol_group": 1e-09,
+   "atol_group": 1e-12,
+   "n_min_fit": 8,
+   "n_min_hump_window": 6,
+   "n_min_osc_fit": 10,
+   "n_min_osc": 12,
+   "n_min_abs": 6,
+   "r_min_override": null,
+   "r_max_frac": 1.0,
+   "r_max_auto": true,
+   "r_max_noise_cut": 3.0,
+   "r_max_noise_run": 3,
+   "n_rmin_candidates": 20,
+   "envelope_mode": "both",
+   "tail_frac_noise": 0.25,
+   "noise_floor_abs_min": 1e-15,
+   "prom_factor": 3.0,
+   "n_cross_min": 4,
+   "n_extrema_min": 4,
+   "spacing_regularity_max": 0.4,
+   "r2_cos_min": 0.6,
+   "r2_env_log_min": 0.85,
+   "q_stab_max": 0.2,
+   "phi_stab_max": 0.5,
+   "q_grid_points": 400,
+   "q_refine_points": 200,
+   "family_sign_purity_warn": 0.8,
+   "delta_aicc_tie": 2.0,
+   "delta_aicc_osc_min": 6.0,
+   "constrain_cinf_abs": true,
+   "constrain_cinf_signed": false,
+   "k_stab_max": 0.3,
+   "k_stab_moderate": 0.6,
+   "model_consistency_min": 0.6,
+   "bootstrap_n": 200,
+   "pcov_max_cond": 1000000000000.0
+  }
+ },
+ "d1_20_49_50_A": {
+  "classification": "non_monotonic",
+  "recommended_model": "non_monotonic",
+  "evidence_level": "weak",
+  "distance_aggregation": "mean_by_distance",
+  "nonmonotonic_reason": "sign_change",
+  "full_range": [
+   3.0,
+   36.0
+  ],
+  "r_min": 3.0,
+  "r_max": 36.0,
+  "n_points": 12,
+  "n_raw_points": 12,
+  "n_distances": 12,
+  "fit_space": "",
+  "envelope_fit": {
+   "model": "envelope_power",
+   "fit_space": "log_absC",
+   "r2_space": "log",
+   "params": {
+    "A": 0.0005257630607894492,
+    "K": 2.334977938017963
+   },
+   "param_errors": {
+    "A": 0.00024401811905520475,
+    "K": 0.16242978608320302
+   },
+   "n": 12,
+   "k": 2,
+   "rss": 1.657982042607751,
+   "rmse": 0.3717057575789116,
+   "r2": 0.9538424825060763,
+   "aic": -19.751665086665923,
+   "aicc": -18.41833175333259,
+   "bic": -18.781851787089924,
+   "window": [
+    3.0,
+    36.0
+   ],
+   "valid": true,
+   "error_source": "lstsq_cov",
+   "message": "全点包络（all_points，n=12 个点）",
+   "bound_hits": []
+  },
+  "envelope_fit_alt": null,
+  "envelope_extrema_r": [],
+  "envelope_extrema_abs": [],
+  "envelope_extrema_excluded": [
+   [
+    27.0,
+    -2.337056229121e-07,
+    "幅度不足"
+   ]
+  ],
+  "envelope_mode_used": "all_points",
+  "detrended_fit": {
+   "model": "cosine_detrended",
+   "fit_space": "linear_detrended",
+   "r2_space": "linear",
+   "params": {
+    "Q": 0.4289930901009291,
+    "phi": -2.7043716496184063,
+    "amplitude": 1.530092294940726
+   },
+   "param_errors": {},
+   "n": 12,
+   "k": 2,
+   "rss": null,
+   "rmse": null,
+   "r2": 0.8714156872984495,
+   "aic": null,
+   "aicc": null,
+   "bic": null,
+   "window": [
+    3.0,
+    36.0
+   ],
+   "valid": true,
+   "error_source": "pcov",
+   "message": "",
+   "bound_hits": []
+  },
+  "candidate_fits": {
+   "constant": {
+    "model": "constant",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 4.666041342622061e-06
+    },
+    "param_errors": {
+     "A": 2.900917155612646e-06
+    },
+    "n": 12,
+    "k": 1,
+    "rss": 1.1108222853720648e-09,
+    "rmse": 9.621253753072174e-06,
+    "r2": 0.0,
+    "aic": -275.23686337639367,
+    "aicc": -274.8368633763937,
+    "bic": -274.75195672660567,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law": {
+    "model": "power_law",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.00023012496326045665,
+     "K": 1.7286493368185232
+    },
+    "param_errors": {
+     "A": 4.404496435285066e-05,
+     "K": 0.15441267882077284
+    },
+    "n": 12,
+    "k": 2,
+    "rss": 2.9988756919419436e-11,
+    "rmse": 1.5808425211317813e-06,
+    "r2": 0.9730031011131769,
+    "aic": -316.58126268380795,
+    "aicc": -315.24792935047464,
+    "bic": -315.61144938423195,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "exponential": {
+    "model": "exponential",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 8.835778426150796e-05,
+     "xi": 3.150696712009855
+    },
+    "param_errors": {
+     "A": 5.147331148349278e-06,
+     "xi": 0.15305734685182143
+    },
+    "n": 12,
+    "k": 2,
+    "rss": 6.009174641283883e-12,
+    "rmse": 7.076471955998439e-07,
+    "r2": 0.9945903366178226,
+    "aic": -335.8716842900164,
+    "aicc": -334.5383509566831,
+    "bic": -334.9018709904404,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law_C": {
+    "model": "power_law_C",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 1.2072530792694718e-22,
+     "A": 0.00023012781531636938,
+     "K": 1.7286596549737714
+    },
+    "param_errors": {
+     "C_inf": 9.96173729546407e-07,
+     "A": 6.736774857694112e-05,
+     "K": 0.2692980573521612
+    },
+    "n": 12,
+    "k": 3,
+    "rss": 2.99887569169428e-11,
+    "rmse": 1.5808425210665039e-06,
+    "r2": 0.9730031011154064,
+    "aic": -314.581262684799,
+    "aicc": -311.581262684799,
+    "bic": -313.126542735435,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 C_inf 触及下界 0；C_inf ∈ [0, 3.379e-05]（非负约束启用）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "exponential_C": {
+    "model": "exponential_C",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 6.111285321598744e-08,
+     "A": 8.866619260755094e-05,
+     "xi": 3.1339626693815816
+    },
+    "param_errors": {
+     "C_inf": 2.974917431593689e-07,
+     "A": 5.733395123565194e-06,
+     "xi": 0.1832032441797433
+    },
+    "n": 12,
+    "k": 3,
+    "rss": 5.980521334140599e-12,
+    "rmse": 7.059580567179965e-07,
+    "r2": 0.9946161312994027,
+    "aic": -333.9290402631811,
+    "aicc": -330.9290402631811,
+    "bic": -332.4743203138171,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 C_inf 触及下界 0；C_inf ∈ [0, 3.379e-05]（非负约束启用）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "osc_power": {
+    "model": "osc_power",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.0024678889477820136,
+     "K": 2.8466900551062966,
+     "Q": 0.35714132013620953,
+     "phi": -2.3246668077170294
+    },
+    "param_errors": {
+     "A": 0.001352245486089901,
+     "K": 0.29639849220105635,
+     "Q": 0.014350339145135007,
+     "phi": 0.09534941990191896
+    },
+    "n": 12,
+    "k": 4,
+    "rss": 1.5165179892188225e-12,
+    "rmse": 3.5549472443563566e-07,
+    "r2": 0.9986835588729053,
+    "aic": -348.39413026376144,
+    "aicc": -342.6798445494757,
+    "bic": -346.45450366460943,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "osc_exp": {
+    "model": "osc_exp",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.0002081090579200785,
+     "xi": 2.2954695054021697,
+     "Q": 0.3431944720810084,
+     "phi": -1.9597579170391137
+    },
+    "param_errors": {
+     "A": 0.00018108301240887155,
+     "xi": 0.7791521812780254,
+     "Q": 0.045307802033581,
+     "phi": 0.4199602114587077
+    },
+    "n": 12,
+    "k": 4,
+    "rss": 5.047873787083313e-12,
+    "rmse": 6.4858010216442e-07,
+    "r2": 0.9956181010018069,
+    "aic": -333.9635277201877,
+    "aicc": -328.249242005902,
+    "bic": -332.0239011210357,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 Q 触及下界 0.3432",
+    "bound_hits": [
+     "Q"
+    ]
+   },
+   "osc_power_C": {
+    "model": "osc_power_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 2.1786157545482227e-07,
+     "A": 0.0019113393583013473,
+     "K": 2.7169377550725105,
+     "Q": 0.3615485119249013,
+     "phi": -2.3007108988267064
+    },
+    "param_errors": {
+     "C_inf": 1.0323098473832842e-07,
+     "A": 0.0009013368570606247,
+     "K": 0.20414526448374143,
+     "Q": 0.00950624732341149,
+     "phi": 0.07017626438104317
+    },
+    "n": 12,
+    "k": 5,
+    "rss": 1.130441611195224e-12,
+    "rmse": 3.0692583403747886e-07,
+    "r2": 0.9990186995213138,
+    "aic": -349.9198328356372,
+    "aicc": -339.9198328356372,
+    "bic": -347.4952995866972,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "C_inf ∈ [-3.379e-05, 3.379e-05]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_exp_C": {
+    "model": "osc_exp_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 2.002906720121622e-07,
+     "A": 0.00018356428691030508,
+     "xi": 2.4043614157059205,
+     "Q": 0.3431944720807434,
+     "phi": -1.9126568870431693
+    },
+    "param_errors": {
+     "C_inf": 2.008785138878472e-07,
+     "A": 0.00037381228289032505,
+     "xi": 0.4142781635618953,
+     "Q": 0.013929818932292384,
+     "phi": 0.17999093492048648
+    },
+    "n": 12,
+    "k": 5,
+    "rss": 4.702145808443539e-12,
+    "rmse": 6.259756257530812e-07,
+    "r2": 0.9959182164855034,
+    "aic": -332.8149056744248,
+    "aicc": -322.8149056744248,
+    "bic": -330.39037242548477,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 Q 触及下界 0.3432；C_inf ∈ [-3.379e-05, 3.379e-05]（无符号约束）",
+    "bound_hits": [
+     "Q"
+    ]
+   }
+  },
+  "comparison": {
+   "groups": {
+    "linear_absC @ (3.0, 36.0)": {
+     "best_model": "exponential",
+     "rows": [
+      {
+       "model": "exponential",
+       "aicc": -334.5383509566831,
+       "bic": -334.9018709904404,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 2,
+       "r2": 0.9945903366178226
+      },
+      {
+       "model": "exponential_C",
+       "aicc": -330.9290402631811,
+       "bic": -332.4743203138171,
+       "delta_aicc": 3.609310693501982,
+       "delta_bic": 2.427550676623298,
+       "bic_evidence": "正证据",
+       "n": 12,
+       "k": 3,
+       "r2": 0.9946161312994027
+      },
+      {
+       "model": "power_law",
+       "aicc": -315.24792935047464,
+       "bic": -315.61144938423195,
+       "delta_aicc": 19.29042160620844,
+       "delta_bic": 19.29042160620844,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 2,
+       "r2": 0.9730031011131769
+      },
+      {
+       "model": "power_law_C",
+       "aicc": -311.581262684799,
+       "bic": -313.126542735435,
+       "delta_aicc": 22.95708827188406,
+       "delta_bic": 21.775328255005377,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 3,
+       "r2": 0.9730031011154064
+      },
+      {
+       "model": "constant",
+       "aicc": -274.8368633763937,
+       "bic": -274.75195672660567,
+       "delta_aicc": 59.70148758028938,
+       "delta_bic": 60.14991426383472,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 1,
+       "r2": 0.0
+      }
+     ]
+    },
+    "linear_C @ (3.0, 36.0)": {
+     "best_model": "osc_power",
+     "rows": [
+      {
+       "model": "osc_power",
+       "aicc": -342.6798445494757,
+       "bic": -346.45450366460943,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 4,
+       "r2": 0.9986835588729053
+      },
+      {
+       "model": "osc_power_C",
+       "aicc": -339.9198328356372,
+       "bic": -347.4952995866972,
+       "delta_aicc": 2.760011713838537,
+       "delta_bic": -1.0407959220877387,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 5,
+       "r2": 0.9990186995213138
+      },
+      {
+       "model": "osc_exp",
+       "aicc": -328.249242005902,
+       "bic": -332.0239011210357,
+       "delta_aicc": 14.430602543573741,
+       "delta_bic": 14.430602543573741,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 4,
+       "r2": 0.9956181010018069
+      },
+      {
+       "model": "osc_exp_C",
+       "aicc": -322.8149056744248,
+       "bic": -330.39037242548477,
+       "delta_aicc": 19.86493887505094,
+       "delta_bic": 16.064131239124663,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 5,
+       "r2": 0.9959182164855034
+      }
+     ]
+    }
+   },
+   "best_per_group": {
+    "('linear_absC', (3.0, 36.0))": "exponential",
+    "('linear_C', (3.0, 36.0))": "osc_power"
+   }
+  },
+  "oscillation": {
+   "detected": true,
+   "n_cross": 4,
+   "cross_positions": [
+    11.357179564917669,
+    17.208180426041196,
+    25.50870184887889,
+    31.506633638618602
+   ],
+   "cross_spacing_regularity": 0.03631915173477001,
+   "n_ext": 3,
+   "ext_positions": [
+    12.0,
+    21.0,
+    27.0
+   ],
+   "ext_spacing_regularity": 0.29652,
+   "Q": 0.4289930901009291,
+   "Q_rel_mad": 0.03837944037109085,
+   "phi": -2.7043716496184063,
+   "phi_mad": 0.19116089389708968,
+   "amplitude": 1.530092294940726,
+   "r2_cos": 0.8714156872984495,
+   "envelope_form": "power",
+   "r2_env_log": 0.9538424825060763,
+   "subwindow_Qs": [
+    0.41212112038628335,
+    0.4230730334165179,
+    0.47557337084360696
+   ],
+   "criterion_checks": {
+    "n_cross": true,
+    "n_ext": false,
+    "cross_spacing": true,
+    "ext_spacing": true,
+    "r2_cos": true,
+    "r2_env_log": true,
+    "q_stable": true,
+    "phi_stable": true
+   },
+   "evidence": "weak",
+   "structural_artifact_suspected": false,
+   "structural_warning": "φ 子窗口最大漂移 1.53 rad，振荡模型在远端不稳定，证据降为 weak；距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估"
+  },
+  "family_diagnostics": {
+   "family_r": {
+    "0": [
+     3.0,
+     6.0,
+     9.0,
+     12.0,
+     15.0,
+     18.0,
+     21.0,
+     24.0,
+     27.0,
+     30.0,
+     33.0,
+     36.0
+    ]
+   },
+   "family_C": {
+    "0": [
+     3.3791576266999995e-05,
+     1.4647582911065e-05,
+     3.6054385688599997e-06,
+     -9.83229968557e-07,
+     -9.2786142033e-07,
+     3.327168495265e-07,
+     7.26729847434e-07,
+     2.3643300644865e-07,
+     -2.337056229121e-07,
+     -1.550052267799e-07,
+     1.5364026501069998e-07,
+     1.985761575409e-07
+    ]
+   },
+   "per_family": {
+    "0": {
+     "n": 12,
+     "sign_purity": 0.6666666666666666,
+     "n_cross": 4,
+     "envelope_form": "power",
+     "envelope_param": 2.334977938017963,
+     "r2_env_log": 0.9538424825060763,
+     "Q": 0.4289930901009291,
+     "phi": -2.7043716496184063,
+     "r2_cos": 0.8714156872984495
+    },
+    "note": "仅一个距离族有数据，族分解诊断降级"
+   },
+   "consistency": {
+    "0": true
+   },
+   "structural_artifact_suspected": false,
+   "insufficient": true
+  },
+  "stability": {
+   "scan_table": [
+    {
+     "r_min": 3.0,
+     "n_pts": 12,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.334977938017963,
+     "param_err": 0.16242978608320302,
+     "r2_env_log": 0.9538424825060763,
+     "aicc": -18.41833175333259,
+     "bic": -18.781851787089924,
+     "osc_flag": true,
+     "osc_evidence": "strong",
+     "Q": 0.4289930901009291,
+     "phi": -2.7043716496184063,
+     "r2_cos": 0.8714156872984495
+    },
+    {
+     "r_min": 6.0,
+     "n_pts": 11,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.435040901958409,
+     "param_err": 0.23289113265362077,
+     "r2_env_log": 0.9239362227374224,
+     "aicc": -15.774031365405861,
+     "bic": -16.47824081980912,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.4454785583831409,
+     "phi": -3.129351129668181,
+     "r2_cos": 0.9301639094306101
+    },
+    {
+     "r_min": 9.0,
+     "n_pts": 10,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.1211533021192985,
+     "param_err": 0.2784193140966277,
+     "r2_env_log": 0.8788657068744883,
+     "aicc": -15.83913120993442,
+     "bic": -16.948246738232044,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.45498680482152326,
+     "phi": 2.910549715992822,
+     "r2_cos": 0.9357792087102982
+    },
+    {
+     "r_min": 12.0,
+     "n_pts": 9,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 1.8126677196652545,
+     "param_err": 0.34228042023388416,
+     "r2_env_log": 0.8002630122686794,
+     "aicc": -14.690514735896269,
+     "bic": -16.29606558122383,
+     "osc_flag": true,
+     "osc_evidence": "weak",
+     "Q": 0.44259629552954327,
+     "phi": -3.0286852796913704,
+     "r2_cos": 0.9449221267120468
+    }
+   ],
+   "recommended_r_min": 3.0,
+   "rel_mad_K": 0.10443358385179217,
+   "rel_mad_xi": null,
+   "rel_mad_Q": 0.02068538366485005,
+   "model_consistency": 1.0,
+   "spearman_rho": -0.7999999999999999,
+   "post_hump_windows": 0,
+   "verdict": "stable",
+   "messages": []
+  },
+  "initial_noise_floor": 1.550052267799e-07,
+  "initial_noise_floor_components": {
+   "tail_median": 1.550052267799e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "final_noise_floor": 1.550052267799e-07,
+  "final_noise_floor_components": {
+   "tail_median": 1.550052267799e-07,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "analysis_version": "1.0",
+  "physical_form": "C(r) ≈ A·r^(−2.33)·cos(0.429·r + -2.7)",
+  "warnings": [
+   "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 12 个 bond 数据点保留在 group_raw",
+   "envelope_mode='both' 但极值点仅 2 个（<4），退化回全点包络",
+   "包络拟合: 全点包络（all_points，n=12 个点）",
+   "φ 子窗口最大漂移 1.53 rad，振荡模型在远端不稳定，证据降为 weak；距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
+   "候选模型 power_law_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 3.379e-05]（非负约束启用）",
+   "候选模型 exponential_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 3.379e-05]（非负约束启用）",
+   "候选模型 osc_exp: 参数 Q 触及下界 0.3432",
+   "候选模型 osc_power_C: C_inf ∈ [-3.379e-05, 3.379e-05]（无符号约束）",
+   "候选模型 osc_exp_C: 参数 Q 触及下界 0.3432；C_inf ∈ [-3.379e-05, 3.379e-05]（无符号约束）",
+   "存在振荡迹象但证据不足，summary 保留 possible oscillation 信息"
+  ],
+  "config": {
+   "rtol_group": 1e-09,
+   "atol_group": 1e-12,
+   "n_min_fit": 8,
+   "n_min_hump_window": 6,
+   "n_min_osc_fit": 10,
+   "n_min_osc": 12,
+   "n_min_abs": 6,
+   "r_min_override": null,
+   "r_max_frac": 1.0,
+   "r_max_auto": true,
+   "r_max_noise_cut": 3.0,
+   "r_max_noise_run": 3,
+   "n_rmin_candidates": 20,
+   "envelope_mode": "both",
+   "tail_frac_noise": 0.25,
+   "noise_floor_abs_min": 1e-15,
+   "prom_factor": 3.0,
+   "n_cross_min": 4,
+   "n_extrema_min": 4,
+   "spacing_regularity_max": 0.4,
+   "r2_cos_min": 0.6,
+   "r2_env_log_min": 0.85,
+   "q_stab_max": 0.2,
+   "phi_stab_max": 0.5,
+   "q_grid_points": 400,
+   "q_refine_points": 200,
+   "family_sign_purity_warn": 0.8,
+   "delta_aicc_tie": 2.0,
+   "delta_aicc_osc_min": 6.0,
+   "constrain_cinf_abs": true,
+   "constrain_cinf_signed": false,
+   "k_stab_max": 0.3,
+   "k_stab_moderate": 0.6,
+   "model_consistency_min": 0.6,
+   "bootstrap_n": 200,
+   "pcov_max_cond": 1000000000000.0
+  }
+ },
+ "d2_25_50_51_B": {
+  "classification": "oscillatory_power_law",
+  "recommended_model": "oscillatory_power_law",
+  "evidence_level": "strong",
+  "distance_aggregation": "mean_by_distance",
+  "nonmonotonic_reason": "",
+  "full_range": [
+   3.0,
+   36.0
+  ],
+  "r_min": 3.0,
+  "r_max": 36.0,
+  "n_points": 12,
+  "n_raw_points": 12,
+  "n_distances": 12,
+  "fit_space": "",
+  "envelope_fit": {
+   "model": "envelope_power",
+   "fit_space": "log_absC",
+   "r2_space": "log",
+   "params": {
+    "A": 0.001597335241329077,
+    "K": 2.7591380205583356
+   },
+   "param_errors": {
+    "A": 0.0010551854045672163,
+    "K": 0.23118857559341224
+   },
+   "n": 12,
+   "k": 2,
+   "rss": 3.3587773522785436,
+   "rmse": 0.5290539789944677,
+   "r2": 0.9343979001820936,
+   "aic": -11.279955503418751,
+   "aicc": -9.946622170085417,
+   "bic": -10.310142203842751,
+   "window": [
+    3.0,
+    36.0
+   ],
+   "valid": true,
+   "error_source": "lstsq_cov",
+   "message": "全点包络（all_points，n=12 个点）",
+   "bound_hits": []
+  },
+  "envelope_fit_alt": null,
+  "envelope_extrema_r": [],
+  "envelope_extrema_abs": [],
+  "envelope_extrema_excluded": [],
+  "envelope_mode_used": "all_points",
+  "detrended_fit": {
+   "model": "cosine_detrended",
+   "fit_space": "linear_detrended",
+   "r2_space": "linear",
+   "params": {
+    "Q": 0.7234334207020969,
+    "phi": -3.1069940519971704,
+    "amplitude": 1.7617798591275864
+   },
+   "param_errors": {},
+   "n": 12,
+   "k": 2,
+   "rss": null,
+   "rmse": null,
+   "r2": 0.9793083694519674,
+   "aic": null,
+   "aicc": null,
+   "bic": null,
+   "window": [
+    3.0,
+    36.0
+   ],
+   "valid": true,
+   "error_source": "pcov",
+   "message": "",
+   "bound_hits": []
+  },
+  "candidate_fits": {
+   "constant": {
+    "model": "constant",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 9.966395225919623e-06
+    },
+    "param_errors": {
+     "A": 8.436221240479753e-06
+    },
+    "n": 12,
+    "k": 1,
+    "rss": 9.394417404018472e-09,
+    "rmse": 2.7979780503097934e-05,
+    "r2": 0.0,
+    "aic": -249.6166824048687,
+    "aicc": -249.2166824048687,
+    "bic": -249.1317757550807,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law": {
+    "model": "power_law",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.005156688223287346,
+     "K": 3.5672623794663427
+    },
+    "param_errors": {
+     "A": 0.0011972919759542543,
+     "K": 0.20996176738770803
+    },
+    "n": 12,
+    "k": 2,
+    "rss": 1.851991509978525e-11,
+    "rmse": 1.242306829376478e-06,
+    "r2": 0.9980286254800789,
+    "aic": -322.36497344904654,
+    "aicc": -321.03164011571323,
+    "bic": -321.39516014947054,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "exponential": {
+    "model": "exponential",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.0013414786048772745,
+     "xi": 1.1662740122119533
+    },
+    "param_errors": {
+     "A": 0.0003057766480085451,
+     "xi": 0.10244677584332966
+    },
+    "n": 12,
+    "k": 2,
+    "rss": 3.1790001106124295e-11,
+    "rmse": 1.6276261115021752e-06,
+    "r2": 0.9966160752988763,
+    "aic": -315.88131147198936,
+    "aicc": -314.54797813865605,
+    "bic": -314.91149817241336,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "power_law_C": {
+    "model": "power_law_C",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 6.101564545138186e-07,
+     "A": 0.006172072250473091,
+     "K": 3.73613034689222
+    },
+    "param_errors": {
+     "C_inf": 4.47754127417229e-07,
+     "A": 0.0017542627521599625,
+     "K": 0.25941660430250263
+    },
+    "n": 12,
+    "k": 3,
+    "rss": 1.544080055519425e-11,
+    "rmse": 1.1343427081792879e-06,
+    "r2": 0.9983563855116135,
+    "aic": -322.54697247641246,
+    "aicc": -319.54697247641246,
+    "bic": -321.09225252704846,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0001025]（非负约束启用）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "exponential_C": {
+    "model": "exponential_C",
+    "fit_space": "linear_absC",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 9.084279090010592e-07,
+     "A": 0.0015422351122280442,
+     "xi": 1.1027209995335772
+    },
+    "param_errors": {
+     "C_inf": 5.225533409809131e-07,
+     "A": 0.0003944971218091294,
+     "xi": 0.10372645079564295
+    },
+    "n": 12,
+    "k": 3,
+    "rss": 2.3882751911005762e-11,
+    "rmse": 1.4107548780412375e-06,
+    "r2": 0.9974577718996401,
+    "aic": -317.3132549361279,
+    "aicc": -314.3132549361279,
+    "bic": -315.8585349867639,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0001025]（非负约束启用）",
+    "bound_hits": [
+     "C_inf"
+    ]
+   },
+   "osc_power": {
+    "model": "osc_power",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.004756683280914032,
+     "K": 3.037312619257474,
+     "Q": 0.7148981094892691,
+     "phi": -3.0645251968737686
+    },
+    "param_errors": {
+     "A": 0.0002705170667705705,
+     "K": 0.03134621283736406,
+     "Q": 0.006833800482458566,
+     "phi": 0.038955450597568726
+    },
+    "n": 12,
+    "k": 4,
+    "rss": 1.3011306462955017e-13,
+    "rmse": 1.0412855221213752e-07,
+    "r2": 0.9999865353248328,
+    "aic": -377.86335093181196,
+    "aicc": -372.14906521752624,
+    "bic": -375.92372433265996,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "",
+    "bound_hits": []
+   },
+   "osc_exp": {
+    "model": "osc_exp",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "A": 0.0008055572161904755,
+     "xi": 1.878325810885446,
+     "Q": 0.750023959014913,
+     "phi": -3.1415926535897927
+    },
+    "param_errors": {
+     "A": 0.00028269517084273527,
+     "xi": 0.09972653380362553,
+     "Q": 0.088036169569589,
+     "phi": 0.4856813646920763
+    },
+    "n": 12,
+    "k": 4,
+    "rss": 1.8055167581879702e-12,
+    "rmse": 3.8789138924317143e-07,
+    "r2": 0.9998131571435417,
+    "aic": -346.30097106736844,
+    "aicc": -340.5866853530827,
+    "bic": -344.36134446821643,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "pcov",
+    "message": "参数 phi 触及下界 -3.142",
+    "bound_hits": [
+     "phi"
+    ]
+   },
+   "osc_power_C": {
+    "model": "osc_power_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 2.4373256787599075e-09,
+     "A": 0.004752148761658357,
+     "K": 3.0367885167294117,
+     "Q": 0.714844785050219,
+     "phi": -3.06409531552901
+    },
+    "param_errors": {
+     "C_inf": 3.1448814417638925e-08,
+     "A": 0.00024994632290906464,
+     "K": 0.028808315001256274,
+     "Q": 0.005717654326291123,
+     "phi": 0.033421744964688825
+    },
+    "n": 12,
+    "k": 5,
+    "rss": 1.300551201144215e-13,
+    "rmse": 1.0410536334023234e-07,
+    "r2": 0.9999865413211874,
+    "aic": -375.86869619871095,
+    "aicc": -365.86869619871095,
+    "bic": -373.44416294977094,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "C_inf ∈ [-0.0001025, 0.0001025]（无符号约束）",
+    "bound_hits": []
+   },
+   "osc_exp_C": {
+    "model": "osc_exp_C",
+    "fit_space": "linear_C",
+    "r2_space": "linear",
+    "params": {
+     "C_inf": 6.711952377525278e-08,
+     "A": 0.0007994148165391434,
+     "xi": 1.8847138095065035,
+     "Q": 0.7504517845775798,
+     "phi": -3.1415926535897216
+    },
+    "param_errors": {
+     "C_inf": 1.1509158702202904e-07,
+     "A": 8.9476166901606e-05,
+     "xi": 0.061067822963929,
+     "Q": 0.03604349451298944,
+     "phi": 0.20422253353363606
+    },
+    "n": 12,
+    "k": 5,
+    "rss": 1.7615677141405702e-12,
+    "rmse": 3.8314137013863983e-07,
+    "r2": 0.9998177051849216,
+    "aic": -344.59668327770123,
+    "aicc": -334.59668327770123,
+    "bic": -342.1721500287612,
+    "window": [
+     3.0,
+     36.0
+    ],
+    "valid": true,
+    "error_source": "bootstrap",
+    "message": "参数 phi 触及下界 -3.142；C_inf ∈ [-0.0001025, 0.0001025]（无符号约束）",
+    "bound_hits": [
+     "phi"
+    ]
+   }
+  },
+  "comparison": {
+   "groups": {
+    "linear_absC @ (3.0, 36.0)": {
+     "best_model": "power_law",
+     "rows": [
+      {
+       "model": "power_law",
+       "aicc": -321.03164011571323,
+       "bic": -321.39516014947054,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 2,
+       "r2": 0.9980286254800789
+      },
+      {
+       "model": "power_law_C",
+       "aicc": -319.54697247641246,
+       "bic": -321.09225252704846,
+       "delta_aicc": 1.484667639300767,
+       "delta_bic": 0.302907622422083,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 3,
+       "r2": 0.9983563855116135
+      },
+      {
+       "model": "exponential",
+       "aicc": -314.54797813865605,
+       "bic": -314.91149817241336,
+       "delta_aicc": 6.4836619770571815,
+       "delta_bic": 6.4836619770571815,
+       "bic_evidence": "强证据",
+       "n": 12,
+       "k": 2,
+       "r2": 0.9966160752988763
+      },
+      {
+       "model": "exponential_C",
+       "aicc": -314.3132549361279,
+       "bic": -315.8585349867639,
+       "delta_aicc": 6.718385179585312,
+       "delta_bic": 5.536625162706628,
+       "bic_evidence": "正证据",
+       "n": 12,
+       "k": 3,
+       "r2": 0.9974577718996401
+      },
+      {
+       "model": "constant",
+       "aicc": -249.2166824048687,
+       "bic": -249.1317757550807,
+       "delta_aicc": 71.81495771084454,
+       "delta_bic": 72.26338439438985,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 1,
+       "r2": 0.0
+      }
+     ]
+    },
+    "linear_C @ (3.0, 36.0)": {
+     "best_model": "osc_power",
+     "rows": [
+      {
+       "model": "osc_power",
+       "aicc": -372.14906521752624,
+       "bic": -375.92372433265996,
+       "delta_aicc": 0.0,
+       "delta_bic": 0.0,
+       "bic_evidence": "弱（无显著差异）",
+       "n": 12,
+       "k": 4,
+       "r2": 0.9999865353248328
+      },
+      {
+       "model": "osc_power_C",
+       "aicc": -365.86869619871095,
+       "bic": -373.44416294977094,
+       "delta_aicc": 6.280369018815293,
+       "delta_bic": 2.479561382889017,
+       "bic_evidence": "正证据",
+       "n": 12,
+       "k": 5,
+       "r2": 0.9999865413211874
+      },
+      {
+       "model": "osc_exp",
+       "aicc": -340.5866853530827,
+       "bic": -344.36134446821643,
+       "delta_aicc": 31.56237986444353,
+       "delta_bic": 31.56237986444353,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 4,
+       "r2": 0.9998131571435417
+      },
+      {
+       "model": "osc_exp_C",
+       "aicc": -334.59668327770123,
+       "bic": -342.1721500287612,
+       "delta_aicc": 37.55238193982501,
+       "delta_bic": 33.751574303898735,
+       "bic_evidence": "极强证据",
+       "n": 12,
+       "k": 5,
+       "r2": 0.9998177051849216
+      }
+     ]
+    }
+   },
+   "best_per_group": {
+    "('linear_absC', (3.0, 36.0))": "power_law",
+    "('linear_C', (3.0, 36.0))": "osc_power"
+   }
+  },
+  "oscillation": {
+   "detected": true,
+   "n_cross": 7,
+   "cross_positions": [
+    7.649330868549534,
+    11.258929476912968,
+    15.829582851485078,
+    19.933046702177073,
+    23.569110335929878,
+    28.633266172896878,
+    32.10942081186949
+   ],
+   "cross_spacing_regularity": 0.12523835413538412,
+   "n_ext": 6,
+   "ext_positions": [
+    9.0,
+    12.0,
+    18.0,
+    21.0,
+    27.0,
+    30.0
+   ],
+   "ext_spacing_regularity": 0.0,
+   "Q": 0.7234334207020969,
+   "Q_rel_mad": 0.028245571607076345,
+   "phi": -3.1069940519971704,
+   "phi_mad": 0.12262329087547652,
+   "amplitude": 1.7617798591275864,
+   "r2_cos": 0.9793083694519674,
+   "envelope_form": "power",
+   "r2_env_log": 0.9343979001820936,
+   "subwindow_Qs": [
+    0.6986434231310328,
+    0.7357100567211262,
+    0.7219558044800725
+   ],
+   "criterion_checks": {
+    "n_cross": true,
+    "n_ext": true,
+    "cross_spacing": true,
+    "ext_spacing": true,
+    "r2_cos": true,
+    "r2_env_log": true,
+    "q_stable": true,
+    "phi_stable": true
+   },
+   "evidence": "strong",
+   "structural_artifact_suspected": false,
+   "structural_warning": "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估"
+  },
+  "family_diagnostics": {
+   "family_r": {
+    "0": [
+     3.0,
+     6.0,
+     9.0,
+     12.0,
+     15.0,
+     18.0,
+     21.0,
+     24.0,
+     27.0,
+     30.0,
+     33.0,
+     36.0
+    ]
+   },
+   "family_C": {
+    "0": [
+     0.00010246715303085,
+     7.004298622325e-06,
+     -5.735956391184999e-06,
+     1.881753391004e-06,
+     3.4889753720529e-07,
+     -9.128120192810001e-07,
+     5.038304522945001e-07,
+     -8.450214508163499e-08,
+     -2.57979447612e-07,
+     2.1587983857115002e-07,
+     -9.114259719379999e-08,
+     -9.25372384321e-08
+    ]
+   },
+   "per_family": {
+    "0": {
+     "n": 12,
+     "sign_purity": 0.5,
+     "n_cross": 7,
+     "envelope_form": "power",
+     "envelope_param": 2.7591380205583356,
+     "r2_env_log": 0.9343979001820936,
+     "Q": 0.7234334207020969,
+     "phi": -3.1069940519971704,
+     "r2_cos": 0.9793083694519674
+    },
+    "note": "仅一个距离族有数据，族分解诊断降级"
+   },
+   "consistency": {
+    "0": true
+   },
+   "structural_artifact_suspected": false,
+   "insufficient": true
+  },
+  "stability": {
+   "scan_table": [
+    {
+     "r_min": 3.0,
+     "n_pts": 12,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.7591380205583356,
+     "param_err": 0.23118857559341224,
+     "r2_env_log": 0.9343979001820936,
+     "aicc": -9.946622170085417,
+     "bic": -10.310142203842751,
+     "osc_flag": true,
+     "osc_evidence": "strong",
+     "Q": 0.7234334207020969,
+     "phi": -3.1069940519971704,
+     "r2_cos": 0.9793083694519674
+    },
+    {
+     "r_min": 6.0,
+     "n_pts": 11,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.6003606389153315,
+     "param_err": 0.3297582583739763,
+     "r2_env_log": 0.8735663692060256,
+     "aicc": -8.122679237464851,
+     "bic": -8.82688869186811,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.7308281201516759,
+     "phi": 2.9818971214500647,
+     "r2_cos": 0.9914074225209659
+    },
+    {
+     "r_min": 9.0,
+     "n_pts": 10,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.7866458017587488,
+     "param_err": 0.45070517878038485,
+     "r2_env_log": 0.826943676776478,
+     "aicc": -6.205428834808404,
+     "bic": -7.314544363106027,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.730651567154207,
+     "phi": 2.9731863480126033,
+     "r2_cos": 0.9840990205545064
+    },
+    {
+     "r_min": 12.0,
+     "n_pts": 9,
+     "skipped": false,
+     "envelope_model": "power",
+     "param": 2.4596763938978423,
+     "param_err": 0.5971528496483637,
+     "r2_env_log": 0.7079221547625072,
+     "aicc": -4.672744931941027,
+     "bic": -6.278295777268588,
+     "osc_flag": true,
+     "osc_evidence": "moderate",
+     "Q": 0.7310164550722824,
+     "phi": 2.978079974454985,
+     "r2_cos": 0.9870682588877193
+    }
+   ],
+   "recommended_r_min": 3.0,
+   "rel_mad_K": 0.05153213014494409,
+   "rel_mad_xi": null,
+   "rel_mad_Q": 0.000370161030657832,
+   "model_consistency": 1.0,
+   "spearman_rho": -0.39999999999999997,
+   "post_hump_windows": 0,
+   "verdict": "stable",
+   "messages": []
+  },
+  "initial_noise_floor": 9.25372384321e-08,
+  "initial_noise_floor_components": {
+   "tail_median": 9.25372384321e-08,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "final_noise_floor": 9.25372384321e-08,
+  "final_noise_floor_components": {
+   "tail_median": 9.25372384321e-08,
+   "intra_scatter": 0.0,
+   "absolute_min": 1e-15
+  },
+  "analysis_version": "1.0",
+  "physical_form": "C(r) ≈ A·r^(−2.76)·cos(0.723·r + -3.11)",
+  "warnings": [
+   "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 12 个 bond 数据点保留在 group_raw",
+   "包络拟合: 全点包络（all_points，n=12 个点）",
+   "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
+   "候选模型 power_law_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0001025]（非负约束启用）",
+   "候选模型 exponential_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0001025]（非负约束启用）",
+   "候选模型 osc_exp: 参数 phi 触及下界 -3.142",
+   "候选模型 osc_power_C: C_inf ∈ [-0.0001025, 0.0001025]（无符号约束）",
+   "候选模型 osc_exp_C: 参数 phi 触及下界 -3.142；C_inf ∈ [-0.0001025, 0.0001025]（无符号约束）"
+  ],
+  "config": {
+   "rtol_group": 1e-09,
+   "atol_group": 1e-12,
+   "n_min_fit": 8,
+   "n_min_hump_window": 6,
+   "n_min_osc_fit": 10,
+   "n_min_osc": 12,
+   "n_min_abs": 6,
+   "r_min_override": null,
+   "r_max_frac": 1.0,
+   "r_max_auto": true,
+   "r_max_noise_cut": 3.0,
+   "r_max_noise_run": 3,
+   "n_rmin_candidates": 20,
+   "envelope_mode": "all_points",
+   "tail_frac_noise": 0.25,
+   "noise_floor_abs_min": 1e-15,
+   "prom_factor": 3.0,
+   "n_cross_min": 4,
+   "n_extrema_min": 4,
+   "spacing_regularity_max": 0.4,
+   "r2_cos_min": 0.6,
+   "r2_env_log_min": 0.85,
+   "q_stab_max": 0.2,
+   "phi_stab_max": 0.5,
+   "q_grid_points": 400,
+   "q_refine_points": 200,
+   "family_sign_purity_warn": 0.8,
+   "delta_aicc_tie": 2.0,
+   "delta_aicc_osc_min": 6.0,
+   "constrain_cinf_abs": true,
+   "constrain_cinf_signed": false,
+   "k_stab_max": 0.3,
+   "k_stab_moderate": 0.6,
+   "model_consistency_min": 0.6,
+   "bootstrap_n": 200,
+   "pcov_max_cond": 1000000000000.0
+  }
+ },
+ "_meta": {
+  "baseline_kind": "post_refactor",
+  "note": "重构后首次运行生成。重构前基准快照已删除、无法重建；本基线用于之后回归，不构成重构前后等价性证明。",
+  "cases": [
+   "d1_10_49_50_A",
+   "d1_10_50_54_C",
+   "d1_100_49_50_A",
+   "d1_100_50_51_A",
+   "d1_100_50_51_C",
+   "d1_100_50_54_C",
+   "d1_20_49_50_A",
+   "d2_25_50_51_B"
+  ]
+ }
+}
