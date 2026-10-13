@@ -46,6 +46,7 @@ ANALYZER_ENERGY = 'EnergyProcessor'
 # ---- 物理量标识 ----
 OBSERVABLE_SUPERCONDUCTING_CORRELATION = 'superconducting_correlation'
 OBSERVABLE_SPIN_CORRELATION = 'spin_correlation'
+OBSERVABLE_CHARGE_CORRELATION = 'charge_correlation'
 OBSERVABLE_SPIN_STRUCTURE_FACTOR = 'spin_structure_factor'
 OBSERVABLE_ENERGY = 'energy'
 
