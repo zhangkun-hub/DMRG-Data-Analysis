@@ -21,8 +21,10 @@
 
 from .Analysis_Contract import (
     AnalysisReport, from_decay_result, from_structure_factor, from_peak_report,
+    from_energy_extrapolation,
 )
 from .Spin_Structure_Factor_Analyzer import SpinStructureFactorPeakAnalyzer
+from .Energy_Process import EnergyProcessor
 
 # 拟合质量指标：按 FitResult 实际字段名（r2/rss/rmse/aic/aicc/bic）提取，
 # 存在才收录；不编造缺失数值
@@ -121,3 +123,21 @@ def peak_analysis_report(sf_result, signal='abs', min_height_frac=0.2,
         sf_result, signal=signal, min_height_frac=min_height_frac,
         refine=refine, q_shape=q_shape)
     return from_peak_report(peak_dict, sf_result)
+
+
+def energy_extrapolation_report(records, power: int = 1,
+                                threshold: float = 2.0) -> AnalysisReport:
+    """调用 EnergyProcessor.extrapolate 并包装为 AnalysisReport。
+
+    语义约定（与契约 from_energy_extrapolation 一致）：
+    - 复用契约适配器，不重复实现拟合、异常点剔除或结果映射
+    - 不捕获底层异常（records < 3 的 ValueError 等原样传播）
+    - 不修改绘图/打印行为（extrapolate 的 plt.show 与异常点 print
+      副作用保持不变）
+    - 不通过解析 stdout 获取异常点信息；误差棒与拟合优度在
+      extrapolate 返回值中不存在，按契约保持空值语义，不编造
+    - 单一外推结果不映射任何物理相态结论
+    """
+    e_inf = EnergyProcessor.extrapolate(records, power, threshold)
+    return from_energy_extrapolation(
+        e_inf, [r.N for r in records], power, threshold)
