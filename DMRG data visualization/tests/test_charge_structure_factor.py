@@ -250,6 +250,126 @@ check('F', '真实数据：虚部残差报告（数值有限即可）',
       np.isfinite(res_real['imaginary_residual']), res_real['imaginary_residual'])
 
 # ==========================================================================
+# G. 批量估计（estimate_batch）
+# ==========================================================================
+print('===== G. 批量估计 =====')
+from Physical_Quantity.Analysis_Contract import AnalysisReport
+
+# 1. 两组均成功
+batch_ok = ChargeStructureFactorEstimator.estimate_batch(
+    [{'name': 'g0', 'nf_path': nf_path, 'corr_paths': [corr0_path]},
+     {'name': 'g1', 'nf_path': nf_path, 'corr_paths': [corr1_path]}],
+    qs, 8)
+check('G', '两组成功：results 含 2 个 AnalysisReport、failed 为空',
+      set(batch_ok['results'].keys()) == {'g0', 'g1'}
+      and all(isinstance(r, AnalysisReport) for r in batch_ok['results'].values())
+      and batch_ok['failed'] == {},
+      f"results={list(batch_ok['results'])} failed={batch_ok['failed']}")
+
+# 2. 一组文件缺失：成功组保留、失败组记录正确
+batch_mix = ChargeStructureFactorEstimator.estimate_batch(
+    [{'name': 'ok', 'nf_path': nf_path, 'corr_paths': [corr0_path]},
+     {'name': 'missing', 'nf_path': os.path.join(tmp, 'no_nf.json'),
+      'corr_paths': [corr0_path]}],
+    qs, 8)
+check('G', '一组文件缺失：成功组有结果，失败组记录 FileNotFoundError',
+      'ok' in batch_mix['results'] and 'missing' not in batch_mix['results']
+      and batch_mix['failed']['missing']['type'] == 'FileNotFoundError',
+      batch_mix['failed'])
+
+# 3. 一组数据格式错误：失败记录、其他组继续
+bad_corr = os.path.join(tmp, 'nf_bad.json')
+with open(bad_corr, 'w', encoding='utf-8') as f:
+    f.write('not a json list')
+batch_bad = ChargeStructureFactorEstimator.estimate_batch(
+    [{'name': 'good', 'nf_path': nf_path, 'corr_paths': [corr0_path]},
+     {'name': 'bad', 'nf_path': nf_path, 'corr_paths': [bad_corr]},
+     {'name': 'good2', 'nf_path': nf_path, 'corr_paths': [corr0_path]}],
+    qs, 8)
+check('G', '一组格式错误：失败记录 ValueError，其余两组不受影响',
+      'bad' in batch_bad['failed'] and batch_bad['failed']['bad']['type'] == 'ValueError'
+      and set(batch_bad['results'].keys()) == {'good', 'good2'},
+      batch_bad['failed'])
+
+# 4. 批量成功组与单组调用一致
+single = charge_structure_factor_report(nf_path, [corr0_path], qs, 8)
+batch_one = ChargeStructureFactorEstimator.estimate_batch(
+    [{'name': 'g0', 'nf_path': nf_path, 'corr_paths': [corr0_path]}], qs, 8)
+check('G', '批量成功组与相同输入的单组调用一致（status/metadata/受限标记）',
+      batch_one['results']['g0'].status == single.status
+      and batch_one['results']['g0'].metadata == single.metadata
+      and batch_one['results']['g0'].data_restricted == single.data_restricted)
+
+# 5. 成功结果的可追溯字段与受限标记
+rep_g0 = batch_ok['results']['g0']
+check('G', '成功结果的 observable/analyzer/受限标记正确',
+      rep_g0.observable == OBSERVABLE_CHARGE_STRUCTURE_FACTOR
+      and rep_g0.analyzer == 'ChargeStructureFactorEstimator'
+      and rep_g0.data_restricted is True
+      and rep_g0.status == STATUS_OK)
+
+# 6. 重复 name 不静默覆盖
+batch_dup = ChargeStructureFactorEstimator.estimate_batch(
+    [{'name': 'dup', 'nf_path': nf_path, 'corr_paths': [corr0_path]},
+     {'name': 'dup', 'nf_path': nf_u, 'corr_paths': [corr_u]}],
+    qs, 8)
+check('G', '重复 name：第一个结果保留，第二个记入 failed（DuplicateName）',
+      'dup' in batch_dup['results']
+      and batch_dup['failed']['dup']['type'] == 'DuplicateName'
+      and batch_dup['results']['dup'].metadata['N'] == 8,
+      batch_dup['failed'])
+
+# 6b. 先失败后重复：保留原始失败记录，不被 DuplicateName 覆盖
+batch_faildup = ChargeStructureFactorEstimator.estimate_batch(
+    [{'name': 'fd', 'nf_path': os.path.join(tmp, 'no_nf.json'),
+      'corr_paths': [corr0_path]},
+     {'name': 'fd', 'nf_path': nf_path, 'corr_paths': [corr0_path]},
+     {'name': 'other', 'nf_path': nf_path, 'corr_paths': [corr0_path]}],
+    qs, 8)
+check('G', '先失败后重复：failed 保留原始 FileNotFoundError（不被 DuplicateName 覆盖）',
+      batch_faildup['failed']['fd']['type'] == 'FileNotFoundError'
+      and 'DuplicateName' not in batch_faildup['failed']['fd']['type'],
+      batch_faildup['failed'])
+check('G', '先失败后重复：原始失败消息保留、其他独立组不受影响',
+      'no_nf.json' in batch_faildup['failed']['fd']['message']
+      and 'other' in batch_faildup['results']
+      and 'fd' not in batch_faildup['results'],
+      f"results={list(batch_faildup['results'])}")
+
+# 7. 未授权异常继续传播（spec 缺 'name' → KeyError，不捕获）
+try:
+    ChargeStructureFactorEstimator.estimate_batch(
+        [{'nf_path': nf_path, 'corr_paths': [corr0_path]}], qs, 8)
+    check('G', 'spec 缺 name → KeyError 原样传播（不静默转换）', False, '未抛异常')
+except KeyError:
+    check('G', 'spec 缺 name → KeyError 原样传播（不静默转换）', True)
+
+# 8. 空输入 → ValueError
+try:
+    ChargeStructureFactorEstimator.estimate_batch([], qs, 8)
+    check('G', '空 measure_specs → ValueError', False, '未抛异常')
+except ValueError:
+    check('G', '空 measure_specs → ValueError', True)
+
+# 9. 真实数据批量（只读复用 N200 两组 doping；不硬编码为唯一依赖）
+if os.path.exists(f'{ROOT}/Data_N200/t_J_3/d1_10/1500_measure_phys_qty/measure_49/nf.json'):
+    base10 = f'{ROOT}/Data_N200/t_J_3/d1_10/1500_measure_phys_qty'
+    base100 = f'{ROOT}/Data_N200/t_J_3/d1_100/1500_measure_phys_qty'
+    batch_real = ChargeStructureFactorEstimator.estimate_batch(
+        [{'name': 'd1_10', 'nf_path': f'{base10}/measure_49/nf.json',
+          'corr_paths': [f'{base10}/measure_49/nf49nf.json']},
+         {'name': 'd1_100', 'nf_path': f'{base100}/measure_49/nf.json',
+          'corr_paths': [f'{base100}/measure_49/nf49nf.json']}],
+        qs200, 200)
+    check('G', '真实数据批量：两组成功且均为受限估计（不比较数值）',
+          set(batch_real['results'].keys()) == {'d1_10', 'd1_100'}
+          and all(r.data_restricted is True for r in batch_real['results'].values())
+          and batch_real['failed'] == {},
+          list(batch_real['results']))
+else:
+    check('G', '真实数据批量（数据目录存在时才运行）', True, '跳过（目录不存在）')
+
+# ==========================================================================
 # 汇总
 # ==========================================================================
 print()

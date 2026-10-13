@@ -29,6 +29,11 @@ DensityRecord / CorrelationRecord 解析；几何元信息 _xc_geometry_meta。
   完整结构因子的物理虚部，也不能仅凭该现象认定实现错误
 - imaginary_residual 仅如实报告该数值；实现不取实部、不强制对称化
   （那会把推导数据伪装成实测）
+
+受限结果比较限制：
+- 不同源点集合或不同覆盖率得到的受限结构因子，不应未经验证就直接
+  比较；当前不提供归一化补偿、不进行反向关联推导，也不据此判断
+  CDW 或其他物理相态
 """
 
 import numpy as np
@@ -110,3 +115,58 @@ class ChargeStructureFactorEstimator:
         # 记录对角补全的源点（可追溯；不改变受限语义）
         result['diagonal_source_sites'] = sorted(sources)
         return result
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def estimate_batch(measure_specs, q_list, N, a=1.0,
+                       sequences=None) -> dict:
+        """批量估计：逐组调用 estimate_from_files + 契约包装。
+
+        参数
+        ----
+        measure_specs : list[dict]，每组含必需键
+            'name'（唯一标识）、'nf_path'、'corr_paths'（list）；
+            可选键 'sequences'（覆盖全局 sequences）
+        q_list, N, a, sequences : 与 estimate_from_files 一致
+
+        行为约定：
+        - 一组失败不阻止其他独立组：FileNotFoundError / ValueError
+          （数据失败）被记录进 failed，其余组继续
+        - TypeError / KeyError / AttributeError 等潜在程序缺陷**不捕获**，
+          原样向上传播（不静默转换为数据失败）
+        - 重复 name：后出现的同名组跳过并记入 failed（DuplicateName），
+          不覆盖先前结果——策略明确且可测试
+        - 空 measure_specs → ValueError（与 estimate_from_files 的
+          空输入语义一致）
+        - 返回 {'results': dict[name → AnalysisReport],
+                 'failed': dict[name → {'type', 'message'}]}
+
+        契约包装经函数级延迟导入（Analysis_Integration 依赖本模块，
+        模块级导入会形成循环）。
+        """
+        if not measure_specs:
+            raise ValueError("measure_specs 为空，无法批量估计")
+        from .Analysis_Integration import charge_structure_factor_report
+
+        results = {}
+        failed = {}
+        seen = set()
+        for spec in measure_specs:
+            name = spec['name']   # 缺键 → KeyError 传播（不捕获）
+            if name in seen:
+                if name not in failed:
+                    # 先失败后重复：保留原始失败记录，不覆盖
+                    failed[name] = {
+                        'type': 'DuplicateName',
+                        'message': f'重复的 name: {name!r}，已跳过（不覆盖先前结果）'}
+                continue
+            seen.add(name)
+            group_sequences = spec.get('sequences', sequences)
+            try:
+                results[name] = charge_structure_factor_report(
+                    spec['nf_path'], spec['corr_paths'], q_list, N, a,
+                    group_sequences)
+            except (FileNotFoundError, ValueError) as e:
+                # 仅数据级失败：文件缺失/格式错误/数值校验失败
+                failed[name] = {'type': type(e).__name__, 'message': str(e)}
+        return {'results': results, 'failed': failed}
