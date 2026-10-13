@@ -1,25 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-统一契约集成层（D3.2：SC / Spin 衰减分析器包装试点）
+统一契约集成层（SC / Spin 衰减分析器包装 + Spin Structure Factor 包装）
 
-将现有关联函数衰减分析器的输出包装为 AnalysisReport，供后续
-证据融合（PhaseDiagnosis）消费。纯增量层：
+将现有分析器的输出包装为 AnalysisReport，供后续证据融合
+（PhaseDiagnosis）消费。纯增量层：
 
 - 不修改任何现有分析器的返回类型、数值算法或输出结构
-- 数值路径与直接调用 analyze() 完全一致（回归基线不受影响）
+- 数值路径与直接调用 analyze()/estimator/find_peaks() 完全一致
+  （回归基线不受影响）
 - 不捕获并吞掉分析器异常——原始异常（如空输入 ValueError）原样传播
 - 通过 **kwargs 兼容 SC 与 Spin 适配层的 analyze 签名差异
   （SuperCorrDecayAnalyzer.analyze(record_list, config)；
    SpinCorrDecayAnalyzer.analyze(record_list, config, N, a)）
-- 完整候选模型、模型比较、振荡分析、去趋势结果、稳定性扫描等
-  详细数据保留在 report.payload（原始结果对象引用）
+- 完整候选模型、模型比较、振荡分析、去趋势结果、稳定性扫描、
+  结构因子全量 S(q) 与峰值细节等均保留在 report.payload
 - 不把 SC 的 SU(2) 对称性检查结果（SuperCorrProcessor.symmetry_check
   的独立输出）伪装成衰减分析器自身的输出
+- 不把峰值位置、峰数或峰值状态映射为物理相态结论
 """
 
 from .Analysis_Contract import (
-    AnalysisReport, from_decay_result,
+    AnalysisReport, from_decay_result, from_structure_factor, from_peak_report,
 )
+from .Spin_Structure_Factor_Analyzer import SpinStructureFactorPeakAnalyzer
 
 # 拟合质量指标：按 FitResult 实际字段名（r2/rss/rmse/aic/aicc/bic）提取，
 # 存在才收录；不编造缺失数值
@@ -66,3 +69,55 @@ def analyze_with_report(analyzer_cls, record_list, observable,
         if fit_quality:
             report.metadata['fit_quality'] = fit_quality
     return report
+
+
+def structure_factor_report(estimator_fn, estimator_arg, q_list, N, a=1.0,
+                            **kwargs) -> AnalysisReport:
+    """调用 SpinStructureFactorEstimator 入口并包装为 AnalysisReport。
+
+    参数
+    ----
+    estimator_fn  : SpinStructureFactorEstimator.estimate_sz_sz_from_file
+                    或 estimate_spin_dot_from_records（调用方传入实际入口，
+                    不修改 estimator 签名）
+    estimator_arg : 入口的第一个位置参数（文件路径 / record_list）
+    q_list, N, a  : 与 estimator 入口一致的参数
+    **kwargs      : 其余入口专属参数（如 estimate_sz_sz_from_file 的 source）
+
+    语义约定：
+    - status 与 data_restricted 独立：受限数据（is_restricted=True）仍可
+      status='ok'（计算正常完成），两字段不互相推导
+    - missing_pairs 非空（>0）时在 from_structure_factor 之外追加一条
+      数据质量警告（None=未评估、空=无缺失时均不追加）；不修改契约模块
+    - 不捕获底层异常（空文件路径 FileNotFoundError 等原样传播）
+    - payload 保留 estimator 原始 dict 引用；complex 数组 S_q 在 payload
+      中，默认序列化不展开；显式 include_payload=True 序列化含 complex
+      的 payload 仍按契约严格拒绝（TypeError），不添加宽松兜底
+    """
+    sf_result = estimator_fn(estimator_arg, q_list, N, a, **kwargs)
+    report = from_structure_factor(sf_result)
+    missing = sf_result.get('missing_pairs')
+    if missing:
+        report.warnings.append(
+            f"{len(missing)} 个预期关联对缺失（受限估计）")
+    return report
+
+
+def peak_analysis_report(sf_result, signal='abs', min_height_frac=0.2,
+                         refine=True, q_shape=None) -> AnalysisReport:
+    """调用 SpinStructureFactorPeakAnalyzer.find_peaks 并包装为 AnalysisReport。
+
+    sf_result 同时传给 from_peak_report 作为 data_restricted 回退源
+    （峰值报告缺 is_restricted 透传字段时按契约规则回退）。
+
+    语义约定：
+    - parameters 保持契约既有结构（n_peaks / 原始网格峰位 / 峰高）；
+      q_refined 与 fwhm 等细节不并入 parameters，经 payload 访问
+    - 峰值位置、峰数与峰值状态是数值层面的检测结果，不映射为
+      AFM 或其他物理相态结论
+    - 不捕获底层异常；不修改 find_peaks 签名
+    """
+    peak_dict = SpinStructureFactorPeakAnalyzer.find_peaks(
+        sf_result, signal=signal, min_height_frac=min_height_frac,
+        refine=refine, q_shape=q_shape)
+    return from_peak_report(peak_dict, sf_result)
