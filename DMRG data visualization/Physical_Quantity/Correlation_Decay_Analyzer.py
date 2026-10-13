@@ -654,6 +654,10 @@ class CorrelationDecayAnalyzer:
         y_det = np.asarray(y_det, dtype=float)
         if not np.isfinite(q_guess) or len(r) < 5:
             return (np.nan, np.nan, np.nan, np.nan)
+        # NaN/Inf 守卫：y_det 含非有限值时 lstsq 因 NaN 矩阵抛 LinAlgError，
+        # 优雅返回 NaN（调用方将其视为振荡证据缺失）
+        if not np.all(np.isfinite(y_det)):
+            return (np.nan, np.nan, np.nan, np.nan)
         qs = np.linspace(0.8 * q_guess, 1.2 * q_guess, config.q_refine_points)
         best_q, best_r2 = np.nan, -np.inf
         best_ab = None
@@ -732,6 +736,11 @@ class CorrelationDecayAnalyzer:
         cross_pos, n_cross = CorrelationDecayAnalyzer.detect_zero_crossings(r, C)
         E = CorrelationDecayAnalyzer._envelope_value(env_fit, r)
         y_det = C / E
+        # NaN/Inf 守卫：去包络信号必须逐点有限（含单点 NaN 时振荡
+        # 拟合无定义，lstsq 会因 NaN 矩阵抛 LinAlgError）——优雅跳过，
+        # osc_flag=False，不崩溃
+        if not np.all(np.isfinite(y_det)):
+            return res
         q0, _, _ = CorrelationDecayAnalyzer.estimate_q_lomb_scargle(r, y_det, config)
         Q, phi, amp, r2_cos = CorrelationDecayAnalyzer.refine_q_cosine(r, y_det, q0, config)
         qs, phis = CorrelationDecayAnalyzer._subwindow_q_phi(r, y_det, config)
