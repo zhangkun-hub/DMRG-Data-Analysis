@@ -42,6 +42,11 @@ CMP_INCONSISTENT = 'inconsistent'
 CMP_UNKNOWN = 'unknown'
 CMP_NOT_APPLICABLE = 'not_applicable'
 
+# 证据充分性状态（保守语义，见 evidence_sufficiency_check docstring）
+SUFF_SUFFICIENT = 'sufficient'
+SUFF_INSUFFICIENT = 'insufficient'
+SUFF_UNKNOWN = 'unknown'
+
 # 汇总结论枚举（语义见模块 docstring）
 CONCLUSION_EVIDENCE_COLLECTED = 'evidence_collected'
 CONCLUSION_INCONCLUSIVE = 'INCONCLUSIVE'
@@ -61,11 +66,12 @@ class PhaseDiagnosisReport:
     report_refs: list = field(default_factory=list)      # 原始报告引用（内存可追溯）
     labels: list = field(default_factory=list)           # 调用方标签（与 entries 同序）
     consistency: dict = field(default_factory=dict)      # P2 可比性审计结果（默认空）
+    sufficiency: dict = field(default_factory=dict)      # P3 证据充分性结果（默认空）
 
     def to_dict(self) -> dict:
         """紧凑 dict：entries/status_summary/conclusion/rule_log/labels/
-        consistency。report_refs 默认不序列化（引用完整性由内存保证；
-        需要完整报告请对各 AnalysisReport 单独调用 to_json）。
+        consistency/sufficiency。report_refs 默认不序列化（引用完整性由
+        内存保证；需要完整报告请对各 AnalysisReport 单独调用 to_json）。
         非有限浮点转 null。"""
         return {
             'entries': _convert(self.entries),
@@ -74,6 +80,7 @@ class PhaseDiagnosisReport:
             'rule_log': _convert(self.rule_log),
             'labels': _convert(self.labels),
             'consistency': _convert(self.consistency),
+            'sufficiency': _convert(self.sufficiency),
         }
 
     def to_json(self, path: str) -> None:
@@ -358,5 +365,136 @@ def audit_comparability(phase_report: PhaseDiagnosisReport) -> PhaseDiagnosisRep
                "其余→unknown；逐对结果优先保留")
 
     phase_report.consistency = consistency
+    phase_report.rule_log = log
+    return phase_report
+
+
+# ==========================================================================
+# P3：证据充分性检查（机械事实清单；无物理判据、无阈值、无相态标签）
+# ==========================================================================
+def evidence_sufficiency_check(phase_report: PhaseDiagnosisReport,
+                               *, rules=None) -> PhaseDiagnosisReport:
+    """对已汇总报告做证据充分性检查，结果写入 phase_report.sufficiency。
+
+    每个 observable 分组记录：
+    - has_any_valid_report：是否存在 status != 'failed' 的有效报告
+    - data_restriction_status：'restricted' | 'unrestricted' | 'unknown'
+      （只统计有效条目；True/False 混合或含 None → unknown 并记录冲突）
+    - comparability：{analyzer: P2 group_summary 状态}，只读取已有
+      consistency 信息（不重新审计）；缺失 → unknown
+    - notes：仅实际可验证的机械事实
+    - entry_indices：对应原始 entries 索引
+
+    overall 保守语义（仅三个枚举值）：
+    - 空输入 → 'insufficient'（没有可检查的证据条目；不表示物理相态不存在）
+    - 全部条目 failed/None → 'insufficient'（没有有效报告；不表示物理证据不存在）
+    - 存在有效报告：
+        rules=None → 'unknown'（存在有效报告，但未提供经确认的充分性标准）
+        rules 提供且全部 condition 通过 → 'sufficient'
+        rules 提供但任一不通过 → 'unknown'
+      rules 为 list[dict]，每项 {'name', 'description', 'condition'}，
+      condition(entries, per_observable) -> bool，仅执行显式传入的
+      机械规则；不引入默认物理阈值
+    - sufficient 只能由显式规则产生；P2 可比性状态不改变 overall；
+      has_any_valid_report=True 不直接转换为 sufficient
+
+    幂等：sufficiency 字段整体替换；日志按前缀清理再追加。
+    不修改原始 AnalysisReport/payload/entries/labels/report_refs。
+    """
+    entries = phase_report.entries
+    log = [line for line in phase_report.rule_log
+           if not line.startswith('evidence_sufficiency_check:')]
+
+    # ---- 按 observable 分组（键为 str；None observable → 'None'） ----
+    grouped = {}
+    for i, e in enumerate(entries):
+        key = str(e['observable'])
+        grp = grouped.setdefault(
+            key, {'entry_indices': [], 'statuses': [], 'restrictions': [],
+                  'analyzers': set()})
+        grp['entry_indices'].append(i)
+        grp['statuses'].append(e['status'])
+        grp['restrictions'].append(e['data_restricted'])
+        if e['analyzer'] is not None:
+            grp['analyzers'].add(e['analyzer'])
+
+    # ---- P2 consistency 只读引用（不重新审计） ----
+    group_summary_qg = phase_report.consistency.get(
+        'q_grid', {}).get('group_summary', {})
+
+    per_observable = {}
+    for key, grp in grouped.items():
+        valid = [i for i, s in zip(grp['entry_indices'], grp['statuses'])
+                 if s != STATUS_FAILED]
+        notes = []
+        # data_restriction_status：只看有效条目的值
+        drs = [entries[i]['data_restricted'] for i in valid]
+        if not valid:
+            dr_status = SUFF_UNKNOWN
+            notes.append('无有效报告（该 observable 全部 failed/None）')
+        elif all(d is True for d in drs):
+            dr_status = 'restricted'
+        elif all(d is False for d in drs):
+            dr_status = 'unrestricted'
+        else:
+            dr_status = SUFF_UNKNOWN
+            if any(d is None for d in drs):
+                notes.append('data_restricted 缺失或为 None，标记 unknown（不默认 unrestricted）')
+            if any(d is True for d in drs) and any(d is False for d in drs):
+                notes.append('同一 observable 内限制状态冲突（True 与 False 并存），标记 unknown')
+        notes.append(f'有效报告 {len(valid)}/{len(grp["entry_indices"])} 条')
+        # comparability：该 observable 内 analyzer → P2 组汇总（缺失 unknown）
+        comparability = {}
+        if not phase_report.consistency:
+            notes.append('consistency 未审计（P2），可比性标记 unknown')
+        for a in sorted(grp['analyzers']):
+            comparability[a] = group_summary_qg.get(a, SUFF_UNKNOWN)
+        per_observable[str(key)] = {
+            'has_any_valid_report': bool(valid),
+            'data_restriction_status': dr_status,
+            'comparability': comparability,
+            'notes': notes,
+            'entry_indices': list(grp['entry_indices']),
+        }
+
+    # ---- overall（保守语义） ----
+    any_valid = any(p['has_any_valid_report'] for p in per_observable.values())
+    if not entries:
+        overall = SUFF_INSUFFICIENT
+        overall_note = '空输入：没有可检查的证据条目（不表示物理相态不存在）'
+    elif not any_valid:
+        overall = SUFF_INSUFFICIENT
+        overall_note = ('全部条目 failed/None：没有有效报告'
+                        '（不表示物理证据不存在）')
+    elif rules is None:
+        overall = SUFF_UNKNOWN
+        overall_note = '存在有效报告，但未提供经确认的充分性标准（rules=None）'
+    else:
+        results = []
+        for rule in rules:
+            passed = bool(rule['condition'](entries, per_observable))
+            results.append((rule['name'], passed))
+            log.append(f"evidence_sufficiency_check: 规则 '{rule['name']}' "
+                       f"({rule.get('description', '')}) → "
+                       f"{'通过' if passed else '不通过'}")
+        if results and all(p for _, p in results):
+            overall = SUFF_SUFFICIENT
+            overall_note = ('显式规则全部通过：'
+                            + ', '.join(n for n, _ in results))
+        else:
+            overall = SUFF_UNKNOWN
+            overall_note = ('存在有效报告，但显式规则未全部通过'
+                            f'（{results}）')
+
+    log.append(f"evidence_sufficiency_check: overall={overall}——{overall_note}")
+    log.append("evidence_sufficiency_check: sufficient 仅由显式规则产生；"
+               "P2 可比性状态不改变 overall；insufficient 仅指无可用报告，"
+               "不是对物理证据不存在的断言")
+
+    phase_report.sufficiency = {
+        'overall': overall,
+        'overall_note': overall_note,
+        'per_observable': per_observable,
+    }
     phase_report.rule_log = log
     return phase_report

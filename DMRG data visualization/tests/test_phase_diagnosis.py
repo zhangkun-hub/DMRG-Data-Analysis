@@ -34,9 +34,11 @@ from Physical_Quantity.Analysis_Contract import (
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR, OBSERVABLE_ENERGY)
 from Physical_Quantity.Phase_Diagnosis import (
     PhaseDiagnosisReport, collect_evidence, audit_comparability,
+    evidence_sufficiency_check,
     CONCLUSION_EVIDENCE_COLLECTED, CONCLUSION_INCONCLUSIVE,
     ANALYZER_SPIN_SF, ANALYZER_CHARGE_SF, ANALYZER_PEAK,
-    CMP_CONSISTENT, CMP_INCONSISTENT, CMP_UNKNOWN, CMP_NOT_APPLICABLE)
+    CMP_CONSISTENT, CMP_INCONSISTENT, CMP_UNKNOWN, CMP_NOT_APPLICABLE,
+    SUFF_SUFFICIENT, SUFF_INSUFFICIENT, SUFF_UNKNOWN)
 
 RESULTS = {}
 
@@ -369,6 +371,162 @@ check('E', '组级汇总：含 inconsistent 时组汇总为 inconsistent（不�
       audit_e6.consistency['q_grid']['group_summary'].get(ANALYZER_CHARGE_SF)
       == CMP_INCONSISTENT,
       audit_e6.consistency['q_grid']['group_summary'])
+
+# ==========================================================================
+# F. P3 证据充分性检查（evidence_sufficiency_check）
+# ==========================================================================
+print('===== F. P3 证据充分性检查 =====')
+
+
+def suff_of(reports, labels=None, rules=None):
+    pr = collect_evidence(reports, labels=labels)
+    return evidence_sufficiency_check(pr, rules=rules)
+
+
+# F1. 空输入 → insufficient
+check('F', 'F1 空输入 → overall=insufficient（不表示物理相态不存在）',
+      suff_of([]).sufficiency['overall'] == SUFF_INSUFFICIENT)
+
+# F2. 全部 failed（None 报告）→ insufficient
+check('F', 'F2 全部 failed → overall=insufficient',
+      suff_of([None, None], labels=['a', 'b']).sufficiency['overall']
+      == SUFF_INSUFFICIENT)
+
+# F3. 全部 None 报告 → insufficient（与空输入区分的事实信息保留）
+rep_f3 = suff_of([None], labels=['x'])
+check('F', 'F3 全部 None → insufficient 且 note 说明（与空输入可区分）',
+      rep_f3.sufficiency['overall'] == SUFF_INSUFFICIENT
+      and '没有有效报告' in rep_f3.sufficiency['overall_note'])
+
+# F4. 单个有效且 data_restricted=True → restricted
+r_restr, _ = make_sf_report(ANALYZER_CHARGE_SF, sites=[49, 50], qgrid=Q1)
+check('F', 'F4 受限报告 → data_restriction_status=restricted，overall=unknown（无标准）',
+      suff_of([r_restr]).sufficiency['per_observable'][
+          OBSERVABLE_CHARGE_STRUCTURE_FACTOR]['data_restriction_status']
+      == 'restricted'
+      and suff_of([r_restr]).sufficiency['overall'] == SUFF_UNKNOWN)
+
+# F5. 单个有效且 data_restricted=False → unrestricted
+r_free = make_report(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_PEAK,
+                     data_restricted=False)
+check('F', 'F5 不受限报告 → data_restriction_status=unrestricted',
+      suff_of([r_free]).sufficiency['per_observable'][
+          OBSERVABLE_SPIN_STRUCTURE_FACTOR]['data_restriction_status']
+      == 'unrestricted')
+
+# F6. data_restricted 缺失/None → unknown（不默认 unrestricted）
+r_nodr = make_report(OBSERVABLE_SPIN_CORRELATION, 'SpinCorrDecayAnalyzer',
+                     classification='power_law')   # data_restricted=None
+check('F', 'F6 data_restricted=None → unknown（不默认 unrestricted）',
+      suff_of([r_nodr]).sufficiency['per_observable'][
+          OBSERVABLE_SPIN_CORRELATION]['data_restriction_status']
+      == SUFF_UNKNOWN)
+
+# F7. 同一 observable 内限制状态冲突 → unknown + 冲突事实记录
+r_t = make_report(OBSERVABLE_CHARGE_STRUCTURE_FACTOR, ANALYZER_CHARGE_SF,
+                  data_restricted=True)
+r_f = make_report(OBSERVABLE_CHARGE_STRUCTURE_FACTOR, ANALYZER_CHARGE_SF,
+                  data_restricted=False)
+rep_f7 = suff_of([r_t, r_f], labels=['t', 'f'])
+check('F', 'F7 限制状态冲突 → unknown + 冲突事实入 notes',
+      rep_f7.sufficiency['per_observable'][
+          OBSERVABLE_CHARGE_STRUCTURE_FACTOR]['data_restriction_status']
+      == SUFF_UNKNOWN
+      and any('冲突' in n for n in rep_f7.sufficiency['per_observable'][
+          OBSERVABLE_CHARGE_STRUCTURE_FACTOR]['notes']))
+
+# F8. 多 observable 分组与索引正确
+r_spin = make_report(OBSERVABLE_SPIN_CORRELATION, 'SpinCorrDecayAnalyzer',
+                     classification='exponential')
+rep_f8 = suff_of([r_c1, r_spin], labels=['c', 's'])
+check('F', 'F8 多 observable 分组与 entry_indices 正确',
+      set(rep_f8.sufficiency['per_observable'].keys())
+      == {OBSERVABLE_CHARGE_STRUCTURE_FACTOR, OBSERVABLE_SPIN_CORRELATION}
+      and rep_f8.sufficiency['per_observable'][
+          OBSERVABLE_CHARGE_STRUCTURE_FACTOR]['entry_indices'] == [0]
+      and rep_f8.sufficiency['per_observable'][
+          OBSERVABLE_SPIN_CORRELATION]['entry_indices'] == [1])
+
+# F9. P2 consistency 四态引用及缺失
+pr_f9 = collect_evidence([r_c1, r_c2, r_c3], labels=['a', 'b', 'c'])
+audit_comparability(pr_f9)
+evidence_sufficiency_check(pr_f9)
+comp = pr_f9.sufficiency['per_observable'][
+    OBSERVABLE_CHARGE_STRUCTURE_FACTOR]['comparability']
+check('F', 'F9 P2 组汇总被引用（consistent/inconsistent 原语义保留）',
+      comp[ANALYZER_CHARGE_SF] in (CMP_CONSISTENT, CMP_INCONSISTENT))
+rep_f9b = suff_of([r_c1])   # 未审计
+check('F', 'F9b consistency 缺失 → comparability 标记 unknown',
+      rep_f9b.sufficiency['per_observable'][
+          OBSERVABLE_CHARGE_STRUCTURE_FACTOR]['comparability'][
+          ANALYZER_CHARGE_SF] == SUFF_UNKNOWN)
+
+# F10. inconsistent 不自动改变 overall
+check('F', 'F10 P2 inconsistent 不改变 overall（仍 unknown）',
+      pr_f9.sufficiency['overall'] == SUFF_UNKNOWN)
+
+# F11. 单项拟合分类不输出物理相态结论
+check('F', 'F11 无物理相态标签/置信度字段（sufficiency 键集固定）',
+      set(pr_f9.sufficiency.keys()) == {'overall', 'overall_note', 'per_observable'}
+      and 'phase' not in json.dumps(pr_f9.to_dict(), ensure_ascii=False).lower()
+      and 'confidence' not in pr_f9.to_dict())
+
+# F12. 输入顺序变化不影响按 observable 分组后的语义
+rep_f12a = suff_of([r_c1, r_spin], labels=['c', 's'])
+rep_f12b = suff_of([r_spin, r_c1], labels=['s', 'c'])
+check('F', 'F12 输入顺序变化：分组语义不变（overall 与分组键一致）',
+      rep_f12a.sufficiency['overall'] == rep_f12b.sufficiency['overall']
+      and rep_f12a.sufficiency['per_observable'][
+          OBSERVABLE_CHARGE_STRUCTURE_FACTOR]['has_any_valid_report']
+      == rep_f12b.sufficiency['per_observable'][
+          OBSERVABLE_CHARGE_STRUCTURE_FACTOR]['has_any_valid_report'])
+
+# F13. 连续两次调用结果与日志稳定（幂等）
+pr_f13 = collect_evidence([r_c1, r_c2], labels=['a', 'b'])
+audit_comparability(pr_f13)
+evidence_sufficiency_check(pr_f13)
+suf1 = pr_f13.sufficiency
+n_log1 = len([l for l in pr_f13.rule_log
+              if l.startswith('evidence_sufficiency_check:')])
+evidence_sufficiency_check(pr_f13)
+suf2 = pr_f13.sufficiency
+n_log2 = len([l for l in pr_f13.rule_log
+              if l.startswith('evidence_sufficiency_check:')])
+check('F', 'F13 幂等：sufficiency 一致、日志不累积',
+      suf1 == suf2 and n_log1 == n_log2 and n_log1 > 0,
+      f'log {n_log1}/{n_log2}')
+
+# F14. 原始报告与 payload 不变
+snap = dict((r_c1.payload or {}))
+snap_cls = r_c1.classification
+evidence_sufficiency_check(collect_evidence([r_c1], labels=['x']))
+check('F', 'F14 原始报告与 payload 不变',
+      r_c1.classification == snap_cls
+      and all((r_c1.payload or {}).get(k) == snap.get(k) for k in snap))
+
+# F15. 严格 JSON 序列化（sufficiency 可读回）
+tmp_f = tempfile.mkdtemp(prefix='phase_p3_')
+json_f = os.path.join(tmp_f, 'report.json')
+pr_f9.to_json(json_f)
+raw_f = open(json_f, encoding='utf-8').read()
+back_f = json.loads(raw_f)
+check('F', 'F15 JSON：sufficiency 可读回、无 NaN/Infinity',
+      'NaN' not in raw_f and 'Infinity' not in raw_f
+      and back_f['sufficiency']['overall'] == SUFF_UNKNOWN)
+
+# F16. 显式机械规则可产生 sufficient（无规则时 unknown）
+def _rule_spin_only(entries, per_observable):
+    return (OBSERVABLE_SPIN_CORRELATION in per_observable
+            and per_observable[OBSERVABLE_SPIN_CORRELATION]['has_any_valid_report'])
+rep_f16 = suff_of([r_spin], rules=[{'name': 'spin_has_valid',
+                                    'description': '自旋关联存在有效报告（机械规则，非物理标准）',
+                                    'condition': _rule_spin_only}])
+check('F', 'F16 显式机械规则全部通过 → sufficient（sufficient 仅由规则产生）',
+      rep_f16.sufficiency['overall'] == SUFF_SUFFICIENT)
+check('F', 'F16b 规则不通过 → unknown（不降级为 insufficient）',
+      suff_of([r_c1], rules=[{'name': 'spin_has_valid',
+                              'description': '同上', 'condition': _rule_spin_only}]
+              ).sufficiency['overall'] == SUFF_UNKNOWN)
 
 # ==========================================================================
 # 汇总
