@@ -370,6 +370,113 @@ else:
     check('G', '真实数据批量（数据目录存在时才运行）', True, '跳过（目录不存在）')
 
 # ==========================================================================
+# H. q_grid 实际网格统计（D4.4：只描述输入事实，不宣称规则网格参数）
+# ==========================================================================
+print('===== H. q_grid 网格统计 =====')
+# H1. 已知规则网格（xc_momentum_grid）
+qs_h1, _ = xc_momentum_grid(200, a=1.0, n_qx=11, n_qy=4)
+res_h1 = ChargeStructureFactorEstimator.estimate_from_files(
+    nf_path, [corr0_path], qs_h1, 8)
+g1 = res_h1['q_grid']
+check('H', '规则网格：n_qx/n_qy 为唯一坐标数量（11/4）',
+      g1['n_qx'] == 11 and g1['n_qy'] == 4, g1)
+check('H', '规则网格：qx/qy 端点与输入实际值一致',
+      abs(g1['qx_min'] - qs_h1[:, 0].min()) < 1e-12
+      and abs(g1['qx_max'] - qs_h1[:, 0].max()) < 1e-12
+      and abs(g1['qy_min'] - qs_h1[:, 1].min()) < 1e-12
+      and abs(g1['qy_max'] - qs_h1[:, 1].max()) < 1e-12,
+      g1)
+
+# H2. 不同网格尺寸：记录的是实际输入统计，不是硬编码默认值
+qs_h2, _ = xc_momentum_grid(200, a=1.0, n_qx=21, n_qy=4)
+res_h2 = ChargeStructureFactorEstimator.estimate_from_files(
+    nf_path, [corr0_path], qs_h2, 8)
+g2 = res_h2['q_grid']
+check('H', '不同网格尺寸：n_qx 反映实际输入（21），端点一致',
+      g2['n_qx'] == 21 and g2['n_qy'] == 4
+      and abs(g2['qx_min'] - g1['qx_min']) < 1e-12
+      and abs(g2['qx_max'] - g1['qx_max']) < 1e-12,
+      g2['n_qx'])
+
+# H3. 非规则网格与单 qy 坐标网格：统计如实
+qs_irr = np.array([(0.0, 0.0), (0.5, 0.0), (1.5, 0.0), (3.0, 0.0)])  # 非等距、单 qy
+res_irr = ChargeStructureFactorEstimator.estimate_from_files(
+    nf_path, [corr0_path], qs_irr, 8)
+g3 = res_irr['q_grid']
+check('H', '非规则/单 qy 网格：唯一坐标数与端点如实',
+      g3['n_qx'] == 4 and g3['n_qy'] == 1
+      and g3['qx_min'] == 0.0 and g3['qx_max'] == 3.0
+      and g3['qy_min'] == 0.0 and g3['qy_max'] == 0.0, g3)
+
+# H4. 包装层 metadata['q_grid'] 与估计器一致
+rep_h4 = charge_structure_factor_report(nf_path, [corr0_path], qs_h1, 8)
+check('H', '包装层 metadata.q_grid 与估计器结果一致',
+      rep_h4.metadata.get('q_grid') == g1, rep_h4.metadata.get('q_grid'))
+
+# H5. 批量多组：各组记录自己的网格（不同网格不被混记）
+batch_h5 = ChargeStructureFactorEstimator.estimate_batch(
+    [{'name': 'grid11', 'nf_path': nf_path, 'corr_paths': [corr0_path]},
+     {'name': 'grid21', 'nf_path': nf_path, 'corr_paths': [corr0_path]}],
+    qs_h1, 8)
+# 批量接口同一 q_list——用两组不同 q_list 验证：改为分别构造
+batch_h5b = {'a': ChargeStructureFactorEstimator.estimate_from_files(
+                 nf_path, [corr0_path], qs_h1, 8),
+             'b': ChargeStructureFactorEstimator.estimate_from_files(
+                 nf_path, [corr0_path], qs_h2, 8)}
+check('H', '批量路径：各组 q_grid 各自如实记录（11 vs 21）',
+      batch_h5b['a']['q_grid']['n_qx'] == 11
+      and batch_h5b['b']['q_grid']['n_qx'] == 21)
+check('H', 'estimate_batch 结果保留各组 q_grid（同网格时一致）',
+      'grid11' in batch_h5['results']
+      and batch_h5['results']['grid11'].metadata.get('q_grid') == g1)
+
+# H6. JSON 序列化含 q_grid
+_json_h = os.path.join(tmp, 'rep_qgrid.json')
+rep_h4.to_json(_json_h)
+_raw_h = open(_json_h, encoding='utf-8').read()
+back_h = json.loads(_raw_h)
+check('H', 'JSON 序列化含 q_grid 且数值一致',
+      'NaN' not in _raw_h and back_h['metadata']['q_grid']['n_qx'] == 11
+      and abs(back_h['metadata']['q_grid']['qx_min'] - g1['qx_min']) < 1e-12)
+
+# H7. 空 q_list：q_grid 如实为空统计，不抛异常（不改变既有计算语义）
+res_empty_q = ChargeStructureFactorEstimator.estimate_from_files(
+    nf_path, [corr0_path], np.empty((0, 2)), 8)
+check('H', '空 q_list：q_grid 为空统计（n=0、端点 None），不新增异常',
+      res_empty_q['q_grid']['n_qx'] == 0 and res_empty_q['q_grid']['n_qy'] == 0
+      and res_empty_q['q_grid']['qx_min'] is None
+      and len(res_empty_q['S_q']) == 0, res_empty_q['q_grid'])
+
+# H8. 混合有限与 NaN：只统计有限坐标，端点不受 NaN 影响
+qs_nan = np.array([[0.0, 0.0], [0.5, 0.0], [np.nan, 0.0], [2.0, 0.0]])
+res_nan = ChargeStructureFactorEstimator.estimate_from_files(
+    nf_path, [corr0_path], qs_nan, 8)
+check('H', '混合 NaN：n_qx 只计有限坐标（3），端点来自有限坐标',
+      res_nan['q_grid']['n_qx'] == 3 and res_nan['q_grid']['n_qy'] == 1
+      and res_nan['q_grid']['qx_min'] == 0.0 and res_nan['q_grid']['qx_max'] == 2.0,
+      res_nan['q_grid'])
+
+# H9. 混合有限与正负 Inf：非有限点不影响统计
+qs_inf = np.array([[0.0, 0.0], [np.inf, 0.0], [1.0, -np.inf]])
+res_inf = ChargeStructureFactorEstimator.estimate_from_files(
+    nf_path, [corr0_path], qs_inf, 8)
+check('H', '混合 Inf：只统计两分量均有限的点（1 个），端点不受影响',
+      res_inf['q_grid']['n_qx'] == 1 and res_inf['q_grid']['n_qy'] == 1
+      and res_inf['q_grid']['qx_min'] == 0.0 and res_inf['q_grid']['qx_max'] == 0.0,
+      res_inf['q_grid'])
+
+# H10. 全部坐标非有限：n=0、四端点 None（与空输入同语义）
+qs_allnan = np.array([[np.nan, np.nan], [np.inf, np.nan]])
+res_allnan = ChargeStructureFactorEstimator.estimate_from_files(
+    nf_path, [corr0_path], qs_allnan, 8)
+check('H', '全部非有限：n_qx=n_qy=0、四端点 None',
+      res_allnan['q_grid']['n_qx'] == 0 and res_allnan['q_grid']['n_qy'] == 0
+      and res_allnan['q_grid']['qx_min'] is None
+      and res_allnan['q_grid']['qx_max'] is None
+      and res_allnan['q_grid']['qy_min'] is None
+      and res_allnan['q_grid']['qy_max'] is None, res_allnan['q_grid'])
+
+# ==========================================================================
 # 汇总
 # ==========================================================================
 print()

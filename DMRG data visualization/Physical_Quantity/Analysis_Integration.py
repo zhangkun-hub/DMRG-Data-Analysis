@@ -160,4 +160,8 @@ def charge_structure_factor_report(nf_path, corr_paths, q_list, N,
     report = from_structure_factor(sf_result)
     report.observable = OBSERVABLE_CHARGE_STRUCTURE_FACTOR
     report.analyzer = 'ChargeStructureFactorEstimator'
+    # 实际 q 网格统计入 metadata（与 fit_quality 同模式，不改契约适配器；
+    # 缺失时保持原有行为，不伪造默认值）
+    if sf_result.get('q_grid') is not None:
+        report.metadata['q_grid'] = sf_result['q_grid']
     return report
