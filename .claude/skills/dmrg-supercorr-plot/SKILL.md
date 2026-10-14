@@ -1,6 +1,6 @@
 ---
 name: dmrg-supercorr-plot
-description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的超导关联数据：解析 Data_N96 下 measure_super_corr 的 12 个 scs{X}{ch}_fix_refbond_{i}_{j}.json 文件、用 SuperCorrRecord.extract_data 封装、做四通道 a/b/c/d 的 SU(2) 对称性检验（a↔d、b↔c）、按 0.5(a-b-c+d) 合成 <Δ†Δ>、用 SuperCorrProcessor 画 A/B/C 三个键方向图及两组数据绝对误差对比。当用户提到超导关联、superconducting correlation、Δ†Δ、SU(2) 对称性检验、scs 文件、reference bond、A/B/C 键方向，或要在本 DMRG 仓库处理超导关联数据时使用——只要涉及本仓库超导关联的提取、对称性检验、合成或作图就应触发，即使用户没提"DMRG"。
+description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的超导关联数据：解析 Data_N200/Data_N400 下 measure_super_corr 的 12 个 scs{X}{ch}_fix_refbond_{i}_{j}.json 文件、用 SuperCorrRecord.extract_data 封装、做四通道 a/b/c/d 的 SU(2) 对称性检验（a↔d、b↔c）、按 0.5(a-b-c+d) 合成 <Δ†Δ>、用 SuperCorrProcessor 画 A/B/C 三个键方向图及两组数据绝对误差对比。当用户提到超导关联、superconducting correlation、Δ†Δ、SU(2) 对称性检验、scs 文件、reference bond、A/B/C 键方向，或要在本 DMRG 仓库处理超导关联数据时使用——只要涉及本仓库超导关联的提取、对称性检验、合成或作图就应触发，即使用户没提"DMRG"。
 ---
 
 # DMRG 超导关联数据处理与作图
@@ -16,18 +16,19 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的超导关联数据
 
 ## 2. 数据定位
 
-超导关联数据位于 `Data_N96/{t_J}/{doping}/{bond_dim}_measure_super_corr/`，每个 reference bond 一个子目录，内含 **12 个文件**：
+超导关联数据位于 `Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_super_corr/`，每个 reference bond 一个子目录，内含 **12 个文件**：
 
 ```
 measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
 ```
 
-- `{i}_{j}`：reference bond 的两个格点，如 `super_corr_25_26`、`super_corr_26_27`（notebook 里 version 参数 `"50_54"` 也是这种 refbond 对，N=200 示例值）
+- `{i}_{j}`：reference bond 的两个格点。实际存在的 refbond 目录：N200 = `49_50`、`50_51`、`50_54`；N400 = `97_98`、`98_99`、`98_102`
+- 实际有数据的组合：`Data_N200/t_J_3` 7 种 doping（1500 全部 + 5000 四种）；`Data_N400/t_J_3` 仅 d1_10/1500（**仓库没有 Data_N96**）
 - `X`：键方向 A / B / C；`ch`：通道 a / b / c / d，共 3×4=12 个文件
 - 通道物理含义：a = `<c_i↑† c_j↓† c_k↑ c_l↓>`，b = `<c_i↓† c_j↑† c_k↑ c_l↓>`，c = `<c_i↑† c_j↓† c_k↓ c_l↑>`，d = `<c_i↓† c_j↑† c_k↓ c_l↑>`
-- `t_J` / `doping` / `bond_dim` 取值同密度 skill
 
-**运行前核对参数与目录一致**：notebook 里 N=200、`d1_10`、`50_54` 是示例值，实际数据只有 N=96，refbond 目录以磁盘为准（可用 `glob` 列 `measure_super_corr/*`）。
+**运行前核对参数与目录一致**：notebook 里的参数块是示例值，refbond 目录以磁盘为准（可用 `glob` 列 `measure_super_corr/*`）。
+**数据质量注意**：N400 超导数据 SU(2) 对称性误差实测 0.008~0.144（远超 ~1e-4 经验阈值），合成关联值的物理解释需谨慎；N200 数据未发现此量级问题。
 
 ## 3. 提取：SuperCorrRecord
 
@@ -35,14 +36,14 @@ measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
 from pathlib import Path
 from Physical_Quantity.Physical_Data_Record import SuperCorrRecord
 
-base = Path(f'Data_N96/t_J_3/d1_48/measure_super_corr/super_corr_25_26')
+base = Path(f'Data_N200/t_J_3/d1_100/1500_measure_super_corr/super_corr_49_50')
 records = {}
 for bond in 'ABC':
     for channel in 'abcd':
         key = f'scs{bond}{channel}'
-        fname = f'{key}_fix_refbond_25_26.json'
+        fname = f'{key}_fix_refbond_49_50.json'
         records[key] = SuperCorrRecord.extract_data(
-            (base / fname).read_text(encoding='utf-8'), N=96, a=1.0
+            (base / fname).read_text(encoding='utf-8'), N=200, a=1.0
         )
 ```
 
@@ -91,11 +92,12 @@ SuperCorrProcessor.Super_Corr_Visualization_three(super_corr_dict)   # 三键方
 - 不同 bond_dim 对比时目录前缀不同（`measure_super_corr` vs `1500_measure_super_corr`），注意拼路径
 - 仓库根目录跑脚本 `import Physical_Quantity` 会 ModuleNotFoundError——从 `DMRG data visualization/` 目录执行
 
-## 7. 衰减类型分析与拟合（SuperCorrDecayAnalyzer）
+## 7. 衰减类型分析与拟合（SuperCorrDecayAnalyzer / 统一入口）
 
-作图之外需要做衰减类型分类/拟合时，使用同目录 `Super_Correlation_Analyzer.py` 的 `SuperCorrDecayAnalyzer`（本 skill 覆盖的代码均不被其修改）：
+作图之外需要做衰减类型分类/拟合时，使用同目录 `Super_Correlation_Analyzer.py` 的 `SuperCorrDecayAnalyzer`（通用核心在 `Correlation_Decay_Analyzer.py`，本 skill 覆盖的代码均不被其修改）：
 
 - `SuperCorrDecayAnalyzer.analyze(record_list, config=None)` → `DecayAnalysisResult`：输入已合成的 `<Δ†Δ>`（本 skill 第 4 节合成的 `super_corr_dict_UltraDMRG` 值即为合法输入），输出 8 类分类（constant / power_law / exponential / oscillatory_* / non_monotonic / complex_decay / INCONCLUSIVE）+ evidence level
 - 配套：`print_summary(result)` 打印完整报告（含 8 项振荡诊断逐项表、r_min 扫描表、噪声底来源）；`Decay_Visualization(result, r, C)` 画 8 面板综合图（r/C 用 `group_by_distance` 的输出）；`analyze_batch({name: records})` 批量分析（不自动做跨 refbond 物理结论）
 - 结果含 `analysis_version` 与完整 `AnalyzerConfig` 快照，`to_dict()/to_json(path)` 可追溯
 - 该分析器对"合成后"数据工作；SU(2) 对称性误差大（>1e-3）时合成结果本身存疑，先核对本 skill 第 4 节的 symmetry_check 输出
+- **统一契约入口**（可选）：`from Physical_Quantity.Analysis_Entry import run_analysis` 配合 `OBSERVABLE_SUPERCONDUCTING_CORRELATION` 常量可返回统一 `AnalysisReport`（payload 保留原始 DecayAnalysisResult）；自旋/电荷关联、结构因子、峰值与能量外推也有对应路由，见项目 CLAUDE.md 架构一节

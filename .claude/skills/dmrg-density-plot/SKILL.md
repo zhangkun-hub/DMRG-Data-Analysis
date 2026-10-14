@@ -1,6 +1,6 @@
 ---
 name: dmrg-density-plot
-description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据：解析 Data_N96 下 nf.json 测量文件、用 DensityRecord.extract_data 封装、用 DensityProcessor 画密度分布折线图（按 i%4 分成 4 条水平行）或两组数据（UltraDMRG vs Itensor）的绝对误差对比图。当用户提到密度/电子密度/电荷密度分布、nf.json、DensityRecord、DensityProcessor、密度误差对比，或要在本 DMRG 仓库里处理格点密度数据时使用——只要涉及本仓库密度数据的提取或作图就应触发，即使用户没提"DMRG"。
+description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据：解析 Data_N200/Data_N400 下 nf.json 测量文件、用 DensityRecord.extract_data 封装、用 DensityProcessor 画密度分布折线图（按 i%4 分成 4 条水平行）或两组数据（UltraDMRG vs Itensor）的绝对误差对比图。当用户提到密度/电子密度/电荷密度分布、nf.json、DensityRecord、DensityProcessor、密度误差对比，或要在本 DMRG 仓库里处理格点密度数据时使用——只要涉及本仓库密度数据的提取或作图就应触发，即使用户没提"DMRG"。
 ---
 
 # DMRG 格点密度数据处理与作图
@@ -16,14 +16,15 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据
 
 ## 2. 数据定位
 
-密度数据文件是 `Data_N96/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/nf.json`：
+密度数据文件是 `Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/nf.json`：
 
-- `t_J`：t/J 比值，现有 `t_J_3`、`t_J_5`、`t_J_10`、`t_J_15`、`t_J_20`
-- `doping`：空穴率，现有 `d0`、`d1_12`、`d1_16`、`d1_24`、`d1_48`
-- `bond_dim`：bond dimension 前缀，有 `measure_*` 与 `1500_measure_*` 两种（notebook 里 `bond_dim = "1500"` 拼出 `1500_measure_phys_qty`）
-- `version`：测量版本号，如 `25`、`26`
+- 实际有数据的组合（其余目录为空骨架）：
+  - `Data_N200/t_J_3`：doping 7 种（`d1_10`、`d1_20`、`d1_25`、`d1_100`、`d2_25`、`d3_20`、`d3_25`）；bond_dim 前缀有 `measure_*` 与 `1500_measure_*` 两种（1500 全部有，5000 仅 d1_10/d1_100/d1_20/d2_25）；measure 版本 49/50
+  - `Data_N400/t_J_3`：仅 `d1_10`、1500；measure 版本 97/98
+- 其他 `t_J_5/10/15/20` 只有空目录；**仓库没有 Data_N96**（旧文档引用已过时）
+- `version`：测量版本号，实际为 49/50（N200）或 97/98（N400）
 
-**运行前先核对参数与目录一致**：notebook 里的 `N = 200`、`d1_10` 是示例值，实际数据只有 N=96 一组；参数不匹配会 FileNotFoundError 或解析失败。可用 `glob` 列出实际目录再取数。
+**运行前先核对参数与目录一致**：notebook 里的参数块是示例值；参数不匹配会 FileNotFoundError 或解析失败。可用 `glob` 列出实际目录再取数。
 
 JSON 格式统一为嵌套列表：`[[[0], [0.9998, 0]], [[1], [0.9999, 0]], ...]`，第一层元素是 `[格点索引, [值, 0]]`。
 
@@ -33,7 +34,7 @@ JSON 格式统一为嵌套列表：`[[[0], [0.9998, 0]], [[1], [0.9999, 0]], ...
 from Physical_Quantity.Physical_Data_Record import DensityRecord
 
 text = open(".../nf.json", encoding="utf-8").read()   # 或 Path(...).read_text(encoding='utf-8')
-records = DensityRecord.extract_data(text, N=96, a=1.0)   # a 是晶格常数，默认 1.0
+records = DensityRecord.extract_data(text, N=200, a=1.0)   # a 是晶格常数，默认 1.0
 ```
 
 - 返回 `list[DensityRecord]`，每个对象有属性：`lattice_point`（格点 i）、`coords`、`density`、`horizontal_starting_point`（= i % 4，用于分 4 条水平行）
@@ -49,7 +50,7 @@ DensityProcessor.Line_Chart_Visualization(records)   # 单组数据：4 条水�
 ```
 
 - 按 `horizontal_starting_point`（0/1/2/3）把格点分成 4 条水平行曲线
-- **四行长度必须完全一致**，数据文件缺格点会抛 ValueError（数据不完整时先检查 nf.json 是否有 96 个元素）
+- **四行长度必须完全一致**，数据文件缺格点会抛 ValueError（数据不完整时先检查 nf.json 是否有 N 个元素）
 
 ## 5. 两组数据绝对误差对比（UltraDMRG vs Itensor）
 

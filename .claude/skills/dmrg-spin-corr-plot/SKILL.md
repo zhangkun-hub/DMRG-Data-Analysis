@@ -1,6 +1,6 @@
 ---
 name: dmrg-spin-corr-plot
-description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据：解析 Data_N96 下 sz{ver}sz / sp{ver}sm / sm{ver}sp 三分量 JSON、用 CorrelationRecord.extract_data 按 A/B 子格序列封装、由 SzSz + 1/2(SuSd + SdSu) 合成 <S_i·S_j>、用 CorrelationProcessor 画 1×3 子图（线性/y-log/log-log 判断指数或幂律衰减）及两组数据绝对误差对比。当用户提到自旋关联、spin correlation、SzSz、SuSd、SdSu、指数衰减、幂律衰减，或要在本 DMRG 仓库处理自旋关联数据时使用——只要涉及本仓库自旋关联的提取、合成或作图就应触发，即使用户没提"DMRG"。
+description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据：解析 Data_N200/Data_N400 下 sz{ver}sz / sp{ver}sm / sm{ver}sp 三分量 JSON、用 CorrelationRecord.extract_data 按 A/B 子格序列封装、由 SzSz + 1/2(SuSd + SdSu) 合成 <S_i·S_j>、用 CorrelationProcessor 画 1×3 子图（线性/y-log/log-log 判断指数或幂律衰减）及两组数据绝对误差对比。当用户提到自旋关联、spin correlation、SzSz、SuSd、SdSu、指数衰减、幂律衰减，或要在本 DMRG 仓库处理自旋关联数据时使用——只要涉及本仓库自旋关联的提取、合成或作图就应触发，即使用户没提"DMRG"。
 ---
 
 # DMRG 自旋关联数据处理与作图
@@ -16,15 +16,15 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据
 
 ## 2. 数据定位
 
-自旋关联有三个分量文件，位于 `Data_N96/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/`：
+自旋关联有三个分量文件，位于 `Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/`：
 
 - `sz{version}sz.json` → `<S^z_i S^z_j>`（SzSz）
 - `sp{version}sm.json`、`sm{version}sp.json` → 横向两分量
-- `t_J` / `doping` / `bond_dim` 取值同密度 skill；`version` 是测量版本号（notebook 约定 A 子格 version=49、B 子格 version=50，实际目录如 `measure_25`、`measure_26` 需以磁盘为准）
+- 实际有数据的组合：`Data_N200/t_J_3` 7 种 doping（d1_10/d1_20/d1_25/d1_100/d2_25/d3_20/d3_25）、1500 全部 + 5000 部分、measure 版本 49/50；`Data_N400/t_J_3` 仅 d1_10/1500、版本 97/98（**仓库没有 Data_N96**）
 
 **关键约定——文件交叉对应**：notebook 中实际是 `SuSd ← sp{ver}sm.json`、`SdSu ← sm{ver}sp.json`（notebook 里变量名与文件名的对应是反的，代码注释标了"注意交叉对应"）。写新脚本时按此映射读取，不要凭文件名直觉对应。
 
-**运行前核对参数与目录一致**：notebook 里 `N = 200`、`d1_10` 是示例值，实际数据只有 N=96；参数不匹配会 FileNotFoundError。
+**运行前核对参数与目录一致**：notebook 里的参数块是示例值；参数不匹配会 FileNotFoundError。可用 `glob` 列实际目录。
 
 ## 3. 提取：CorrelationRecord
 
@@ -33,7 +33,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据
 ```python
 from Physical_Quantity.Physical_Data_Record import CorrelationRecord
 
-N = 96
+N = 200
 src_off, max_off = 1, -3        # A 子格；B 子格用 (2, -2)
 source_point = int(N / 8 / 4) * 8 + src_off
 field_point_max = int(N / 4 * 3) + max_off
