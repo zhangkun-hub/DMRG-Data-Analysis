@@ -245,7 +245,7 @@ direct_types = (isinstance(direct_sz, dict)
                     'expected_pair_count', 'pair_coverage', 'source_coverage',
                     'missing_pairs', 'is_restricted', 'imaginary_residual',
                     'duplicate_pairs', 'invalid_values', 'skipped_no_coords',
-                    'meta'})
+                    'meta', 'q_grid'})
 check('D', '旧接口：estimator 返回 dict 且字段集不变', direct_types)
 check('D', '旧接口：find_peaks 返回 dict 且含 peaks/resolution',
       isinstance(direct_peak, dict) and 'peaks' in direct_peak

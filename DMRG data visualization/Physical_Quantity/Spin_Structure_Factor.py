@@ -214,12 +214,40 @@ def _xc_geometry_meta(geometry: HoneycombXCGeometry) -> dict:
     }
 
 
+def _q_grid_stats(q_list) -> dict:
+    """实际 q 网格统计（只描述输入 q_list 的事实，不参与计算、
+    不排序/去重计算输入；不宣称这些值是规则网格生成参数）。
+
+    语义与 Charge_Structure_Factor 的 q_grid 保持一致（电荷侧为内联
+    实现，未来统一时可收敛到本函数）：
+    - 仅统计两个坐标分量均为有限值的动量点；非有限坐标不计入
+      数量与端点（避免"数量有效、端点为 null"的误导性元数据）
+    - round(..., 12) 容差去重（与峰值分析器 _grid_from_q 约定一致）
+    - 空输入或全部非有限 → n=0、四端点 None
+    """
+    q_arr = np.asarray(q_list, dtype=float)
+    if q_arr.ndim == 1:
+        q_arr = q_arr.reshape(1, 2)
+    q_arr = q_arr[np.isfinite(q_arr).all(axis=1)]
+    qx_vals = np.unique(np.round(q_arr[:, 0], 12))
+    qy_vals = np.unique(np.round(q_arr[:, 1], 12))
+    return {
+        'n_qx': int(len(qx_vals)),
+        'n_qy': int(len(qy_vals)),
+        'qx_min': float(qx_vals.min()) if len(qx_vals) else None,
+        'qx_max': float(qx_vals.max()) if len(qx_vals) else None,
+        'qy_min': float(qy_vals.min()) if len(qy_vals) else None,
+        'qy_max': float(qy_vals.max()) if len(qy_vals) else None,
+    }
+
+
 class SpinStructureFactorEstimator:
     """自旋结构因子受限估计（N200 数据仅 3 个源点，覆盖率不可完整评估）。
 
     输出一律 is_restricted=True：现有数据无法构成完整 200×200 关联矩阵，
     不补零、不插值、不声称完整结构因子。输出附带 'meta' 键（几何元信息，
-    来自实际几何对象），供有限尺寸标度等下游接口追溯。
+    来自实际几何对象）与 'q_grid' 键（实际动量网格统计），供有限尺寸
+    标度等下游接口追溯。
     """
 
     # ------------------------------------------------------------------
@@ -244,6 +272,7 @@ class SpinStructureFactorEstimator:
             geometry.coords, pairs, q_list, N,
             definition=DEF_SPIN_DOT, expected_pairs=None)
         result['meta'] = _xc_geometry_meta(geometry)
+        result['q_grid'] = _q_grid_stats(q_list)
         return result
 
     # ------------------------------------------------------------------
@@ -272,4 +301,5 @@ class SpinStructureFactorEstimator:
             geometry.coords, pairs, q_list, N,
             definition=DEF_SZ_SZ, expected_pairs=None)
         result['meta'] = _xc_geometry_meta(geometry)
+        result['q_grid'] = _q_grid_stats(q_list)
         return result

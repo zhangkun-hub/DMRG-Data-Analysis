@@ -222,6 +222,63 @@ check('H', 'spin_dot 输出同样含 meta（与 sz_sz 同几何，n_cells_x=25�
       res.get('meta'))
 
 # ==========================================================================
+# 11. q_grid 实际网格统计（D4.5-T1：与电荷侧语义一致）
+# ==========================================================================
+print('===== I. q_grid 网格统计 =====')
+from Physical_Quantity.Spin_Structure_Factor import _q_grid_stats
+
+# I1. 规则网格
+qs_i1, _ = xc_momentum_grid(200, a=1.0, n_qx=11, n_qy=4)
+g_i1 = _q_grid_stats(qs_i1)
+check('I', '规则网格：n_qx/n_qy 为唯一坐标数量（11/4）',
+      g_i1['n_qx'] == 11 and g_i1['n_qy'] == 4, g_i1)
+check('I', '规则网格：端点与输入实际值一致',
+      abs(g_i1['qx_min'] - qs_i1[:, 0].min()) < 1e-12
+      and abs(g_i1['qx_max'] - qs_i1[:, 0].max()) < 1e-12
+      and abs(g_i1['qy_min'] - qs_i1[:, 1].min()) < 1e-12
+      and abs(g_i1['qy_max'] - qs_i1[:, 1].max()) < 1e-12, g_i1)
+
+# I2. 非规则网格与单 qy
+qs_i2 = np.array([(0.0, 0.0), (0.5, 0.0), (1.5, 0.0), (3.0, 0.0)])
+g_i2 = _q_grid_stats(qs_i2)
+check('I', '非规则/单 qy 网格：唯一坐标数与端点如实',
+      g_i2['n_qx'] == 4 and g_i2['n_qy'] == 1
+      and g_i2['qx_min'] == 0.0 and g_i2['qx_max'] == 3.0
+      and g_i2['qy_min'] == 0.0 and g_i2['qy_max'] == 0.0, g_i2)
+
+# I3. 空 q_list
+g_i3 = _q_grid_stats(np.empty((0, 2)))
+check('I', '空 q_list：n=0、四端点 None',
+      g_i3['n_qx'] == 0 and g_i3['n_qy'] == 0
+      and g_i3['qx_min'] is None and g_i3['qx_max'] is None
+      and g_i3['qy_min'] is None and g_i3['qy_max'] is None, g_i3)
+
+# I4. 混合有限与 NaN/Inf
+qs_i4 = np.array([[0.0, 0.0], [np.nan, 0.0], [1.0, -np.inf], [2.0, 0.0]])
+g_i4 = _q_grid_stats(qs_i4)
+check('I', '混合 NaN/Inf：只统计两分量均有限的点',
+      g_i4['n_qx'] == 2 and g_i4['n_qy'] == 1
+      and g_i4['qx_min'] == 0.0 and g_i4['qx_max'] == 2.0, g_i4)
+
+# I5. 全部非有限
+qs_i5 = np.array([[np.nan, np.nan], [np.inf, np.nan]])
+g_i5 = _q_grid_stats(qs_i5)
+check('I', '全部非有限：n=0、四端点 None',
+      g_i5['n_qx'] == 0 and g_i5['n_qy'] == 0
+      and g_i5['qx_min'] is None and g_i5['qy_min'] is None, g_i5)
+
+# I6. sz_sz 入口返回 q_grid（真实数据 + 规则网格）
+res_i6 = SpinStructureFactorEstimator.estimate_sz_sz_from_file(sz_path, qs200, 200)
+check('I', 'sz_sz 入口：q_grid 存在且与统计函数一致',
+      res_i6.get('q_grid') == _q_grid_stats(qs200), res_i6.get('q_grid'))
+
+# I7. spin_dot 入口返回 q_grid（合成 records）
+recs_i7 = [CorrelationRecord(0, 1, 1.0, 0.5), CorrelationRecord(0, 2, 1.0, 0.3)]
+res_i7 = SpinStructureFactorEstimator.estimate_spin_dot_from_records(recs_i7, qs200, 200)
+check('I', 'spin_dot 入口：q_grid 存在且与统计函数一致',
+      res_i7.get('q_grid') == _q_grid_stats(qs200), res_i7.get('q_grid'))
+
+# ==========================================================================
 # 汇总
 # ==========================================================================
 print()
