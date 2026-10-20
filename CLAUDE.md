@@ -60,7 +60,7 @@ Notebook 位于 `DMRG data visualization/` 根目录，是实际使用入口（�
 
 # 数据目录约定
 
-UltraDMRG 集群计算结果存放在 `DMRG data visualization/Data_N200/` 与 `Data_N400/`（**没有 Data_N96**，旧文档引用已过时），层级：
+UltraDMRG 集群计算结果存放在 `DMRG data visualization/Data_N200/`、`Data_N400/` 与 `Data_Energy/`（**没有 Data_N96**，旧文档引用已过时），层级：
 
 ```
 Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/*.json
@@ -69,14 +69,15 @@ Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_super_corr/super_corr_{i}_{j}/
 
 实际有数据的组合（其余目录为空骨架）：
 - **Data_N200/t_J_3**：doping 4 种（d1_10、d1_20、d1_100、d2_25）；**d1_25、d3_20、d3_25 已因数据问题删除**，不属于当前可用数据，不得假定存在或恢复；bond_dim 1500 与 5000 四组全有；measure 版本 49/50；超导 refbond 49_50/50_51/50_54
-- **Data_N400/t_J_3**：仅 d1_10、bond_dim 1500；measure 版本 97/98；超导 refbond 97_98/98_99/98_102
+- **Data_N400/t_J_3**：doping 5 种（d1_10、d1_20、d1_40、d1_80、d2_25）；bond_dim 1500 与 5000 全有；measure 版本 97/98；超导 refbond 97_98/98_99/98_102；每个 doping 目录内另有 2 份 DMRG 优化日志（低 D 500/1000/1500 + 高 D 2000→5000，均正常结束，N=400）
 - 其他 t_J 值（t_J_5/10/15/20）目前只有空目录；注意 J=0.2 对应 t/J=20 是在 notebook 里写死的
 
 - `doping`：空穴率（d1_100 即 δ = 1/100）
 - 物理量 JSON 文件：`nf`（单点电子密度）、`sz{ver}sz` / `sp{ver}sm` / `sm{ver}sp`（自旋关联三分量）、`nf{ver}nf`（密度-密度关联，**field 连续**，须用 `range(0, N, 1)` 序列解析而非自旋的 step-4 序列）、`single_particle_corr{1..4}`、源点 0 的旧版 `sz.json`
 - 超导关联：bond 方向 A/B/C × 通道 a/b/c/d 共 12 个文件，文件名 `scsAa_fix_refbond_49_50.json` 等；目录名 `super_corr_{refbond1}_{refbond2}` 指明 reference bond
 - 每个数据目录下的 `slurm-*.log` 是**测量作业日志**（"Running measurement using existing MPS"），不含 `Bond dimension`/`sweep`/`E0` 行——`DMRGLogParser` 用于解析集群 DMRG 优化日志，与这些文件无关
-- **DMRG 优化日志（能量数据）**：4 个 doping 目录内各 2 份 `slurm-*-Zk_tJ.log`（共 8 份，N=200，1500 与 2000→5000 两档调度，均正常结束），是当前唯一的能量数据来源；**没有其他 N 的能量日志**，热力学极限外推（需 ≥3 个 N）暂不可行
+- **DMRG 优化日志（能量数据）**：N200 的 4 个 doping 目录内各 2 份 `slurm-*-Zk_tJ.log`（共 8 份，1500 与 2000→5000 两档调度，均正常结束）；N400 的 5 个 doping 目录内同样各 2 份（低 D 500/1000/1500 + 高 D 2000→5000，均正常结束）
+- **Data_Energy（热力学外推数据）**：层级 `Data_Energy/t_J_3/{doping}/N{n}/slurm-*.log`；6 个 doping（d0、d1_10、d1_20、d1_40、d1_80、d3_40）× 5 个 N（80/160/240/320/400）共 30 份优化日志（D 调度 500,1000,1500，全部正常结束，格式与 N200/N400 日志同构，可用 `extract_last_e0` 解析）——每 doping 5 个 N，**满足热力学极限外推条件（≥3 个 N）**；目录内仅有 *.log 文件，被全局 git.ignore 的 `*.log` 规则覆盖（Git 不可见，不入版本控制）
 - 已知数据质量事实：N400 超导数据的 SU(2) 对称性误差实测 0.008~0.144（远超 ~1e-4 经验阈值），合成关联值的物理解释需谨慎；N400 电荷/自旋关联均只有源点 97/98 两组
 
 JSON 格式统一为 `[[索引], [value, 0]]` 的嵌套列表字符串结构（如 `[[[0], [0.9998, 0]], ...]`）。

@@ -23,7 +23,7 @@ measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
 ```
 
 - `{i}_{j}`：reference bond 的两个格点。实际存在的 refbond 目录：N200 = `49_50`、`50_51`、`50_54`；N400 = `97_98`、`98_99`、`98_102`
-- 实际有数据的组合：`Data_N200/t_J_3` 7 种 doping（1500 全部 + 5000 四种）；`Data_N400/t_J_3` 仅 d1_10/1500（**仓库没有 Data_N96**）
+- 实际有数据的组合：`Data_N200/t_J_3` 4 种 doping（d1_10/d1_20/d1_100/d2_25；d1_25/d3_20/d3_25 已删除）、1500 与 5000 全有；`Data_N400/t_J_3` 5 种 doping（d1_10/d1_20/d1_40/d1_80/d2_25）、1500 与 5000 全有（**仓库没有 Data_N96**）
 - `X`：键方向 A / B / C；`ch`：通道 a / b / c / d，共 3×4=12 个文件
 - 通道物理含义：a = `<c_i↑† c_j↓† c_k↑ c_l↓>`，b = `<c_i↓† c_j↑† c_k↑ c_l↓>`，c = `<c_i↑† c_j↓† c_k↓ c_l↑>`，d = `<c_i↓† c_j↑† c_k↓ c_l↑>`
 

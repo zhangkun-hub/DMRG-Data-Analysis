@@ -20,7 +20,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据
 
 - `sz{version}sz.json` → `<S^z_i S^z_j>`（SzSz）
 - `sp{version}sm.json`、`sm{version}sp.json` → 横向两分量
-- 实际有数据的组合：`Data_N200/t_J_3` 7 种 doping（d1_10/d1_20/d1_25/d1_100/d2_25/d3_20/d3_25）、1500 全部 + 5000 部分、measure 版本 49/50；`Data_N400/t_J_3` 仅 d1_10/1500、版本 97/98（**仓库没有 Data_N96**）
+- 实际有数据的组合：`Data_N200/t_J_3` 4 种 doping（d1_10/d1_20/d1_100/d2_25；d1_25/d3_20/d3_25 已删除）、1500 与 5000 全有、measure 版本 49/50；`Data_N400/t_J_3` 5 种 doping（d1_10/d1_20/d1_40/d1_80/d2_25）、1500 与 5000 全有、版本 97/98（**仓库没有 Data_N96**）
 
 **关键约定——文件交叉对应**：notebook 中实际是 `SuSd ← sp{ver}sm.json`、`SdSu ← sm{ver}sp.json`（notebook 里变量名与文件名的对应是反的，代码注释标了"注意交叉对应"）。写新脚本时按此映射读取，不要凭文件名直觉对应。
 

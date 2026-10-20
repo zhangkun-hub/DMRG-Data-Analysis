@@ -19,8 +19,8 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据
 密度数据文件是 `Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/nf.json`：
 
 - 实际有数据的组合（其余目录为空骨架）：
-  - `Data_N200/t_J_3`：doping 7 种（`d1_10`、`d1_20`、`d1_25`、`d1_100`、`d2_25`、`d3_20`、`d3_25`）；bond_dim 前缀有 `measure_*` 与 `1500_measure_*` 两种（1500 全部有，5000 仅 d1_10/d1_100/d1_20/d2_25）；measure 版本 49/50
-  - `Data_N400/t_J_3`：仅 `d1_10`、1500；measure 版本 97/98
+  - `Data_N200/t_J_3`：doping 4 种（`d1_10`、`d1_20`、`d1_100`、`d2_25`；`d1_25`、`d3_20`、`d3_25` 已因数据问题删除）；bond_dim 1500 与 5000 四组全有；measure 版本 49/50
+  - `Data_N400/t_J_3`：doping 5 种（`d1_10`、`d1_20`、`d1_40`、`d1_80`、`d2_25`）；bond_dim 1500 与 5000 全有；measure 版本 97/98
 - 其他 `t_J_5/10/15/20` 只有空目录；**仓库没有 Data_N96**（旧文档引用已过时）
 - `version`：测量版本号，实际为 49/50（N200）或 97/98（N400）
 
