@@ -49,11 +49,13 @@ from Physical_Quantity.Analysis_Contract import (
     AnalysisReport, STATUS_OK, STATUS_FAILED,
     OBSERVABLE_SUPERCONDUCTING_CORRELATION,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,
-    OBSERVABLE_CHARGE_STRUCTURE_FACTOR)
+    OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
+    OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR)
 
 SC_OBS = OBSERVABLE_SUPERCONDUCTING_CORRELATION
 SPIN_OBS = OBSERVABLE_SPIN_STRUCTURE_FACTOR
 CHARGE_OBS = OBSERVABLE_CHARGE_STRUCTURE_FACTOR
+SCPAIR_OBS = OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR
 
 ART = os.path.join(HERE, 'artifacts')
 RESULTS = {}
@@ -126,6 +128,18 @@ def charge_report(qgrid=QGRID, sources=(49, 50)):
                   'imaginary_residual': 0.0},
         payload={'q_grid': qgrid,
                  'diagonal_source_sites': list(sources)})
+
+
+def scpair_report(qgrid=QGRID):
+    """SC 配对结构因子报告（受限语义，source_coverage=None 口径不适用）。"""
+    return AnalysisReport(
+        analyzer='SCPairStructureFactorEstimator', observable=SCPAIR_OBS,
+        status=STATUS_OK, classification=None, parameters={}, evidence=None,
+        data_restricted=True, warnings=[],
+        metadata={'measured_pair_count': 74, 'source_coverage': None,
+                  'imaginary_residual': 0.0, 'ref_bond': [49, 50],
+                  'target_bond_count': 74, 'direction': 'A'},
+        payload={'q_grid': qgrid})
 
 
 def charge_report_no_sources():
@@ -538,6 +552,51 @@ check('B', 'N 不同：Peak 关联键校验生效，q 摘要留空且 not_direct
               and r['peak_estimate_entry_index'] == ''
               and r['comparability_bucket'] == 'not_direct' for r in peaks24))
 
+# B25. SC 配对 SF：同参考键同键方向跨 doping、q_grid 摘要一致 → direct
+o_b25 = [outcome('d1_10', SCPAIR_OBS, 'SCPairStructureFactorEstimator',
+                 '49_50', 'A', scpair_report()),
+         outcome('d1_20', SCPAIR_OBS, 'SCPairStructureFactorEstimator',
+                 '49_50', 'A', scpair_report())]
+b25, r25 = bucket_of('d1_10', '49_50', 'A', o_b25,
+                     analyzer='SCPairStructureFactorEstimator')
+check('B', 'SC 配对 SF 同条件：direct（P2 q_grid 摘要一致，完整坐标未验证）',
+      b25 == 'direct' and 'q_grid 摘要一致' in r25
+      and '完整坐标未验证' in r25, r25[:80])
+
+# B26. SC 配对 SF：参考键不同 → cautious（已知差异，与 SC 衰减同语义）
+o_b26 = [outcome('d1_10', SCPAIR_OBS, 'SCPairStructureFactorEstimator',
+                 '49_50', 'A', scpair_report()),
+         outcome('d1_20', SCPAIR_OBS, 'SCPairStructureFactorEstimator',
+                 '50_51', 'A', scpair_report())]
+b26, r26 = bucket_of('d1_10', '49_50', 'A', o_b26,
+                     analyzer='SCPairStructureFactorEstimator')
+check('B', 'SC 配对 SF 参考键不同：cautious（已知差异）',
+      b26 == 'cautious' and '参考键' in r26 and '源点' not in r26, r26[:60])
+
+# B27. SC 配对 SF：q_grid 摘要不一致 → not_direct
+o_b27 = [outcome('d1_10', SCPAIR_OBS, 'SCPairStructureFactorEstimator',
+                 '49_50', 'A', scpair_report(QGRID)),
+         outcome('d1_20', SCPAIR_OBS, 'SCPairStructureFactorEstimator',
+                 '49_50', 'A', scpair_report(QGRID_OTHER))]
+b27, r27 = bucket_of('d1_10', '49_50', 'A', o_b27,
+                     analyzer='SCPairStructureFactorEstimator')
+check('B', 'SC 配对 SF q_grid 摘要不一致：not_direct',
+      b27 == 'not_direct' and 'q_grid 摘要不一致' in r27, r27[:60])
+
+# B28. SC 配对 SF 行：身份来源标记 = refbond_dir；source_coverage=None
+# 不落入数值列（口径不适用，留空不编造）
+o_b28 = [outcome('d1_10', SCPAIR_OBS, 'SCPairStructureFactorEstimator',
+                 '49_50', 'A', scpair_report())]
+summ_b28 = cds.summarize(o_b28, Q_SMALL)
+row_b28 = summ_b28['rows'][0]
+check('B', 'SC 配对 SF 行：身份标记 refbond_dir、source_coverage 留空'
+      '（bond 源口径不适用）、restricted 标签正确',
+      row_b28['source_identity_kind'] == 'refbond_dir'
+      and row_b28['source_coverage'] == ''
+      and row_b28['data_restricted'] == 'restricted'
+      and row_b28['measured_pair_count'] == 74,
+      row_b28['source_identity_kind'])
+
 # ==========================================================================
 # C. 输出：严格 JSON / CSV 保守空值 / 确定性覆盖
 # ==========================================================================
@@ -613,6 +672,8 @@ def fake_run(observable, *, operation=None, config=None, **kwargs):
         raise FileNotFoundError(f'模拟缺失文件（路径含 d_miss）: {blob[:50]}')
     if observable == SC_OBS:
         return sc_report()
+    if observable == SCPAIR_OBS:
+        return scpair_report()
     if observable == SPIN_OBS and operation == 'estimate':
         return spin_sf_report()
     if observable == SPIN_OBS and operation == 'peak_analysis':
@@ -662,11 +723,12 @@ try:
 finally:
     cds.run_analysis = orig_run
 
-check('E', 'd1：8 条全部成功（3 SC + 2 spin SF + 2 peak + 1 charge）',
-      len(outs_d1) == 8 and all(o['failure'] is None for o in outs_d1),
+check('E', 'd1：11 条全部成功（3 SC + 3 SC 配对 SF + 2 spin SF + 2 peak '
+      '+ 1 charge）',
+      len(outs_d1) == 11 and all(o['failure'] is None for o in outs_d1),
       f'{len(outs_d1)} 条')
-check('E', 'd_miss：6 条显式失败（目录缺失 + 文件缺失 + 依赖失败）',
-      len(outs_miss) == 6
+check('E', 'd_miss：7 条显式失败（SC 目录缺失 ×2 + 文件缺失 + 依赖失败）',
+      len(outs_miss) == 7
       and all(o['report'] is None and o['failure'] is not None
               for o in outs_miss),
       [o['failure']['type'] for o in outs_miss])
@@ -679,10 +741,10 @@ check('E', '参考键过滤生效：过滤后 SC 条目为 0、其余分析照�
 
 summ_e = cds.summarize(outs_d1 + outs_miss, Q_SMALL)
 rows_e = summ_e['rows']
-check('E', '汇总行数 14、标签唯一（无重复记录）',
-      len(rows_e) == 14 and len({(r['doping'], r['observable'], r['analyzer'],
+check('E', '汇总行数 18、标签唯一（无重复记录）',
+      len(rows_e) == 18 and len({(r['doping'], r['observable'], r['analyzer'],
                                   r['refbond_or_source'],
-                                  r['key_or_definition']) for r in rows_e}) == 14)
+                                  r['key_or_definition']) for r in rows_e}) == 18)
 miss_rows = [r for r in rows_e if r['doping'] == 'd_miss']
 check('E', 'd_miss 行全部 status=failed 且带失败原因（不静默跳过）',
       all(r['status'] == 'failed' and r['failed_message']
@@ -692,6 +754,16 @@ d1_sc = [r for r in rows_e
 check('E', '单 doping 三键方向：cautious（已知差异：键方向不同）',
       len(d1_sc) == 3
       and all(r['comparability_bucket'] == 'cautious' for r in d1_sc))
+d1_scpair = [r for r in rows_e
+             if r['doping'] == 'd1' and r['observable'] == SCPAIR_OBS]
+check('E', '单 doping SC 配对 SF 三键方向：cautious（键方向差异）且身份'
+      '标记 refbond_dir、参考键 0_1',
+      len(d1_scpair) == 3
+      and all(r['comparability_bucket'] == 'cautious'
+              and r['source_identity_kind'] == 'refbond_dir'
+              and r['refbond_or_source'] == '0_1'
+              and r['data_restricted'] == 'restricted'
+              for r in d1_scpair))
 check('E', 'd_miss 行：not_direct（无数值参与并列比较）',
       all(r['comparability_bucket'] == 'not_direct' for r in miss_rows))
 chg_e = [r for r in rows_e
@@ -734,11 +806,12 @@ if os.path.isdir(os.path.join(REAL_ROOT, 't_J_3', 'd1_100')):
     outs_real = cds.analyze_doping(
         'd1_100', root=REAL_ROOT, t_j='t_J_3', bond_dim='1500',
         N=200, a=1.0, q_list=qs200, refbonds={'49_50'})
-    check('F', '真实 d1_100：8 条分析全部运行（3 SC + 2+2 自旋 + 1 电荷）',
-          len(outs_real) == 8, f'{len(outs_real)} 条')
+    check('F', '真实 d1_100：11 条分析全部运行（3 SC + 3 SC 配对 SF + '
+          '2+2 自旋 + 1 电荷）',
+          len(outs_real) == 11, f'{len(outs_real)} 条')
     ok_real = [o for o in outs_real if o['failure'] is None]
     check('F', '真实 d1_100：无失败条目（status 为 ok/inconclusive 合法）',
-          len(ok_real) == 8
+          len(ok_real) == 11
           and all(o['report'].status in ('ok', 'inconclusive')
                   for o in ok_real),
           [o['failure']['type'] if o['failure'] else o['report'].status
@@ -762,6 +835,29 @@ if os.path.isdir(os.path.join(REAL_ROOT, 't_J_3', 'd1_100')):
           len(r_chg) == 1 and r_chg[0]['refbond_or_source'] == '49_50'
           and r_chg[0]['data_restricted'] == 'restricted'
           and r_chg[0]['q_grid_json'])
+    r_scpair = [r for r in rows_real
+                if r['observable'] == OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR]
+    check('F', '真实 SC 配对 SF 三键方向行：ok、restricted、身份 refbond_dir、'
+          '目标键计数与 q_grid 摘要存在',
+          len(r_scpair) == 3
+          and all(r['status'] == 'ok'
+                  and r['data_restricted'] == 'restricted'
+                  and r['source_identity_kind'] == 'refbond_dir'
+                  and r['refbond_or_source'] == '49_50'
+                  and r['q_grid_json']
+                  and r['source_coverage'] == ''   # bond 源口径不适用
+                  for r in r_scpair),
+          [(r['key_or_definition'], r['measured_pair_count'])
+           for r in r_scpair])
+    check('F', '真实 SC 配对 SF：目标键计数按方向实测（A/B=74、C=72，'
+          '全量解析不丢数据）',
+          {r['key_or_definition']: r['measured_pair_count']
+           for r in r_scpair} == {'A': 74, 'B': 74, 'C': 72},
+          {r['key_or_definition']: r['measured_pair_count']
+           for r in r_scpair})
+    check('F', '真实 SC 配对 SF 三键方向：cautious（单 doping 键方向差异，'
+          '不做跨 doping 结论）',
+          all(r['comparability_bucket'] == 'cautious' for r in r_scpair))
     raw = open(paths_real['json'], encoding='utf-8').read()
     check('F', '真实输出：严格 JSON 可解析、无 NaN 字面量',
           'NaN' not in raw and json.loads(raw)['rows'])

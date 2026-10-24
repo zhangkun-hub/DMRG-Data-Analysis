@@ -19,11 +19,12 @@ from .Analysis_Contract import (
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_ENERGY,
+    OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
 )
 from .Analysis_Integration import (
     analyze_with_report, structure_factor_report,
     peak_analysis_report, energy_extrapolation_report,
-    charge_structure_factor_report,
+    charge_structure_factor_report, sc_pair_structure_factor_report,
 )
 from .Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
 from .Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
@@ -51,6 +52,8 @@ _ROUTES = {
     (OBSERVABLE_SPIN_STRUCTURE_FACTOR, 'estimate'): structure_factor_report,
     (OBSERVABLE_SPIN_STRUCTURE_FACTOR, 'peak_analysis'): peak_analysis_report,
     (OBSERVABLE_CHARGE_STRUCTURE_FACTOR, 'estimate'): charge_structure_factor_report,
+    (OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, 'estimate'):
+        sc_pair_structure_factor_report,
     (OBSERVABLE_ENERGY, 'extrapolate'): energy_extrapolation_report,
 }
 
@@ -61,6 +64,7 @@ _DEFAULT_OPERATION = {
     OBSERVABLE_SPIN_CORRELATION: 'decay',
     OBSERVABLE_CHARGE_CORRELATION: 'decay',
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR: 'estimate',
+    OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR: 'estimate',
     OBSERVABLE_ENERGY: 'extrapolate',
 }
 

@@ -42,6 +42,7 @@ ANALYZER_DECAY_SPIN = 'SpinCorrDecayAnalyzer'
 ANALYZER_STRUCTURE_FACTOR = 'SpinStructureFactorEstimator'
 ANALYZER_PEAK = 'SpinStructureFactorPeakAnalyzer'
 ANALYZER_ENERGY = 'EnergyProcessor'
+ANALYZER_SC_PAIR_SF = 'SCPairStructureFactorEstimator'
 
 # ---- 物理量标识 ----
 OBSERVABLE_SUPERCONDUCTING_CORRELATION = 'superconducting_correlation'
@@ -50,6 +51,7 @@ OBSERVABLE_CHARGE_CORRELATION = 'charge_correlation'
 OBSERVABLE_SPIN_STRUCTURE_FACTOR = 'spin_structure_factor'
 OBSERVABLE_CHARGE_STRUCTURE_FACTOR = 'charge_structure_factor'
 OBSERVABLE_ENERGY = 'energy'
+OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR = 'sc_pair_structure_factor'
 
 
 def _convert(obj):

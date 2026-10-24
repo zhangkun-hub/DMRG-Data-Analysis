@@ -34,7 +34,9 @@ from .Analysis_Contract import (
 ANALYZER_SPIN_SF = 'SpinStructureFactorEstimator'
 ANALYZER_CHARGE_SF = 'ChargeStructureFactorEstimator'
 ANALYZER_PEAK = 'SpinStructureFactorPeakAnalyzer'
-_SF_ESTIMATOR_ANALYZERS = (ANALYZER_SPIN_SF, ANALYZER_CHARGE_SF)
+ANALYZER_SC_PAIR_SF = 'SCPairStructureFactorEstimator'
+_SF_ESTIMATOR_ANALYZERS = (ANALYZER_SPIN_SF, ANALYZER_CHARGE_SF,
+                           ANALYZER_SC_PAIR_SF)
 
 # 可比性检查状态（四态，语义见 audit_comparability docstring）
 CMP_CONSISTENT = 'consistent'
@@ -259,7 +261,9 @@ def audit_comparability(phase_report: PhaseDiagnosisReport) -> PhaseDiagnosisRep
                  if e['analyzer'] == ANALYZER_SPIN_SF]
     charge_idxs = [i for i, e in enumerate(entries)
                    if e['analyzer'] == ANALYZER_CHARGE_SF]
-    known_sf = {ANALYZER_SPIN_SF, ANALYZER_CHARGE_SF}
+    scpair_idxs = [i for i, e in enumerate(entries)
+                   if e['analyzer'] == ANALYZER_SC_PAIR_SF]
+    known_sf = {ANALYZER_SPIN_SF, ANALYZER_CHARGE_SF, ANALYZER_SC_PAIR_SF}
 
     # ==================================================================
     # source set 检查
@@ -299,6 +303,13 @@ def audit_comparability(phase_report: PhaseDiagnosisReport) -> PhaseDiagnosisRep
                           'comparison_level': 'set',
                           'reason': '自旋结构因子报告无源点身份集合字段，'
                                     '不推测源点'})
+    if scpair_idxs:
+        src_pairs.append({'type': 'source_set', 'analyzer': ANALYZER_SC_PAIR_SF,
+                          'entries': scpair_idxs, 'status': CMP_UNKNOWN,
+                          'comparison_level': 'set',
+                          'reason': 'SC 配对结构因子的源点身份为参考键'
+                                    '（单键，非源点集合），P2 不在此审计'
+                                    '（身份由汇总上下文 refbond_dir 标识）'})
     # 其余类型（衰减/能量/峰值）→ not_applicable（组级一条）
     others = [i for i, e in enumerate(entries) if e['analyzer'] not in known_sf]
     if others:
@@ -310,7 +321,7 @@ def audit_comparability(phase_report: PhaseDiagnosisReport) -> PhaseDiagnosisRep
     # ==================================================================
     # q_grid 检查（同 analyzer 组内逐对，摘要级）
     # ==================================================================
-    sf_idxs = spin_idxs + charge_idxs
+    sf_idxs = spin_idxs + charge_idxs + scpair_idxs
     for a, b in combinations(sf_idxs, 2):
         if entries[a]['analyzer'] != entries[b]['analyzer']:
             continue   # 不同 SF 类型不混组比较

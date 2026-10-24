@@ -22,10 +22,12 @@
 from .Analysis_Contract import (
     AnalysisReport, from_decay_result, from_structure_factor, from_peak_report,
     from_energy_extrapolation, OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
+    OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, ANALYZER_SC_PAIR_SF,
 )
 from .Spin_Structure_Factor_Analyzer import SpinStructureFactorPeakAnalyzer
 from .Energy_Process import EnergyProcessor
 from .Charge_Structure_Factor import ChargeStructureFactorEstimator
+from .SC_Pair_Structure_Factor import SCPairStructureFactorEstimator
 
 # 拟合质量指标：按 FitResult 实际字段名（r2/rss/rmse/aic/aicc/bic）提取，
 # 存在才收录；不编造缺失数值
@@ -164,4 +166,37 @@ def charge_structure_factor_report(nf_path, corr_paths, q_list, N,
     # 缺失时保持原有行为，不伪造默认值）
     if sf_result.get('q_grid') is not None:
         report.metadata['q_grid'] = sf_result['q_grid']
+    return report
+
+
+def sc_pair_structure_factor_report(direction, refbond_dir, q_list, N,
+                                    a=1.0, include_channels=True) -> AnalysisReport:
+    """调用 SCPairStructureFactorEstimator.estimate_from_files 并包装为
+    AnalysisReport。
+
+    契约适配器 from_structure_factor 的 analyzer/observable 按自旋结构因子
+    硬编码；本包装在适配后覆写为 SC 配对标识（不改契约适配器签名）。
+    语义与 from_structure_factor 一致：status 与 data_restricted 正交
+    （受限数据恒 is_restricted=True，仍 status='ok'）、warnings 由实际
+    计数构造、payload 保留原始 dict（含复数 S_q 与 channel_sf，默认不
+    序列化）。
+    SC 专属身份字段（存在才收录，缺失不编造）入 metadata：direction /
+    ref_bond / target_bond_count / channel_target_consistency；q_grid 与
+    电荷包装同模式。
+    不捕获底层异常（文件缺失 FileNotFoundError / 通道集合不一致
+    ValueError 等原样传播）。
+    """
+    sf_result = SCPairStructureFactorEstimator.estimate_from_files(
+        direction, refbond_dir, q_list, N, a, include_channels)
+    report = from_structure_factor(sf_result)
+    report.observable = OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR
+    report.analyzer = ANALYZER_SC_PAIR_SF
+    if sf_result.get('q_grid') is not None:
+        report.metadata['q_grid'] = sf_result['q_grid']
+    for k in ('direction', 'channel', 'ref_bond', 'target_bond_count'):
+        if k in sf_result:
+            report.metadata[k] = sf_result[k]
+    if 'channel_target_consistency' in sf_result:
+        report.metadata['channel_target_consistency'] = \
+            sf_result['channel_target_consistency']
     return report

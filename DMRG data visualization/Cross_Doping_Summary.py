@@ -10,6 +10,9 @@
 覆盖的分析（按实际存在的数据，不做完整性假定）：
 - 超导关联衰减：每个发现的参考键目录 × A/B/C 三个键方向（12 文件合成
   <Δ†Δ> 后经 SuperCorrDecayAnalyzer 分析）
+- SC 配对结构因子：同一参考键目录 × A/B/C 键方向的受限估计
+  （SCPairStructureFactorEstimator，固定参考键 × 单方向目标键集合；
+  不判定配对对称性或物理相态）
 - 自旋结构因子：sz_sz（measure_49/sz.json，源点 0）+ spin_dot
   （measure_49/50 三分量合成，源点 49/50）的受限估计 + 峰值分析
 - 电荷结构因子：nf + nf49nf + nf50nf 的连通形式受限估计
@@ -64,6 +67,7 @@ from Physical_Quantity.Analysis_Contract import (
     OBSERVABLE_SUPERCONDUCTING_CORRELATION,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
+    OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
 )
 from Physical_Quantity.Analysis_Entry import run_analysis
 from Physical_Quantity.Phase_Diagnosis import (
@@ -89,7 +93,9 @@ ANALYZER_SC_DECAY = 'SuperCorrDecayAnalyzer'
 ANALYZER_SPIN_SF = 'SpinStructureFactorEstimator'
 ANALYZER_PEAK = 'SpinStructureFactorPeakAnalyzer'
 ANALYZER_CHARGE_SF = 'ChargeStructureFactorEstimator'
-_SF_ESTIMATOR_ANALYZERS = (ANALYZER_SPIN_SF, ANALYZER_CHARGE_SF)
+ANALYZER_SC_PAIR_SF = 'SCPairStructureFactorEstimator'
+_SF_ESTIMATOR_ANALYZERS = (ANALYZER_SPIN_SF, ANALYZER_CHARGE_SF,
+                           ANALYZER_SC_PAIR_SF)
 
 # 源点/参考键身份来源标记（P3 修复；取值约定见 write_outputs 语义块）
 KIND_REFBOND_DIR = 'refbond_dir'                # SC：参考键目录名
@@ -172,13 +178,20 @@ class Loaders:
 # 单个 doping 的分析运行（复用统一入口 run_analysis）
 # ==========================================================================
 def analyze_doping(doping, *, root, t_j, bond_dim, N, a, q_list,
-                   config=None, refbonds=None, loaders=None) -> list:
+                   config=None, refbonds=None, loaders=None,
+                   only_observables=None) -> list:
     """对单个 doping 运行全部可用分析，返回 outcome 列表（顺序确定）。
 
     outcome = {'context': {...}, 'report': AnalysisReport|None,
                'failure': {'type', 'message'}|None}
     context 键：doping/N/bond_dim/observable/analyzer/refbond_or_source/
     key_or_definition（失败条目同样保留所尝试的分析身份，不伪造来源）。
+
+    only_observables : 可选的 observable 常量集合。None = 不筛选（原有
+    全量行为）；非 None 时只执行集合内 observable 的分析，筛选发生在
+    分析调用之前（未请求的分析不执行、不产生任何 outcome，而非执行后
+    丢弃）；未知 observable 值抛 ValueError（防拼写错误静默空跑）。
+    被筛选掉的分析的失败行同样不产生（未被请求）。
 
     失败约定：仅捕获 FileNotFoundError / ValueError（数据级失败，如文件
     缺失 / 格式错误 / 空输入）记录进 failure；其余异常（潜在程序缺陷）
@@ -187,6 +200,23 @@ def analyze_doping(doping, *, root, t_j, bond_dim, N, a, q_list,
     """
     loaders = loaders or Loaders()
     outcomes = []
+    # ---- 筛选集合（None = 全量；未知值明确报错，不静默空跑） ----
+    if only_observables is None:
+        want = None
+    else:
+        want = set(only_observables)
+        known = {OBSERVABLE_SUPERCONDUCTING_CORRELATION,
+                 OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
+                 OBSERVABLE_SPIN_STRUCTURE_FACTOR,
+                 OBSERVABLE_CHARGE_STRUCTURE_FACTOR}
+        unknown = want - known
+        if unknown:
+            raise ValueError(
+                f"only_observables 含未知 observable: {sorted(unknown)}，"
+                f"支持: {sorted(known)}")
+
+    def _want(observable):
+        return want is None or observable in want
 
     def _ctx(observable, analyzer, refbond_or_source, key_or_definition):
         return {'doping': doping, 'N': N, 'bond_dim': bond_dim,
@@ -209,16 +239,25 @@ def analyze_doping(doping, *, root, t_j, bond_dim, N, a, q_list,
             outcomes.append({'context': context, 'report': report,
                              'failure': None})
 
-    # ---- 超导关联衰减（参考键目录发现，逐键 A/B/C） ----
-    super_dir = os.path.join(root, t_j, doping,
-                             f'{bond_dim}_measure_super_corr')
-    try:
-        dir_names = sorted(os.listdir(super_dir))
-    except FileNotFoundError as e:
-        _fail(_ctx(OBSERVABLE_SUPERCONDUCTING_CORRELATION, ANALYZER_SC_DECAY,
-                   '', ''),
-              type(e).__name__, f'super_corr 目录缺失或不可读: {e}')
-    else:
+    # ---- 超导关联衰减（参考键目录发现，逐键 A/B/C）----
+    # 超导衰减与 SC 配对结构因子共用参考键目录发现循环；各自的调用
+    # 按 only_observables 独立筛选（筛选在调用前，未请求不执行）
+    if _want(OBSERVABLE_SUPERCONDUCTING_CORRELATION) \
+            or _want(OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR):
+        super_dir = os.path.join(root, t_j, doping,
+                                 f'{bond_dim}_measure_super_corr')
+        try:
+            dir_names = sorted(os.listdir(super_dir))
+        except FileNotFoundError as e:
+            if _want(OBSERVABLE_SUPERCONDUCTING_CORRELATION):
+                _fail(_ctx(OBSERVABLE_SUPERCONDUCTING_CORRELATION,
+                           ANALYZER_SC_DECAY, '', ''),
+                      type(e).__name__, f'super_corr 目录缺失或不可读: {e}')
+            if _want(OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR):
+                _fail(_ctx(OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
+                           ANALYZER_SC_PAIR_SF, '', ''),
+                      type(e).__name__, f'super_corr 目录缺失或不可读: {e}')
+            dir_names = []
         for name in dir_names:
             m = _SUPERCORR_DIR_RE.match(name)
             if not m:
@@ -229,73 +268,90 @@ def analyze_doping(doping, *, root, t_j, bond_dim, N, a, q_list,
                 continue
             ref_dir = os.path.join(super_dir, name)
             for key in SC_KEYS:
-                ctx = _ctx(OBSERVABLE_SUPERCONDUCTING_CORRELATION,
-                           ANALYZER_SC_DECAY, refbond_tag, key)
+                if _want(OBSERVABLE_SUPERCONDUCTING_CORRELATION):
+                    ctx = _ctx(OBSERVABLE_SUPERCONDUCTING_CORRELATION,
+                               ANALYZER_SC_DECAY, refbond_tag, key)
 
-                def _sc_analysis(_dir=ref_dir, _rb=refbond, _key=key):
-                    recs = loaders.super_corr(_dir, _rb, _key, N, a)
-                    return run_analysis(
-                        OBSERVABLE_SUPERCONDUCTING_CORRELATION,
-                        config=config, record_list=recs)
+                    def _sc_analysis(_dir=ref_dir, _rb=refbond, _key=key):
+                        recs = loaders.super_corr(_dir, _rb, _key, N, a)
+                        return run_analysis(
+                            OBSERVABLE_SUPERCONDUCTING_CORRELATION,
+                            config=config, record_list=recs)
 
-                _try(ctx, _sc_analysis)
+                    _try(ctx, _sc_analysis)
+
+                # ---- SC 配对结构因子（同一参考键目录 × 键方向；受限估计） ----
+                if _want(OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR):
+                    ctx_scsf = _ctx(OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
+                                    ANALYZER_SC_PAIR_SF, refbond_tag, key)
+
+                    def _sc_pair_analysis(_dir=ref_dir, _key=key):
+                        return run_analysis(
+                            OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
+                            operation='estimate', direction=_key,
+                            refbond_dir=_dir, q_list=q_list, N=N, a=a)
+
+                    _try(ctx_scsf, _sc_pair_analysis)
 
     # ---- 自旋结构因子：sz_sz（源点 0，旧版 sz.json） ----
     phys_dir = os.path.join(root, t_j, doping,
                             f'{bond_dim}_measure_phys_qty')
-    sz_path = os.path.join(phys_dir, 'measure_49', 'sz.json')
-    ctx_sz = _ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_SPIN_SF,
-                  '0', 'sz_sz')
-    _try(ctx_sz, run_analysis, OBSERVABLE_SPIN_STRUCTURE_FACTOR,
-         operation='estimate',
-         estimator_fn=SpinStructureFactorEstimator.estimate_sz_sz_from_file,
-         estimator_arg=sz_path, q_list=q_list, N=N, a=a)
-    if outcomes[-1]['report'] is not None:
-        ctx_sz_peak = _ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_PEAK,
-                           '0', 'sz_sz')
-        _try(ctx_sz_peak, run_analysis, OBSERVABLE_SPIN_STRUCTURE_FACTOR,
-             operation='peak_analysis',
-             sf_result=outcomes[-1]['report'].payload)
-    else:
-        _fail(_ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_PEAK, '0', 'sz_sz'),
-              'DependencyFailed', '前置 sz_sz 估计失败，跳过峰值分析')
+    if _want(OBSERVABLE_SPIN_STRUCTURE_FACTOR):
+        sz_path = os.path.join(phys_dir, 'measure_49', 'sz.json')
+        ctx_sz = _ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_SPIN_SF,
+                      '0', 'sz_sz')
+        _try(ctx_sz, run_analysis, OBSERVABLE_SPIN_STRUCTURE_FACTOR,
+             operation='estimate',
+             estimator_fn=SpinStructureFactorEstimator.estimate_sz_sz_from_file,
+             estimator_arg=sz_path, q_list=q_list, N=N, a=a)
+        if outcomes[-1]['report'] is not None:
+            ctx_sz_peak = _ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_PEAK,
+                               '0', 'sz_sz')
+            _try(ctx_sz_peak, run_analysis, OBSERVABLE_SPIN_STRUCTURE_FACTOR,
+                 operation='peak_analysis',
+                 sf_result=outcomes[-1]['report'].payload)
+        else:
+            _fail(_ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_PEAK,
+                       '0', 'sz_sz'),
+                  'DependencyFailed', '前置 sz_sz 估计失败，跳过峰值分析')
 
-    # ---- 自旋结构因子：spin_dot（源点 49/50 三分量合成） ----
-    ctx_dot = _ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_SPIN_SF,
-                   '49_50', 'spin_dot')
+        # ---- 自旋结构因子：spin_dot（源点 49/50 三分量合成） ----
+        ctx_dot = _ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_SPIN_SF,
+                       '49_50', 'spin_dot')
 
-    def _spin_dot_analysis():
-        recs = loaders.spin_dot(phys_dir, N, a)
-        return run_analysis(
-            OBSERVABLE_SPIN_STRUCTURE_FACTOR, operation='estimate',
-            estimator_fn=SpinStructureFactorEstimator.estimate_spin_dot_from_records,
-            estimator_arg=recs, q_list=q_list, N=N, a=a)
+        def _spin_dot_analysis():
+            recs = loaders.spin_dot(phys_dir, N, a)
+            return run_analysis(
+                OBSERVABLE_SPIN_STRUCTURE_FACTOR, operation='estimate',
+                estimator_fn=SpinStructureFactorEstimator.estimate_spin_dot_from_records,
+                estimator_arg=recs, q_list=q_list, N=N, a=a)
 
-    _try(ctx_dot, _spin_dot_analysis)
-    if outcomes[-1]['report'] is not None:
-        ctx_dot_peak = _ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_PEAK,
-                            '49_50', 'spin_dot')
-        _try(ctx_dot_peak, run_analysis, OBSERVABLE_SPIN_STRUCTURE_FACTOR,
-             operation='peak_analysis',
-             sf_result=outcomes[-1]['report'].payload)
-    else:
-        _fail(_ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_PEAK,
-                   '49_50', 'spin_dot'),
-              'DependencyFailed', '前置 spin_dot 估计失败，跳过峰值分析')
+        _try(ctx_dot, _spin_dot_analysis)
+        if outcomes[-1]['report'] is not None:
+            ctx_dot_peak = _ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR,
+                                ANALYZER_PEAK, '49_50', 'spin_dot')
+            _try(ctx_dot_peak, run_analysis, OBSERVABLE_SPIN_STRUCTURE_FACTOR,
+                 operation='peak_analysis',
+                 sf_result=outcomes[-1]['report'].payload)
+        else:
+            _fail(_ctx(OBSERVABLE_SPIN_STRUCTURE_FACTOR, ANALYZER_PEAK,
+                       '49_50', 'spin_dot'),
+                  'DependencyFailed', '前置 spin_dot 估计失败，跳过峰值分析')
 
     # ---- 电荷结构因子（nf + nf49nf + nf50nf 连通形式） ----
-    ctx_chg = _ctx(OBSERVABLE_CHARGE_STRUCTURE_FACTOR, ANALYZER_CHARGE_SF,
-                   '', 'charge_density_connected')
+    if _want(OBSERVABLE_CHARGE_STRUCTURE_FACTOR):
+        ctx_chg = _ctx(OBSERVABLE_CHARGE_STRUCTURE_FACTOR, ANALYZER_CHARGE_SF,
+                       '', 'charge_density_connected')
 
-    def _charge_analysis():
-        return run_analysis(
-            OBSERVABLE_CHARGE_STRUCTURE_FACTOR, operation='estimate',
-            nf_path=os.path.join(phys_dir, 'measure_49', 'nf.json'),
-            corr_paths=[os.path.join(phys_dir, 'measure_49', 'nf49nf.json'),
-                        os.path.join(phys_dir, 'measure_50', 'nf50nf.json')],
-            q_list=q_list, N=N, a=a)
+        def _charge_analysis():
+            return run_analysis(
+                OBSERVABLE_CHARGE_STRUCTURE_FACTOR, operation='estimate',
+                nf_path=os.path.join(phys_dir, 'measure_49', 'nf.json'),
+                corr_paths=[os.path.join(phys_dir, 'measure_49', 'nf49nf.json'),
+                            os.path.join(phys_dir, 'measure_50', 'nf50nf.json')],
+                q_list=q_list, N=N, a=a)
 
-    _try(ctx_chg, _charge_analysis)
+        _try(ctx_chg, _charge_analysis)
     return outcomes
 
 
@@ -367,7 +423,8 @@ def build_rows(outcomes, phase_report) -> list:
         # P3 修复：身份来源标记（由分析器与实际数据结构共同决定）。
         # 电荷行仅在 payload 实测存在 diagonal_source_sites 时于下方
         # 标记 payload_field；失败/字段缺失保持 ''（无法确定）。
-        if outcome['context']['analyzer'] == ANALYZER_SC_DECAY:
+        if outcome['context']['analyzer'] in (ANALYZER_SC_DECAY,
+                                              ANALYZER_SC_PAIR_SF):
             row['source_identity_kind'] = KIND_REFBOND_DIR
         elif outcome['context']['analyzer'] in (ANALYZER_SPIN_SF,
                                                 ANALYZER_PEAK):
@@ -831,7 +888,8 @@ def write_outputs(summary, outdir) -> dict:
                                       '摘要）优先于 cautious；同身份组全部'
                                       '失败 → not_direct（不降级）',
             'source_identity_kind': {
-                KIND_REFBOND_DIR: 'SC：参考键身份来自参考键目录名',
+                KIND_REFBOND_DIR: 'SC（衰减与配对结构因子）：参考键身份来自'
+                                  '参考键目录名',
                 KIND_PAYLOAD_FIELD: '电荷：来自 payload 的 diagonal_source_'
                                     'sites（对角补全源点，不等同于完整测量'
                                     '源点集合）',
@@ -865,10 +923,13 @@ def _print_console(summary, paths, config):
     by_doping = {}
     for r in rows:
         d = by_doping.setdefault(
-            r['doping'], {'sc': [0, 0], 'spin_sf': [0, 0],
-                          'peak': [0, 0], 'charge': [0, 0]})
+            r['doping'], {'sc': [0, 0], 'sc_pair_sf': [0, 0],
+                          'spin_sf': [0, 0], 'peak': [0, 0],
+                          'charge': [0, 0]})
         if r['observable'] == OBSERVABLE_SUPERCONDUCTING_CORRELATION:
             key = 'sc'
+        elif r['observable'] == OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR:
+            key = 'sc_pair_sf'
         elif r['analyzer'] == ANALYZER_PEAK:
             key = 'peak'
         elif r['observable'] == OBSERVABLE_SPIN_STRUCTURE_FACTOR:
@@ -879,11 +940,13 @@ def _print_console(summary, paths, config):
 
     print(f"\n===== 跨 doping 汇总（N={config.get('N')}, "
           f"bond_dim={config.get('bond_dim')}）=====")
-    print(f"{'doping':10} {'SC ok/fail':>10} {'spin_sf ok/fail':>15} "
-          f"{'peak ok/fail':>13} {'charge ok/fail':>14}")
+    print(f"{'doping':10} {'SC ok/fail':>10} {'SC_SF ok/fail':>13} "
+          f"{'spin_sf ok/fail':>15} {'peak ok/fail':>13} "
+          f"{'charge ok/fail':>14}")
     for doping in sorted(by_doping):
         d = by_doping[doping]
         print(f"{doping:10} {d['sc'][0]:>3}/{d['sc'][1]:<5} "
+              f"{d['sc_pair_sf'][0]:>6}/{d['sc_pair_sf'][1]:<6} "
               f"{d['spin_sf'][0]:>5}/{d['spin_sf'][1]:<8} "
               f"{d['peak'][0]:>5}/{d['peak'][1]:<6} "
               f"{d['charge'][0]:>6}/{d['charge'][1]:<6}")
