@@ -28,6 +28,8 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据
 
 JSON 格式统一为嵌套列表：`[[[0], [0.9998, 0]], [[1], [0.9999, 0]], ...]`，第一层元素是 `[格点索引, [值, 0]]`。
 
+**测量源码（仓库外，只读参照）**：数据目录的计算源码在 `C:\Users\ZhangKun\Desktop\DMRGtJModel`（测量程序如 `src/measure1.cpp`），其库函数来自 `C:\Users\ZhangKun\Desktop\UltraDMRG`（D 盘 `D:\Microsoft VS Code project\DMRG\` 有更全副本，含 tJ 算符定义）。访问/查看这两个文件夹无需请求用户；增、删、改才需要先请求。
+
 ## 3. 提取：DensityRecord
 
 ```python

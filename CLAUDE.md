@@ -13,6 +13,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. 统一分析契约与入口：`AnalysisReport` 统一结果外壳 + `run_analysis()` 统一分派（衰减分析 / 结构因子 / 峰值分析 / 能量外推）
 6. 跨 doping 受控数值汇总（P4.3）：`Cross_Doping_Summary.py` 逐 doping 运行统一入口，按可比性契约分组输出 CSV/JSON（见"跨 doping 汇总"一节）
 
+# 权限约定
+
+- 本项目目录 `C:\Users\ZhangKun\Desktop\DMRG-data-processing` 内的各种操作**无需请示用户**（读文件、grep、运行测试/脚本等被权限系统提示的操作——提示时直接 Yes）
+- 仓库外的测量源码文件夹 `C:\Users\ZhangKun\Desktop\DMRGtJModel` 与 `C:\Users\ZhangKun\Desktop\UltraDMRG`：只读访问/查看无需请示；增、删、改等改变程序内容的操作才需先请求（见"数据目录约定"）
+
 # 运行方式
 
 无 build/lint 体系。本项目是一个 Python 分析工具包 + Jupyter notebook 工作流，测试为 `tests/` 下可直接运行的脚本套件：
@@ -84,6 +89,13 @@ Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_super_corr/super_corr_{i}_{j}/
 - 已知数据质量事实：N400 超导数据的 SU(2) 对称性误差实测 0.008~0.144（远超 ~1e-4 经验阈值），合成关联值的物理解释需谨慎；N400 电荷/自旋关联均只有源点 97/98 两组
 
 JSON 格式统一为 `[[索引], [value, 0]]` 的嵌套列表字符串结构（如 `[[[0], [0.9998, 0]], ...]`）。
+
+## 测量源码位置（仓库外，只读参照）
+
+- `Data_Energy`、`Data_N200`、`Data_N400` 三个数据目录的计算源码均来自 **`C:\Users\ZhangKun\Desktop\DMRGtJModel`**（桌面兄弟目录，不在本仓库内）：测量程序如 `src/measure1.cpp`（自旋/密度/单粒子测量）、`src/measureSC.cpp` 与 `src/measureSC_fix_ref_extension.cpp`（超导关联）、`src/dmrg.cpp`、`src/honeycomb_lattice.h` 等
+- 该程序的库函数引用来自 **`C:\Users\ZhangKun\Desktop\UltraDMRG`**（如 `MeasureTwoSiteOpGroup`/`DumpMeasuRes` 在 `include/qlmps/...` 下）；另有一份更完整的副本在 `D:\Microsoft VS Code project\DMRG\`（含 `qlmps/model_relevant/operators/fermion/tJ_operators.h` 算符定义——桌面版 UltraDMRG 可能缺部分文件，D 盘版更全）
+- **权限约定**：访问、阅读、查看上述两个文件夹**无需请求用户**；只有增、删、改等改变程序内容的操作才需要先请求
+- 测量语义已核实（B1.1）：t-J 算子 `bupc/bupa/bdnc/bdna` = c↑†/c↑/c↓†/c↓，弦因子 `f`=(-1)^N 仅插中间点，单粒子测量为 j>源点 的单项采样；`CMakeLists.txt` 有 `-DUSE_REAL=1`（实值版），数据文件 `[re, im]` 格式对应复值序列化路径（数据虚部恒 0 与实值基态一致）
 
 # 跨 doping 汇总（P4.3）
 

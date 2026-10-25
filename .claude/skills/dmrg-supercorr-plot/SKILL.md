@@ -30,6 +30,8 @@ measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
 **运行前核对参数与目录一致**：notebook 里的参数块是示例值，refbond 目录以磁盘为准（可用 `glob` 列 `measure_super_corr/*`）。
 **数据质量注意**：N400 超导数据 SU(2) 对称性误差实测 0.008~0.144（远超 ~1e-4 经验阈值），合成关联值的物理解释需谨慎；N200 数据未发现此量级问题。
 
+**测量源码（仓库外，只读参照）**：数据目录的计算源码在 `C:\Users\ZhangKun\Desktop\DMRGtJModel`（超导四通道测量在 `src/measureSC.cpp` 与 `src/measureSC_fix_ref_extension.cpp`），其库函数来自 `C:\Users\ZhangKun\Desktop\UltraDMRG`（D 盘 `D:\Microsoft VS Code project\DMRG\` 有更全副本，含 `qlmps/model_relevant/operators/fermion/tJ_operators.h` 算符定义）。访问/查看这两个文件夹无需请求用户；增、删、改才需要先请求。
+
 ## 3. 提取：SuperCorrRecord
 
 ```python

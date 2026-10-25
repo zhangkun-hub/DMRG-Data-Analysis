@@ -26,6 +26,8 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据
 
 **运行前核对参数与目录一致**：notebook 里的参数块是示例值；参数不匹配会 FileNotFoundError。可用 `glob` 列实际目录。
 
+**测量源码（仓库外，只读参照）**：数据目录的计算源码在 `C:\Users\ZhangKun\Desktop\DMRGtJModel`（自旋三分量测量在 `src/measure1.cpp` 的 szsz/spsm/smsp 段），其库函数来自 `C:\Users\ZhangKun\Desktop\UltraDMRG`。访问/查看这两个文件夹无需请求用户；增、删、改才需要先请求。
+
 ## 3. 提取：CorrelationRecord
 
 `extract_data` 需要 A/B 子格序列 `sequence`，用于筛选有效源点/场点：
