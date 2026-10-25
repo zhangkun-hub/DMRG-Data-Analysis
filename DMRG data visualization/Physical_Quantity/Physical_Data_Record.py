@@ -1,4 +1,5 @@
 import ast
+import numpy as np
 from .Honeycomb_Lattice import HoneycombXCGeometry
 
 
@@ -265,4 +266,111 @@ class SuperCorrRecord(Record):
 
         return record_list  
         
-        
+
+
+#-----------------------------------------------------------------------------------
+# 单粒子关联函数<i·j>的数据记录器（B2：GreenFunction 输入）
+#-----------------------------------------------------------------------------------
+class SingleParticleRecord(Record):
+    """单粒子关联记录（j > 源点 的单向有序对，B1.1 已核实测量源码）。
+
+    value 保留复数表达能力（当前数据虚部恒 0，B1.1 CONFIRMED 实值
+    基态；不因当前数据实值而将接口限定为实数）。分析管线（距离分组/
+    衰减核心）消费实部——经 correlation 属性提供，与 CorrelationRecord
+    的分析字段约定一致，便于复用既有预处理。
+    """
+    def __init__(self, source_point: int, field_point: int,
+                 distance: float, value: complex):
+        self.source_point = source_point     # 关联函数的源点 i
+        self.field_point = field_point       # 关联函数的场点 j（j > i）
+        self.distance = distance             # 源点与场点之间的欧氏距离
+        self.value = value                   # 关联值（复数；当前数据虚部为 0）
+
+    @property
+    def correlation(self):
+        """分析管线使用的实部（虚部保留在 .value，不丢弃）。"""
+        return float(self.value.real)
+
+    def __str__(self):
+        return (f"单粒子关联的源点 i = {self.source_point}, "
+                f"场点 j = {self.field_point}, 距离 r = {self.distance}, "
+                f"关联值 = {self.value:.6f}")
+
+    # 数据提取的类方法
+    @classmethod
+    def extract_data(cls, data: str, N: int, a: float = 1.0) \
+            -> list['SingleParticleRecord']:
+        """
+        将输入的字符串数据解析并封装为 SingleParticleRecord 对象列表。
+
+        :param data: 单粒子关联数据（列表构成的字符串，元素格式
+                     [[i, j], [re, im]]；j > i 单向，全量解析，无
+                     sequence/step 过滤——B1 实测目标集合为 ref_site+1
+                     至 N-1）。
+        :param N: 系统格点数（要求：N/8 可以整除）。
+        :param a: 晶格常数（默认为 a = 1.0）。
+        :return record_list: SingleParticleRecord 对象列表。
+
+        校验（遵循项目既有提取风格）：空数据/结构错误/源点不一致 →
+        ValueError；条目格式错误 → NameError（与 CorrelationRecord
+        一致的既有风格）；索引越界/重复键/非有限值 → ValueError
+        （严格拒绝，不静默跳过）。
+        """
+        ### 1.提取数据
+        try:
+            data_list = ast.literal_eval(data)
+        except (ValueError, SyntaxError) as e:
+            raise ValueError(f"输入数据格式错误，无法解析: {e}")
+
+        if not data_list:
+            raise ValueError(f"输入的数据{data}内容为空")
+
+        ### 2.获取预期的源点并校验
+        try:
+            first_i = data_list[0][0][0]
+        except (IndexError, TypeError):
+            raise ValueError("数据结构不符合预期格式 [[i, j], [re, im]]")
+
+        ### 3.创建晶格几何对象
+        honey_latt = HoneycombXCGeometry(N, a)
+
+        ### 4.遍历数据并封装
+        record_list = []
+        seen_pairs = set()
+        for k, element in enumerate(data_list):
+            ## 4.1 解包数据（格式: [[i, j], [re, im]]）
+            try:
+                [i, j], [re, im] = element
+            except (TypeError, ValueError):
+                raise NameError(f"Error：第 {k} 个元素格式不正确")
+
+            ## 4.2 校验源点一致性
+            if i != first_i:
+                raise ValueError(
+                    f"数据不一致：第 {k} 个元素的源点为 {i}，"
+                    f"预期为 {first_i}")
+
+            ## 4.3 校验索引范围
+            if not (0 <= i < N and 0 <= j < N):
+                raise ValueError(
+                    f"索引越界：第 {k} 个元素 ({i}, {j}) 超出 N={N}")
+
+            ## 4.4 校验重复键
+            if (i, j) in seen_pairs:
+                raise ValueError(f"重复键：第 {k} 个元素 ({i}, {j}) 已存在")
+            seen_pairs.add((i, j))
+
+            ## 4.5 校验有限值并构造复数
+            re_f, im_f = float(re), float(im)
+            if not (np.isfinite(re_f) and np.isfinite(im_f)):
+                raise ValueError(
+                    f"非有限值：第 {k} 个元素 ({i}, {j}) 值为 ({re}, {im})")
+            value = complex(re_f, im_f)
+
+            ## 4.6 Honeycomb 晶格距离计算与封装
+            r = honey_latt.get_distance(i, j)
+            record_obj = cls(source_point=i, field_point=j,
+                             distance=r, value=value)
+            record_list.append(record_obj)
+
+        return record_list
