@@ -384,6 +384,16 @@ exp(−i·qy·√3a) = (−1)^m。影响范围：**仅奇 qy 扇区（m=1,3）**
 - 状态 = `blocked_by_data` 的情况：幅度提取所需假设本身不可验证时
   不适用（幅度是层次 1 量）；`blocked_by_data` 保留给相位通道
 
+> **P0 实现现状（5B-2 观测模式，语义收口）**：`supported_candidate`
+> 恒 `None` 且 `supported_candidate_status` 恒 `'not_evaluated'`
+> （判定未执行：record-level bootstrap/联合协方差未实现；`evaluated_none`
+> / `evaluated_candidate` 为未来语义预留）；模板距离仅为描述性观测。
+> "观测到与模板接近"与"候选获得统计支持"是两个层次，不得混淆。
+> 层内逐对积 `r_αβ=s_α·s_β`（5B-3）作为派生观测注入各层
+> `sign_evidence.relative_sign_pairs`（仅供描述，可作未来候选匹配
+> 输入）；跨元素模式到配对表示的规则化解释未实现
+> （`cross_element_sign_structure='not_implemented'`）。
+
 **符号通道 `sign`**：
 - `extracted`：§4.5 全部条件满足，输出相对符号结构（整体符号规范外）
 - `evidence_insufficient`：数据质量不足以稳定提取

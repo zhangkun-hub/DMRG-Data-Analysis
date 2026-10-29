@@ -22,9 +22,26 @@ D4 合成验证与 D5 3.1 审计。本模块当前实现：
   与振幅矩阵完全独立）+ 三通道状态机（run_stage4：magnitude 结构证据
   / sign 逐元素符号证据 / phase blocked_by_data，互不覆盖）
 
-明确不实现（后续阶段）：记录级 bootstrap、联合协方差、幅度候选匹配
-（supported_candidate）、跨元素符号结构推断、d 波/s 波/d+id/ODLRO 判定、
-Analysis_Entry 路由集成。
+明确不实现（后续阶段）：记录级 bootstrap、联合协方差、幅度候选支持
+判定（supported_candidate 恒 None 且 supported_candidate_status 恒
+'not_evaluated'，P0 定稿）、跨元素符号结构推断（逐对积已由 5B-3 提供，
+模式级解释未实现）、d 波/s 波/d+id/ODLRO 判定、Analysis_Entry 路由集成。
+
+P0 语义收口（三通道定稿）：
+- magnitude：振幅矩阵观测 + 秩一结构诊断 + 模板距离描述（数值事实），
+  不含统计支持结论——candidate_distances 不是支持度/概率/显著性
+- sign：逐元素符号为原始观测；层内逐对积 r_αβ=s_α·s_β 为派生观测
+  （5B-3，仅供描述、可作未来候选匹配的输入）；跨元素模式到配对表示
+  的规则化解释未实现（cross_element_sign_structure='not_implemented'）
+- phase：blocked_by_data = 数据能力限制（实值数据无复相位信息），
+  不是算法失败、不是拟合失败、不是候选匹配失败
+- PhaseDiagnosis 消费约定（最小证据类别，不新增 AnalysisReport 字段）：
+  magnitude_observation（振幅矩阵/秩一/距离）、sign_observation
+  （逐元素符号/逐对积）、phase_capability（blocked_by_data）、
+  quality_diagnostic（checks/blocking_reasons/warnings）、
+  analysis_limitation（supported_candidate_status='not_evaluated'、
+  cross_element_sign_structure='not_implemented'）——由未来接入层
+  映射，本模块不改契约
 
 关键语义：
 - 包络振幅 A 取自 |C(r)| 对数空间拟合（非负）：只能用于振幅矩阵结构
@@ -1915,9 +1932,20 @@ CANDIDATE_TEMPLATES = {
 CAND_OBSERVATIONAL = 'observational'
 CAND_INCONCLUSIVE = 'inconclusive'
 
+# 候选支持判定执行状态（P0 语义收口；与 supported_candidate 的值解耦，
+# None 不再单独承载"未执行/无候选/不确定"多义）：
+# - not_evaluated：支持判定未执行（record-level bootstrap 与联合协方差
+#   未实现，禁止用点估计加任意容差冒充统计支持结论）——当前实现恒此值
+# - evaluated_none / evaluated_candidate：未来语义预留（bootstrap 实现后
+#   才可达），当前任何路径不可产生
+CAND_STATUS_NOT_EVALUATED = 'not_evaluated'
+CAND_STATUS_EVALUATED_NONE = 'evaluated_none'
+CAND_STATUS_EVALUATED_CANDIDATE = 'evaluated_candidate'
+
 
 def candidate_observation_report(layer_info, stage3_layer, su2_by_element,
-                                 sign_channel, layer_key, config=None):
+                                 sign_channel, layer_key, config=None,
+                                 rel_pairs=None):
     """单个振荡证据层的观测模式候选报告（5B-2，纯函数）。
 
     输入：
@@ -1928,13 +1956,18 @@ def candidate_observation_report(layer_info, stage3_layer, su2_by_element,
     - su2_by_element: build_comparable_set 的 su2 报告
     - sign_channel: analyze_sign_channel 输出（或 None：sign 证据缺失）
     - layer_key: 'osc' | 'non_osc'
+    - rel_pairs: relative_sign_pair_reports 输出（或 None：未注入）。
+      非 None 时提取本层的逐对积观测（available）与 unavailable 计数
+      注入 sign_evidence.relative_sign_pairs——派生观测仅供描述
 
-    语义（任务书 5B-2 §2/§3）：
+    语义（任务书 5B-2 §2/§3 + P0 定稿）：
     - observed_anisotropy：归一化非负幅度（分量顺序 A/B/C），仅观测
     - candidate_distances：到理想幅度模板的欧氏距离，仅描述性诊断，
       不是概率/置信度/支持程度
-    - supported_candidate 恒 None（joint covariance 不可用、bootstrap
-      未实现；禁止点估计加任意容差冒充置信区间）
+    - supported_candidate 恒 None + supported_candidate_status 恒
+      'not_evaluated'（P0：判定未执行与"判定后无候选"语义分离；
+      joint covariance 不可用、bootstrap 未实现；禁止点估计加任意
+      容差冒充置信区间）
     - status：observational（无阻断）/ inconclusive（存在阻断）
     - 保守：缺字段、非有限值、状态矛盾 → inconclusive + 原因，
       不伪造证据；不新增生产阈值
@@ -2101,13 +2134,27 @@ def candidate_observation_report(layer_info, stage3_layer, su2_by_element,
             layer_key, {}).get('state')
         available = set(sign_channel.get('relative_signs_available') or [])
         extracted = sorted(set(members) & available)
+    # 层内逐对积（派生观测，5B-3；rel_pairs=None 表示未注入——
+    # 与"本层无 available 配对"区分：后者是注入后得到空列表）
+    rel_avail = None
+    rel_unavail = None
+    if rel_pairs is not None:
+        layer_pairs = [p for p in rel_pairs.get('pairs', [])
+                       if p.get('layer') == layer_key]
+        rel_avail = [p for p in layer_pairs
+                     if p.get('state') == RELPAIR_AVAILABLE]
+        rel_unavail = len(layer_pairs) - len(rel_avail)
     sign_evidence = {
         'per_layer_state': per_layer_state,
         'extracted_elements': extracted,
+        'relative_sign_pairs': rel_avail,
+        'n_relative_sign_pairs_unavailable': rel_unavail,
         'cross_element_sign_structure': 'not_implemented',
-        'note': ('仅记录现有逐元素符号证据及缺失状态；跨元素相对符号'
-                 '结构（s_α·s_β）未实现，不自行推导，不产生伙伴定向'
-                 '结论'),
+        'note': ('逐元素符号为原始观测；relative_sign_pairs 为派生观测'
+                 '（r_αβ=s_α·s_β，仅供描述，可作未来候选匹配的输入，'
+                 '不产生伙伴定向结论）；跨元素符号模式到配对表示的'
+                 '规则化解释未实现（cross_element_sign_structure='
+                 "'not_implemented'），不自行推导"),
     }
 
     status = CAND_INCONCLUSIVE if blocking else CAND_OBSERVATIONAL
@@ -2116,9 +2163,14 @@ def candidate_observation_report(layer_info, stage3_layer, su2_by_element,
         'status': status,
         'observed_anisotropy': obs,
         'supported_candidate': None,
+        'supported_candidate_status': CAND_STATUS_NOT_EVALUATED,
         'supported_candidate_semantics': (
-            '恒为 None：joint covariance 不可用、record-level bootstrap '
-            '未实现；禁止用点估计加任意容差冒充置信区间'),
+            'supported_candidate 恒为 None（未执行统计支持判定）；'
+            'supported_candidate_status 恒为 not_evaluated：'
+            'joint covariance 不可用、record-level bootstrap 未实现，'
+            '禁止用点估计加任意容差冒充置信区间；'
+            'evaluated_none / evaluated_candidate 为未来语义预留'
+            '（bootstrap 实现后才可达），当前任何路径不可产生'),
         'prerequisite_checks': checks,
         'blocking_reasons': blocking,
         'quality_warnings': warnings,
@@ -2135,6 +2187,10 @@ def run_candidate_observations(report, config=None):
     复用 run_stage3 与 analyze_sign_channel 的真实结果（不重复拟合、
     不重复符号提取）；跨层不合并。旧式单集合 report（无 layers）→
     状态 unavailable（不伪造分层观测）。
+
+    P0 定稿：额外计算 relative_sign_pair_reports（5B-3）并把各层的
+    逐对积观测注入对应层的 sign_evidence.relative_sign_pairs
+    （派生观测仅供描述；模式级解释仍 not_implemented）。
     """
     config = config or PairingSymmetryConfig()
     cs = report['comparable_set']
@@ -2145,7 +2201,10 @@ def run_candidate_observations(report, config=None):
         'supported_candidate_semantics': (
             'supported_candidate 在所有路径下恒为 None：joint covariance '
             '不可用且 record-level bootstrap 未实现，禁止用点估计加'
-            '任意容差冒充置信区间'),
+            '任意容差冒充置信区间；supported_candidate_status 恒为 '
+            'not_evaluated（判定未执行），evaluated_none/'
+            'evaluated_candidate 为未来语义预留'),
+        'supported_candidate_status': CAND_STATUS_NOT_EVALUATED,
     }
     if 'layers' not in cs:
         base['status'] = 'unavailable'
@@ -2156,10 +2215,11 @@ def run_candidate_observations(report, config=None):
         return base
     st3 = run_stage3(report, config)
     sign = analyze_sign_channel(report, config)
+    rel = relative_sign_pair_reports(sign, report)
     out = dict(base)
     out['layers'] = {}
     for L in (LAYER_OSC, LAYER_NON_OSC):
         out['layers'][L] = candidate_observation_report(
             cs['layers'][L], st3['layers'].get(L), report.get('su2') or {},
-            sign, L, config)
+            sign, L, config, rel_pairs=rel)
     return out

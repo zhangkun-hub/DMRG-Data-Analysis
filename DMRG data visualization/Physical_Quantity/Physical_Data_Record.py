@@ -114,8 +114,13 @@ class CorrelationRecord(Record):
         将输入的字符串数据解析并封装为 CorrelationRecord 对象列表。
         
         :param data: 计算的关联函数的数据(是列表构成的字符串，每个元素的格式为: [[i, j], [val, 0]])。
-        :param sequence: honeycomb晶格下有意义的关联格点序列。由源点位置而分为两种情形：源点处于A子格的序列/源点处于B子格的序列。
-                    例如：A子格序列：range(1, 300, 4)；B子格序列：range(2, 300, 4)。
+        :param sequence: honeycomb晶格下有意义的关联场点序列（源点所在
+                    y 行的场点集约定）：i % 4 是 y 行索引（不是蜂窝
+                    A/B 子晶格划分）。例如：源点 49 所在 y 行
+                    （i % 4 == 1）：range(1, 300, 4)；源点 50 所在
+                    y 行（i % 4 == 2）：range(2, 300, 4)。子晶格划分
+                    见 HoneycombXCGeometry.sub_lattice_partition
+                    （近邻表二部染色）。
         :param N: 系统格点数(要求：N/8可以整除)。
         :param a: honeycomb晶格的晶格常数（默认为a = 1.0）。
                     

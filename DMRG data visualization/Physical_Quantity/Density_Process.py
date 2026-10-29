@@ -8,10 +8,86 @@ from .Honeycomb_Lattice import HoneycombXCGeometry
 #-----------------------------------------------------------------------------------
 # honeycomb格点的电子密度n的数据处理器
 #----------------------------------------------------------------------------------- 
-class DensityProcessor: 
-    #------------------------------------------------------------------- 
+class DensityProcessor:
+    #-------------------------------------------------------------------
+    #------------------- 电子密度的数值摘要（不绘图） -------------------
+    #-------------------------------------------------------------------
+    @staticmethod
+    def profile_summary(record_list: list[DensityRecord],
+                        N: int, a: float = 1.0) -> dict:
+        """密度数值摘要（观测层契约输入）：逐格点向量 + 行平均 +
+        A/B 子晶格平均 + 晶胞分组平均 + 几何/边界元数据。
+
+        校验与语义：
+        - 完整性：record_list 长度必须等于 N 且格点索引恰好覆盖
+          0..N-1（缺失/重复/越界 → ValueError，不静默补默认值）
+        - 行分组：horizontal_starting_point = i % 4（DensityProcessor
+          既有行语义；i % 4 不是平移不变晶胞，行平均不解释为条纹
+          序参量）
+        - 子晶格：HoneycombXCGeometry.sub_lattice_partition（近邻表
+          二部染色并验证，见其 docstring；与关联测量源点序列的
+          A/B 命名是两套约定，不混用）
+        - 晶胞分组：i // 8（XC 构型基元 8 格点，几何定义）——
+          unit_cell_mean 为每个晶胞的平均密度（沿 x 方向的晶胞序列，
+          长度 N/8；不据此解释条纹序）
+        - 边界：x 开放 / y 周期（XC 构型几何定义）
+        - 非有限密度值：计数入 non_finite_count（序列化层按契约转
+          null），不抛错不掩盖
+        - 本方法只产生数值观测，不输出任何相级判定
+        """
+        if not isinstance(N, int) or N <= 0 or N % 8 != 0:
+            raise ValueError(
+                f'N={N} 不是 8 的正倍数，不符合 XC 构型几何约束')
+        if len(record_list) != N:
+            raise ValueError(
+                f'密度记录数 {len(record_list)} != N={N}'
+                '（格点数不匹配，不静默补默认值）')
+        sites = [r.lattice_point for r in record_list]
+        if sorted(sites) != list(range(N)):
+            raise ValueError(
+                '格点索引未恰好覆盖 0..N-1（缺失/重复/越界），'
+                '不静默补默认值')
+        by_site = {r.lattice_point: r.density for r in record_list}
+        density = np.array([by_site[i] for i in range(N)], dtype=float)
+        finite_mask = np.isfinite(density)
+        non_finite = int((~finite_mask).sum())
+
+        geometry = HoneycombXCGeometry(N, a)
+        partition = geometry.sub_lattice_partition()
+        labels = partition['site_labels']
+        safe = np.where(finite_mask, density, 0.0)   # 非有限值不进入均值
+        row_mean = {j: float(safe[np.arange(N) % 4 == j].mean())
+                    if (np.arange(N) % 4 == j).any() else None
+                    for j in range(4)}
+        sub_mean = {c: float(safe[[i for i in range(N)
+                                   if labels[i] == c]].mean())
+                    if any(labels[i] == c for i in range(N)) else None
+                    for c in ('A', 'B')}
+        unit_cell_mean = [
+            float(safe[l * 8:(l + 1) * 8].mean())
+            for l in range(N // 8)]
+        return {
+            'N': N,
+            'a': a,
+            'density_by_site': [float(v) for v in density],
+            'row_mean': row_mean,
+            'sub_lattice_mean': sub_mean,
+            'unit_cell_mean': unit_cell_mean,
+            'sub_lattice_partition': partition,
+            'geometry': {
+                'lattice': 'honeycomb_xc',
+                'unit_cell_size': 8,
+                'boundary': {'x': 'open', 'y': 'periodic'},
+                'row_partition':
+                    'horizontal_starting_point = i % 4'
+                    '（行分组，不是平移不变晶胞）',
+            },
+            'non_finite_count': non_finite,
+            'status_note': '密度数值摘要（观测层）；不含相级判定',
+        }
+    #-------------------------------------------------------------------
     #------------------- 电子密度的一维折线图可视化 --------------------
-    #------------------------------------------------------------------- 
+    #-------------------------------------------------------------------
     @staticmethod
     def Line_Chart_Visualization(record_list: list[DensityRecord]):
         """

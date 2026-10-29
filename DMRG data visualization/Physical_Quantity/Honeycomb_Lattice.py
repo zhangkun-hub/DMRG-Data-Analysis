@@ -137,7 +137,56 @@ class HoneycombXCGeometry(HoneycombLattice):
         ## 添加到最近邻格点列表中
         lattice_nn_list.extend(list_x)
         
-        
+
         return lattice_nn_list
+
+
+    def sub_lattice_partition(self) -> dict:
+        """基于本构型最近邻表的二部染色 A/B 子晶格划分。
+
+        honeycomb 格是二部图：任意最近邻边连接 A/B 两套三角子晶格。
+        从格点 0 出发按 `_nearest_neighbor_grid_index` 做 BFS 染色，
+        并验证：
+        - 二部性：每条最近邻边两端必须异色（违反 → ValueError，
+          不伪造划分）
+        - 完整性：全部 N 个格点均被染色（图不连通或近邻表缺边 →
+          ValueError，不输出残缺划分）
+
+        返回 dict：'derivation'（推导方式，可追溯）与 'site_labels'
+        （索引 0..N-1 的 'A'/'B' 列表，格点 0 所在套命名为 'A'）。
+        划分由本构型的近邻表推导，不由调用方硬编码；注意该划分是
+        二部图意义下的子晶格，与 CorrelationRecord docstring 中
+        "A 子格序列 range(1,N,4)"（i%4==1）的测量源点序列约定
+        是两套不同命名，不得混用。
+        """
+        nn = self._nearest_neighbor_grid_index()
+        adj = {i: [] for i in range(self.N)}
+        for i, j in nn:
+            adj[i].append(j)
+            adj[j].append(i)
+        labels = {}
+        labels[0] = 'A'
+        stack = [0]
+        while stack:
+            u = stack.pop()
+            cu = labels[u]
+            for v in adj[u]:
+                if v in labels:
+                    if labels[v] == cu:
+                        raise ValueError(
+                            f'最近邻表不是二部图：边 ({u}, {v}) 两端同色，'
+                            '无法划分 A/B 子晶格')
+                else:
+                    labels[v] = 'B' if cu == 'A' else 'A'
+                    stack.append(v)
+        if len(labels) != self.N:
+            missing = [i for i in range(self.N) if i not in labels]
+            raise ValueError(
+                f'最近邻图不连通或覆盖不完整（未染色格点: {missing[:8]}'
+                f'{"…" if len(missing) > 8 else ""}，共 {len(missing)} 个），'
+                '子晶格划分不完整')
+        return {'derivation':
+                'bipartite_coloring_from_nearest_neighbor_table',
+                'site_labels': [labels[i] for i in range(self.N)]}
         
         

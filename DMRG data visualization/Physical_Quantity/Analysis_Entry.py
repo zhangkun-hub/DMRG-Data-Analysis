@@ -21,11 +21,18 @@ from .Analysis_Contract import (
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_ENERGY,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
+    OBSERVABLE_SC_PAIRING_SYMMETRY,
+    OBSERVABLE_LOCAL_DENSITY,
+    OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT,
 )
 from .Analysis_Integration import (
     analyze_with_report, structure_factor_report,
     peak_analysis_report, energy_extrapolation_report,
     charge_structure_factor_report, sc_pair_structure_factor_report,
+    sc_pairing_symmetry_analysis_report,
+    density_profile_report,
+    charge_peak_analysis_report,
+    charge_spin_peak_alignment_report,
 )
 from .Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
 from .Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
@@ -57,9 +64,16 @@ _ROUTES = {
     (OBSERVABLE_SPIN_STRUCTURE_FACTOR, 'estimate'): structure_factor_report,
     (OBSERVABLE_SPIN_STRUCTURE_FACTOR, 'peak_analysis'): peak_analysis_report,
     (OBSERVABLE_CHARGE_STRUCTURE_FACTOR, 'estimate'): charge_structure_factor_report,
+    (OBSERVABLE_CHARGE_STRUCTURE_FACTOR, 'peak_analysis'):
+        charge_peak_analysis_report,
     (OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, 'estimate'):
         sc_pair_structure_factor_report,
     (OBSERVABLE_ENERGY, 'extrapolate'): energy_extrapolation_report,
+    (OBSERVABLE_SC_PAIRING_SYMMETRY, 'analyze'):
+        sc_pairing_symmetry_analysis_report,
+    (OBSERVABLE_LOCAL_DENSITY, 'profile'): density_profile_report,
+    (OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT, 'align'):
+        charge_spin_peak_alignment_report,
 }
 
 # 只有一种操作的观测量 → 默认操作（保持常用调用简洁）；
@@ -72,10 +86,14 @@ _DEFAULT_OPERATION = {
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR: 'estimate',
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR: 'estimate',
     OBSERVABLE_ENERGY: 'extrapolate',
+    OBSERVABLE_SC_PAIRING_SYMMETRY: 'analyze',
+    OBSERVABLE_LOCAL_DENSITY: 'profile',
+    OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT: 'align',
 }
 
-# 支持 config 参数的链路（仅衰减分析；其余链路收到 config 抛 TypeError）
-_CONFIG_SUPPORTED = {'decay'}
+# 支持 config 参数的链路（decay → AnalyzerConfig；analyze →
+# PairingSymmetryConfig；其余链路收到 config 抛 TypeError）
+_CONFIG_SUPPORTED = {'decay', 'analyze'}
 
 
 def run_analysis(observable, *, operation=None, config=None, **kwargs):

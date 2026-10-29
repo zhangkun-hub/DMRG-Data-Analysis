@@ -66,16 +66,128 @@ class EnergyRecord:
 # 2. 能量处理器
 #-----------------------------------------------------------------------------------
 class EnergyProcessor:
-    ### 热力学极限外推方法（含异常点检测）
+    ### MAD 异常点诊断核心（共用私有实现：extrapolate 与
+    ### diagnose_outliers 共用，零复制）
+    @staticmethod
+    def _outlier_diagnosis(ns, y, power, threshold):
+        """MAD 稳健尺度候选异常点诊断核心（B3-A3 算法，原样保留）。
+
+        输入 ns/y 为按 N 升序的格点数数组与单格点能量数组。
+        :return dict：诊断字段语义见 diagnose_outliers 的文档。
+        """
+        x = 1 / (np.asarray(ns, dtype=float) ** power)
+
+        ## 初始拟合（诊断用全点拟合）
+        coeffs_init = np.polyfit(x, y, 1)
+        y_pred = np.polyval(coeffs_init, x)
+        residuals = y - y_pred  # 残差：衡量拟合的好坏程度
+
+        ## 残差尺度：稳健 MAD（中位数绝对偏差）× 1.4826
+        # 1.4826 为正态分布一致性常数（正态数据下等价于标准差）；
+        # MAD 对离群点自举污染稳健（B3-A2 实测：std 判据在 5 点小样本
+        # 下因离群点污染尺度而漏检）
+        mad_res = np.median(np.abs(residuals - np.median(residuals)))
+        scale = 1.4826 * mad_res
+
+        ## 退化保护：残差尺度接近浮点噪声量级（完美共线/近线性
+        # 数据残差 ~1e-15×|y|）时跳过阈值比较，比值按不可定义处理
+        # （None，不伪造有限比值）——避免把所有点误判为候选异常、
+        # 避免空数组传入 polyfit（B3-A2 实测崩溃）
+        y_scale = np.median(np.abs(y))
+        if y_scale > 0 and scale <= 1e-12 * y_scale:
+            degenerate = True
+            mask = np.ones(len(x), dtype=bool)   # 全部保留，不比较阈值
+            residual_ratios = {str(int(n)): None for n in ns}
+        else:
+            degenerate = False
+            ## 判断准则：|残差| ≤ threshold × 稳健尺度 → 正常点
+            # 默认threshold=2.0，即保留残差在2个稳健尺度内的点
+            mask = np.abs(residuals) <= threshold * scale
+            # 最小样本保护：剔除后剩余 < 3（契约最低拟合点数）→ 按
+            # 残差降序恢复点至 3（不得盲目继续剔除）
+            if np.sum(mask) < 3:
+                order = np.argsort(np.abs(residuals))[::-1]  # 残差降序
+                for idx in order:
+                    if np.sum(mask) >= 3:
+                        break
+                    mask[idx] = True
+            residual_ratios = {str(int(n)): float(r / scale)
+                               for n, r in zip(ns, residuals)}
+
+        ## 敏感性参照：全点拟合截距（正式主结果）与剔除候选点后的
+        # 重拟合截距
+        e_inf_all = np.polyfit(x, y, 1)[1]
+        e_inf_refit = np.polyfit(x[mask], y[mask], 1)[1]
+        return {
+            'masked_N': [int(n) for n in ns[~mask]],
+            'residual_ratios': residual_ratios,
+            'scale': float(scale),
+            'degenerate': bool(degenerate),
+            'E_inf_all_points': float(e_inf_all),
+            'E_inf_refit': float(e_inf_refit),
+            'sensitivity_delta': float(e_inf_refit - e_inf_all),
+            'mask': [bool(m) for m in mask],
+        }
+
+    ### MAD 候选异常点诊断（公开入口，纯数值）
+    @staticmethod
+    def diagnose_outliers(records: List[EnergyRecord], power: int = 1,
+                          threshold: float = 2.0):
+        """MAD 稳健尺度候选异常点诊断（纯数值，不绘图、不打印）。
+
+        与 extrapolate 共用同一诊断算法（_outlier_diagnosis），仅返回
+        结构化诊断信息供敏感性分析使用；不修改、不决定任何主结果。
+        数据口径与 extrapolate 一致：x = 1/N^power，y = Es。
+
+        :param records: 数据列表，元素为封装的EnergyRecord对象。
+        :param power: 外推幂次（同 extrapolate）。
+        :param threshold: 诊断阈值（|残差|/稳健尺度 ≤ threshold 视为
+            正常点）。仅影响诊断候选列表，不影响任何主拟合。
+
+        :return dict，字段语义：
+            masked_N (list[int])：候选异常点的 N 列表（|残差|/稳健
+                尺度超过 threshold；最小样本保护保证正常点至少 3 个）。
+                无候选点时为空列表 []。
+            residual_ratios (dict[str→float|None])：各 N 的残差/稳健
+                尺度比（有符号，与残差同号；键为 N 的十进制字符串）。
+                尺度退化（degenerate=True）时比值不可定义，统一为
+                None——不伪造有限比值。
+            scale (float)：稳健尺度 = 1.4826 × MAD（残差的中位数绝对
+                偏差），与 |残差| 同单位（Es 单位）。
+            degenerate (bool)：尺度退化标记（scale ≤ 1e-12 × median|y|，
+                完美共线/近线性数据的浮点噪声量级）。True 时不执行
+                阈值比较：masked_N 恒为空、residual_ratios 全 None。
+            E_inf_all_points (float)：全部数据点的线性拟合截距（正式
+                主结果，与 extrapolate 返回值一致）。
+            E_inf_refit (float)：剔除候选异常点后的重拟合截距（敏感
+                性参照，不进入主结果）。
+            sensitivity_delta (float)：E_inf_refit − E_inf_all_points。
+                无候选点时（含退化情况）为 0.0。
+            mask (list[bool])：按 N 升序与输入一一对应的正常点标记
+                （True=正常点），extrapolate 绘图共用。
+
+        记录少于 3 条时抛 ValueError（与 extrapolate 同一契约）。
+        """
+        if len(records) < 3:
+            raise ValueError("检测异常点至少需要 3 组数据")
+        sorted_records = sorted(records, key=lambda r: r.N)
+        ns = np.array([r.N for r in sorted_records])
+        y = np.array([r.Es for r in sorted_records])
+        return EnergyProcessor._outlier_diagnosis(ns, y, power, threshold)
+
+    ### 热力学极限外推方法（全点主结果 + MAD 诊断）
     @staticmethod
     def extrapolate(records: List[EnergyRecord], power: int = 1, threshold: float = 2.0):
         """
         进行热力学极限外推。
         :param records: 数据列表，元素为封装的EnergyRecord对象。
         :param power: 表示是随1/N^power进行热力学极限的外推，也就是Es(N) = E∞ + a/N^power。默认为1（常用N→∞的渐近形式）。
-        :param threshold: 异常点判定阈值（残差的标准差倍数）。
-        
-        :return e_inf: 热力学极限下能量值。
+        :param threshold: 候选异常点诊断阈值（|残差|与稳健尺度的比值），
+            仅用于诊断输出与绘图标注——不改变主结果拟合输入；正式
+            E_inf 恒由全部有效数据点拟合得到。诊断数值细节见
+            diagnose_outliers。
+
+        :return e_inf: 热力学极限下能量值（全部数据点的线性拟合截距）。
         """
         if len(records) < 3:
             raise ValueError("检测异常点至少需要 3 组数据")
@@ -87,28 +199,20 @@ class EnergyProcessor:
         y = np.array([r.Es for r in sorted_records])
 
         
-        ### 2. 异常点的识别
-        ## 2.1 初始拟合（用于识别异常点）
-        coeffs_init = np.polyfit(x, y, 1) # list = np.polyfit(x, y, n)：对x,y数据进行n次多项式拟合，并返回拟合参数列表:list=[an-1,...,a1,a0]
-        y_pred = np.polyval(coeffs_init, x) # y_pred = np.polyval(list, x)：在拟合多项式参数列表list下，对数据x进行拟合多项式计算得到y_pred
-        residuals = y - y_pred  # 残差residuals：衡量拟合的好坏程度
-        std_res = np.std(residuals) # np.std(): 标准差计算。此处作用：衡量残差的离散程度
-        
-        ## 2.2 异常点判断准则：|残差| ≤ threshold × 标准差 → 正常点，反之为异常点
-        # 默认threshold=2.0，即保留残差在2个标准差内的点
-        mask = np.abs(residuals) <= threshold * std_res  # mask为布尔掩码数组，其中正常点为True，异常点为False
+        ### 2. MAD 候选异常点诊断（仅输出诊断信息，不决定拟合输入；
+        # 算法主体在 _outlier_diagnosis，与 diagnose_outliers 共用）
+        diag = EnergyProcessor._outlier_diagnosis(ns, y, power, threshold)
+        mask = np.array(diag['mask'], dtype=bool)
         outlier_mask = ~mask  # ~按位取反运算符：对于布尔类型，会将True变False，False变True
 
-        ## 2.3 打印异常点信息
+        ### 3. 打印诊断信息（候选异常点，非已确认数据错误）
         if np.any(outlier_mask):  # np.any()：检查数组中是否有True值，如果有一个True就返回True，如果全为False就返回false
-            print(f"检测到异常点 (N): {ns[outlier_mask]}") # 这里用到布尔索引特性：只返回序列中True对应的元素
+            print(f"检测到候选异常点 (N): {diag['masked_N']}（仅诊断——主结果使用全部数据点，不剔除）")
         else:
-            print("未检测到显著异常点")
+            print("未检测到显著候选异常点")
 
-            
-        ### 3. 最终拟合（仅使用正常数据）
-        x_clean, y_clean = x[mask], y[mask]
-        coeffs_final = np.polyfit(x_clean, y_clean, 1)
+        ### 4. 最终拟合（恒使用全部有效数据点——MAD 诊断不改变拟合输入）
+        coeffs_final = np.polyfit(x, y, 1)
         slope, e_inf = coeffs_final
 
         # 构造拟合函数字符串
@@ -118,9 +222,9 @@ class EnergyProcessor:
         ### 4. 绘图
         plt.figure(figsize=(10, 8))
         
-        ## 4.1 绘制正常点和异常点
+        ## 4.1 绘制正常点和候选异常点（候选点仅诊断标注，不影响拟合）
         plt.scatter(x[mask], y[mask], color='blue', label='Valid Data', zorder=5)
-        plt.scatter(x[outlier_mask], y[outlier_mask], color='red', marker='x', s=100, label='Outliers', zorder=5)
+        plt.scatter(x[outlier_mask], y[outlier_mask], color='red', marker='x', s=100, label='Candidate Outliers (Diagnostic Only)', zorder=5)
 
         ## 4.2 绘制外推拟合线
         x_range = np.linspace(0, np.max(x) * 1.1, 100) # 生成等距的100个x坐标点，范围从0到最大x值的1.1倍
@@ -146,7 +250,8 @@ class EnergyProcessor:
         print(f"--- 最终结果 ---")
         print(f"外推公式: Es(N) = {e_inf:.6f} + {slope:.4f} * (1/N^{power})")
         print(f"热力学极限 E_s(∞) = {e_inf:.6f}")
-        
+        print(f"主结果基于全部 {len(x)} 个数据点（MAD 诊断不影响拟合输入）")
+
         plt.show()
         
         return e_inf

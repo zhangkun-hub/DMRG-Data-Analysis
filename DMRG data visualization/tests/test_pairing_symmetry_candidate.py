@@ -40,8 +40,9 @@ from Physical_Quantity.Pairing_Symmetry_Analyzer import (
     PairingSymmetryConfig, build_comparable_set,
     fit_symmetric_rank1, fit_general_rank1,
     candidate_observation_report, run_candidate_observations,
+    relative_sign_pair_reports, RELPAIR_AVAILABLE,
     OSC_AMPLITUDE_BIAS_WARNING, CAND_OBSERVATIONAL, CAND_INCONCLUSIVE,
-    LAYER_OSC, LAYER_NON_OSC)
+    CAND_STATUS_NOT_EVALUATED, LAYER_OSC, LAYER_NON_OSC)
 from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
 
 RESULTS = {}
@@ -312,6 +313,74 @@ check('B', '旧式 report：明确不可用 + supported_candidate 键存在且�
       and 'layers' not in r_b
       and 'reason' in r_b,
       f"{sorted(r_b.keys())}")
+
+# ======================================================================
+# P0 语义收口：supported_candidate_status 与符号证据边界
+# ======================================================================
+print('===== P0 语义收口 =====')
+
+r_s1 = run(sym_matrix(np.array([1.0, 1.0, 1.0])))
+check('S', '观测路径：supported_candidate=None 且 supported_candidate_'
+      'status=not_evaluated（判定未执行，与"判定后无候选"语义分离）',
+      r_s1['supported_candidate'] is None
+      and r_s1['supported_candidate_status'] == CAND_STATUS_NOT_EVALUATED
+      and 'evaluated_none' in r_s1['supported_candidate_semantics'],
+      str(r_s1['supported_candidate_semantics'][:80]))
+
+# 阻断路径同样 not_evaluated（阻断 ≠ 已判定无候选）
+r_s2 = run(sym_matrix(np.array([1.0, 1.0, 1.0])), su2_gate='fail')
+check('S', '阻断路径：status=inconclusive 且 supported_candidate_status'
+      ' 仍为 not_evaluated（阻断原因与判定执行状态正交）',
+      r_s2['status'] == CAND_INCONCLUSIVE
+      and r_s2['supported_candidate_status'] == CAND_STATUS_NOT_EVALUATED
+      and r_s2['supported_candidate'] is None)
+
+# rel_pairs 注入：真实 relative_sign_pair_reports 输出
+sign_s = {'per_layer': {LAYER_NON_OSC: {'state': 'extracted', 'note': ''}},
+          'per_element': {'k1': {'state': 'extracted', 'sign': 1},
+                          'k2': {'state': 'extracted', 'sign': -1},
+                          'k3': {'state': 'extracted', 'sign': 1}},
+          'relative_signs_available': ['k1', 'k2', 'k3']}
+rep_s = {'elements': {k: {'quality_gate': {'layer': LAYER_NON_OSC}}
+                      for k in MEMBERS},
+         'comparable_set': {'layers': {}}}
+rel_s = relative_sign_pair_reports(sign_s, rep_s)
+r_s3 = candidate_observation_report(
+    make_layer_info(), make_stage3_layer(
+        sym_matrix(np.array([1.0, 1.0, 1.0]))),
+    make_su2('pass'), sign_s, LAYER_NON_OSC, rel_pairs=rel_s)
+n_avail_s = len([p for p in rel_s['pairs']
+                 if p.get('layer') == LAYER_NON_OSC
+                 and p.get('state') == RELPAIR_AVAILABLE])
+check('S', 'rel_pairs 注入：层内逐对积观测进入 sign_evidence.'
+      'relative_sign_pairs（派生观测，与独立 5B-3 计数一致）',
+      r_s3['sign_evidence']['relative_sign_pairs'] is not None
+      and len(r_s3['sign_evidence']['relative_sign_pairs']) == n_avail_s
+      and all(p['state'] == RELPAIR_AVAILABLE
+              for p in r_s3['sign_evidence']['relative_sign_pairs']),
+      f"n={len(r_s3['sign_evidence']['relative_sign_pairs'] or [])}")
+check('S', '相对符号积可计算但模式解释未实现：relative_sign_pairs 有值'
+      ' 且 cross_element_sign_structure=not_implemented 并存',
+      r_s3['sign_evidence']['cross_element_sign_structure']
+      == 'not_implemented'
+      and '规则化解释未实现' in r_s3['sign_evidence']['note'])
+
+# rel_pairs=None（直接调用不注入）：字段为 None（未注入），
+# 与"注入后本层无 available 配对"（空列表）语义区分
+r_s4 = run(sym_matrix(np.array([1.0, 1.0, 1.0])))
+check('S', '未注入路径：relative_sign_pairs 为 None（未注入），'
+      'n_relative_sign_pairs_unavailable 为 None——与空列表语义区分',
+      r_s4['sign_evidence']['relative_sign_pairs'] is None
+      and r_s4['sign_evidence']['n_relative_sign_pairs_unavailable'] is None)
+
+# 旧式 report 路径：入口级 supported_candidate_status 统一
+check('S', '旧式 report 路径：入口级 supported_candidate_status='
+      'not_evaluated（统一契约）',
+      r_b.get('supported_candidate_status') == CAND_STATUS_NOT_EVALUATED)
+
+# 新增字段不破坏严格 JSON 序列化
+check('S', '新增字段不破坏严格 JSON 序列化',
+      json.dumps(r_s1, allow_nan=False, default=str) is not None)
 
 # ======================================================================
 # 集成：真实 build_comparable_set + run_candidate_observations

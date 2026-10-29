@@ -42,7 +42,10 @@ ANALYZER_DECAY_SPIN = 'SpinCorrDecayAnalyzer'
 ANALYZER_STRUCTURE_FACTOR = 'SpinStructureFactorEstimator'
 ANALYZER_PEAK = 'SpinStructureFactorPeakAnalyzer'
 ANALYZER_ENERGY = 'EnergyProcessor'
+ANALYZER_SC_PAIRING_SYMMETRY = 'PairingSymmetryAnalyzer'
 ANALYZER_SC_PAIR_SF = 'SCPairStructureFactorEstimator'
+ANALYZER_DENSITY = 'DensityEstimator'
+ANALYZER_CHARGE_SPIN_PEAK_ALIGNMENT = 'ChargeSpinPeakAlignmentEstimator'
 
 # ---- 物理量标识 ----
 OBSERVABLE_SUPERCONDUCTING_CORRELATION = 'superconducting_correlation'
@@ -52,7 +55,10 @@ OBSERVABLE_SINGLE_PARTICLE_CORRELATION = 'single_particle_correlation'
 OBSERVABLE_SPIN_STRUCTURE_FACTOR = 'spin_structure_factor'
 OBSERVABLE_CHARGE_STRUCTURE_FACTOR = 'charge_structure_factor'
 OBSERVABLE_ENERGY = 'energy'
+OBSERVABLE_SC_PAIRING_SYMMETRY = 'sc_pairing_symmetry'
 OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR = 'sc_pair_structure_factor'
+OBSERVABLE_LOCAL_DENSITY = 'local_density'
+OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT = 'charge_spin_peak_alignment'
 
 
 def _convert(obj):
@@ -208,6 +214,136 @@ def from_structure_factor(sf_dict) -> AnalysisReport:
     )
 
 
+def from_density_profile(profile_dict) -> AnalysisReport:
+    """DensityProcessor.profile_summary 的 dict 输出 → AnalysisReport。
+
+    映射规则：
+    - status：profile_dict 为 None → 'failed'；否则 'ok'
+    - classification / evidence：密度是数值观测，无模型分类与证据
+      等级 → None
+    - parameters：N / 逐格点密度向量 / 行平均 / A-B 子晶格平均 /
+      晶胞分组平均（数值摘要；不复制可视化）
+    - data_restricted：False（单格点全量测量，无源点子集概念）
+    - warnings：非有限密度值计数（non_finite_count > 0 时构造；
+      向量原样保留，序列化时按契约转 null）
+    - metadata：几何与边界元数据（lattice/unit_cell_size/boundary/
+      子晶格划分及其推导方式/行分组语义说明）——行平均与子晶格
+      平均是空间观测，不构成任何相级支持或反证
+    - payload：profile_dict 原对象引用（默认不序列化）
+    """
+    if profile_dict is None:
+        return AnalysisReport(analyzer=ANALYZER_DENSITY,
+                              observable=OBSERVABLE_LOCAL_DENSITY,
+                              status=STATUS_FAILED)
+    params = {
+        'N': profile_dict['N'],
+        'density_by_site': list(profile_dict['density_by_site']),
+        'row_mean': dict(profile_dict['row_mean']),
+        'sub_lattice_mean': dict(profile_dict['sub_lattice_mean']),
+        'unit_cell_mean': list(profile_dict['unit_cell_mean']),
+    }
+    geo = profile_dict.get('geometry') or {}
+    partition = profile_dict.get('sub_lattice_partition') or {}
+    metadata = {
+        'N': profile_dict['N'],
+        'a': profile_dict.get('a'),
+        'lattice_geometry': geo.get('lattice'),
+        'unit_cell_size': geo.get('unit_cell_size'),
+        'boundary': geo.get('boundary'),
+        'row_partition': geo.get('row_partition'),
+        'sub_lattice_derivation': partition.get('derivation'),
+        'sub_lattice_labels': partition.get('site_labels'),
+    }
+    warnings = []
+    if profile_dict.get('non_finite_count'):
+        warnings.append(f"{profile_dict['non_finite_count']} 个非有限"
+                        "密度值（向量原样保留，序列化转 null）")
+    return AnalysisReport(
+        analyzer=ANALYZER_DENSITY,
+        observable=OBSERVABLE_LOCAL_DENSITY,
+        status=STATUS_OK,
+        classification=None,
+        parameters=params,
+        evidence=None,
+        data_restricted=False,
+        warnings=warnings,
+        metadata=metadata,
+        payload=profile_dict,
+    )
+
+
+def from_charge_spin_peak_alignment(align_dict) -> AnalysisReport:
+    """电荷-自旋峰位对齐观测（O4）的 dict 输出 → AnalysisReport。
+
+    映射规则：
+    - status：align_dict 为 None → 'failed'；否则 'ok'（对齐计算完成，
+      可比性不成立 / 无峰均不是计算失败，经 metadata/warnings 表达）
+    - classification / evidence：数值对齐观测，无模型分类与证据等级
+      → None
+    - parameters：n_charge_peaks / n_spin_peaks / charge_peak_nearest_spin
+      （逐电荷峰最近自旋峰及 q 距离，可为空列表）/ spin_peak_nearest_charge
+      / min_dq / median_dq / max_dq（无可比对时 None）
+    - data_restricted：None（对齐观测不引入新的受限性概念；两输入
+      各自的受限性经其自身报告表达）
+    - warnings：q_grid 不一致（comparability 不成立）时记录；不抛错、
+      不静默（comparability 字段显式标记）
+    - metadata：comparability（consistent_q_grid /
+      inconsistent_q_grid / missing_q_grid / no_peaks 之一）、
+      q_grid 摘要（两输入各自的，缺失 None）
+    - payload：align_dict 原对象引用（默认不序列化）
+
+    语义边界：峰位距离是数值观测，不构成任何相级支持或反证
+    （峰位重合 ≠ 耦合序存在；峰位偏离 ≠ 不存在）。
+    """
+    if align_dict is None:
+        return AnalysisReport(analyzer=ANALYZER_CHARGE_SPIN_PEAK_ALIGNMENT,
+                              observable=OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT,
+                              status=STATUS_FAILED)
+    params = {
+        'n_charge_peaks': align_dict['n_charge_peaks'],
+        'n_spin_peaks': align_dict['n_spin_peaks'],
+        'charge_peak_nearest_spin': align_dict['charge_peak_nearest_spin'],
+        'spin_peak_nearest_charge': align_dict['spin_peak_nearest_charge'],
+        'min_dq': align_dict.get('min_dq'),
+        'median_dq': align_dict.get('median_dq'),
+        'max_dq': align_dict.get('max_dq'),
+        # qy 周期折叠距离（P1-G.6）：与原始距离分列，不混淆
+        'charge_peak_nearest_spin_periodic':
+            align_dict.get('charge_peak_nearest_spin_periodic', []),
+        'spin_peak_nearest_charge_periodic':
+            align_dict.get('spin_peak_nearest_charge_periodic', []),
+        'min_dq_periodic': align_dict.get('min_dq_periodic'),
+        'median_dq_periodic': align_dict.get('median_dq_periodic'),
+        'max_dq_periodic': align_dict.get('max_dq_periodic'),
+    }
+    warnings = []
+    if align_dict.get('comparability') != 'consistent_q_grid':
+        warnings.append(
+            f"峰位对齐不可比：{align_dict.get('comparability')}"
+            f"（{align_dict.get('comparability_note', '')}）")
+    return AnalysisReport(
+        analyzer=ANALYZER_CHARGE_SPIN_PEAK_ALIGNMENT,
+        observable=OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT,
+        status=STATUS_OK,
+        classification=None,
+        parameters=params,
+        evidence=None,
+        data_restricted=None,
+        warnings=warnings,
+        metadata={
+            'comparability': align_dict.get('comparability'),
+            'comparability_note': align_dict.get('comparability_note'),
+            'charge_q_grid': align_dict.get('charge_q_grid'),
+            'spin_q_grid': align_dict.get('spin_q_grid'),
+            'qy_period': align_dict.get('qy_period'),
+            'periodic_distance_available':
+                align_dict.get('periodic_distance_available'),
+            'periodic_note': align_dict.get('periodic_note'),
+        },
+        payload=align_dict,
+    )
+
+
 def from_peak_report(peak_dict, sf_dict=None) -> AnalysisReport:
     """find_peaks 的 dict 输出 → AnalysisReport。
 
@@ -285,9 +421,11 @@ def from_peak_report(peak_dict, sf_dict=None) -> AnalysisReport:
 def from_energy_extrapolation(e_inf, ns, power: int = 1, threshold: float = 2.0) -> AnalysisReport:
     """EnergyProcessor.extrapolate 的裸 float 返回值的独立包装函数。
 
-    注意：extrapolate 原函数签名/返回/行为未修改；其异常点剔除信息只经
-    print 输出、不随返回值返回，因此本包装的 warnings 保持空列表
-    （无法可靠映射，不猜测）。"""
+    注意：正式 e_inf 为全点拟合结果（extrapolate 主结果，B3-A7）；MAD
+    候选异常点仅为诊断与敏感性分析，不改变正式结果、不进入 warnings。
+    结构化诊断经 EnergyProcessor.diagnose_outliers 获取，由
+    energy_extrapolation_report 接入 report.metadata
+    ['outlier_diagnosis']（B3-A9）——本适配器不复制该信息。"""
     return AnalysisReport(
         analyzer=ANALYZER_ENERGY,
         observable=OBSERVABLE_ENERGY,
