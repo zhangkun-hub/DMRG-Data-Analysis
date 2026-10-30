@@ -124,8 +124,20 @@ class DMRGLogParser:
             })
 
         # 将列表records转换为pandas DataFrame对象（以二维表格形式展现）
-        df = pd.DataFrame(records) 
-        
+        df = pd.DataFrame(records)
+
+        # 空解析守卫：无有效记录时返回带契约列与类型的空表，
+        # 避免 sort_values 因列缺失抛 KeyError（不伪造数据）
+        if df.empty:
+            return pd.DataFrame(
+                columns=["BondDimension", "Sweep", "E0_mean", "E0_std",
+                         "N_samples"]
+            ).astype({
+                "BondDimension": "int64", "Sweep": "int64",
+                "E0_mean": "float64", "E0_std": "float64",
+                "N_samples": "int64",
+            })
+
         # 排序并重置索引：先按BondDimension升序排序，相同BondDimension时，再按Sweep升序排序。排序好后重新生成从0开始的连续索引并丢弃旧索引(drop决定)
         return df.sort_values(["BondDimension", "Sweep"]).reset_index(drop=True)
 

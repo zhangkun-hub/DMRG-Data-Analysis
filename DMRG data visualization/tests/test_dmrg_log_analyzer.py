@@ -259,6 +259,72 @@ else:
     check('E', '真实日志验证（数据目录不存在，跳过）', True, '跳过')
 
 # ==========================================================================
+# F. get_dataframe 空解析守卫与返回契约（P1-G.27）
+# ==========================================================================
+print('===== F. get_dataframe 空解析守卫 =====')
+CONTRACT_COLUMNS = ['BondDimension', 'Sweep', 'E0_mean', 'E0_std', 'N_samples']
+CONTRACT_DTYPES = ['int64', 'int64', 'float64', 'float64', 'int64']
+
+_empty_cases = [
+    ('空字符串', ''),
+    ('只有阶段头行与 sweep 行、无 E0 行',
+     'Bond dimension:\t 200/200\nsweep 1\n'),
+    ('格式错误日志（无可匹配模式的无关文本）',
+     'this is not a dmrg log\nrandom garbage\n'),
+    ('只有 E0 行、无头行与 sweep 行（D 未建立不分组）',
+     e0_line((6, 7), -29.1, 200) + '\n'),
+]
+for name, text in _empty_cases:
+    p_empty = DMRGLogParser()
+    p_empty.parse_from_string(text)
+    try:
+        df_empty = p_empty.get_dataframe()
+    except KeyError as e:
+        check('F', f'{name} → 不因排序列缺失抛 KeyError', False,
+              f'KeyError: {e}')
+        continue
+    check('F', f'{name} → 返回空 DataFrame 且无 KeyError', df_empty.empty)
+    check('F', f'{name} → 列结构与契约一致（5 列）',
+          list(df_empty.columns) == CONTRACT_COLUMNS, list(df_empty.columns))
+    check('F', f'{name} → 列 dtype 与正常结果一致（int64/float64）',
+          [str(df_empty[c].dtype) for c in CONTRACT_COLUMNS]
+          == CONTRACT_DTYPES,
+          [str(df_empty[c].dtype) for c in CONTRACT_COLUMNS])
+
+p_raw0 = DMRGLogParser()
+p_raw0.parse_from_string('')
+check('F', '空解析下 get_raw_dict 返回空 dict（既有行为不变）',
+      p_raw0.get_raw_dict() == {})
+
+# 正常日志：字段、排序、索引与数值与修复前行为一致
+text_norm, _ = make_log([(800, 2), (200, 3)], e0_per_sweep=2)
+p_norm = DMRGLogParser()
+p_norm.parse_from_string(text_norm)
+df_norm = p_norm.get_dataframe()
+check('F', '正常日志列结构与契约一致（5 列）',
+      list(df_norm.columns) == CONTRACT_COLUMNS)
+check('F', '正常日志按 (BondDimension, Sweep) 升序排序',
+      list(df_norm['BondDimension']) == [200, 200, 200, 800, 800]
+      and list(df_norm['Sweep']) == [1, 2, 3, 1, 2],
+      df_norm[['BondDimension', 'Sweep']].to_dict('list'))
+check('F', '正常日志索引已重置为 0..n-1',
+      list(df_norm.index) == list(range(len(df_norm))))
+# 每 sweep 2 条 E0 行：首行 base-1e-8，末行抬高 1.5e-8 → base-0.5e-8；
+# 均值 = base - 1.5e-8 + 0.75e-8 = base - 0.75e-8
+mean_norm = [
+    (-29.0 - df_norm.loc[i, 'BondDimension'] * 1e-5
+     - (df_norm.loc[i, 'Sweep'] - 1) * 1e-6) - 0.75e-8
+    for i in df_norm.index]
+check('F', '正常日志 E0_mean 与合成值精确一致（1e-12 内）',
+      all(abs(df_norm.loc[i, 'E0_mean'] - mean_norm[i]) < 1e-12
+          for i in df_norm.index))
+# 两条样本差 0.5e-8，np.std（ddof=0）→ 0.25e-8
+check('F', '正常日志 E0_std 口径不变（np.std, ddof=0，2.5e-9）',
+      all(abs(df_norm['E0_std'] - 2.5e-9) < 1e-12))
+check('F', '正常日志 N_samples 与每 sweep E0 行数一致',
+      list(df_norm['N_samples']) == [2, 2, 2, 2, 2])
+
+# ==========================================================================
 # 汇总
 # ==========================================================================
 print()
