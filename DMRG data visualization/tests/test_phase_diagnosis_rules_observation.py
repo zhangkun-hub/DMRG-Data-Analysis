@@ -43,7 +43,7 @@ from Physical_Quantity.Analysis_Contract import (
     ANALYZER_SC_PAIR_SF, ANALYZER_SC_PAIRING_SYMMETRY)
 from Physical_Quantity.Phase_Diagnosis import (
     collect_evidence, run_candidate_rules, AUTHORIZED_RULES, P1F3_RULES,
-    P1F3_CRITERIA_VERSION,
+    GAPW_RULES, P1F3_CRITERIA_VERSION,
     VERDICT_SUPPORTED, VERDICT_CONTRADICTED, VERDICT_CONFLICTING,
     VERDICT_INSUFFICIENT, VERDICT_QUALITY_FAILED, VERDICT_DATA_MISSING,
     VERDICT_CRITERIA_UNDEFINED, VERDICT_NOT_MEASURABLE,
@@ -121,19 +121,21 @@ def run(reps):
 # A. 授权清单与规则对象结构
 # ======================================================================
 print('===== A. 授权清单 =====')
-check('A', 'AUTHORIZED_RULES 恰为 6 条（观测级 ×3 + 能力边界 ×3）',
+check('A', 'AUTHORIZED_RULES 恰为 8 条（P1F3 观测级 ×3 + 能力边界 ×3 + '
+      'P1-G.28 Gap/Width 能力边界 ×2）',
       set(AUTHORIZED_RULES) == {'sc_assoc_v1', 'cdw_v1', 'sdw_v1',
-                                'did_phase_v1', 'pdw_v1', 'stripe_v1'},
+                                'did_phase_v1', 'pdw_v1', 'stripe_v1',
+                                'gap_v1', 'width_v1'},
       str(AUTHORIZED_RULES))
 check('A', '全部授权绑定 criteria_version=phase_criteria_v1_observation',
       P1F3_CRITERIA_VERSION == 'phase_criteria_v1_observation'
       and all(v == P1F3_CRITERIA_VERSION for v in AUTHORIZED_RULES.values()))
-check('A', 'P1F3_RULES 与授权清单一一对应，候选集合正确',
-      {r['rule_id'] for r in P1F3_RULES} == set(AUTHORIZED_RULES)
-      and {r['candidate'] for r in P1F3_RULES}
+check('A', 'P1F3_RULES ∪ GAPW_RULES 与授权清单一一对应，候选集合正确',
+      {r['rule_id'] for r in P1F3_RULES + GAPW_RULES} == set(AUTHORIZED_RULES)
+      and {r['candidate'] for r in P1F3_RULES + GAPW_RULES}
       == {'superconductivity', 'cdw', 'sdw', 'd_id_phase', 'pdw',
-          'stripe'},
-      str({r['candidate'] for r in P1F3_RULES}))
+          'stripe', 'gap_scaling', 'width_scaling'},
+      str({r['candidate'] for r in P1F3_RULES + GAPW_RULES}))
 check('A', 'sc_lro_v1 仍暂缓：不定义不注册',
       'sc_lro_v1' not in AUTHORIZED_RULES
       and 'sc_lro_v1' not in [r['rule_id'] for r in P1F3_RULES])

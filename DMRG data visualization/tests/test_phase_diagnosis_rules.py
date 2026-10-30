@@ -405,7 +405,8 @@ check('G', 'to_json 含新键且严格可解析（无 NaN/Infinity）',
 # H. P1-D.2.2：候选清单与混合状态收尾
 # ======================================================================
 print('===== H. 候选清单与混合状态 =====')
-from Physical_Quantity.Phase_Diagnosis import AUTHORIZED_RULES, P1F3_RULES
+from Physical_Quantity.Phase_Diagnosis import (
+    AUTHORIZED_RULES, P1F3_RULES, GAPW_RULES)
 
 # H1 显式候选清单：无规则候选 → criteria_undefined（判定不可执行）
 ph_h1 = make_phase()
@@ -518,14 +519,15 @@ check('H', '混合 gate+missing 无有效判定无异常：quality_failed + '
       and len(d9['detail']['execution_errors']) == 0,
       str(d9['verdict']))
 
-# H10 生产默认授权：恰为 6 条（观测级 ×3 + 能力边界 ×3），
-# 全部无相级支持/反证条款（不注册真实物理判据）
-check('H', 'AUTHORIZED_RULES 恰为 6 条（含 stripe_v1 能力边界）'
+# H10 生产默认授权：恰为 8 条（观测级 ×3 + 能力边界 ×3 + P1-G.28
+# Gap/Width 能力边界 ×2），全部无相级支持/反证条款（不注册真实物理判据）
+check('H', 'AUTHORIZED_RULES 恰为 8 条（含 stripe/gap/width 能力边界）'
       '且无相级判定规则',
       set(AUTHORIZED_RULES)
       == {'sc_assoc_v1', 'cdw_v1', 'sdw_v1', 'did_phase_v1', 'pdw_v1',
-          'stripe_v1'}
-      and all(r.get('counter_evidence') is None for r in P1F3_RULES))
+          'stripe_v1', 'gap_v1', 'width_v1'}
+      and all(r.get('counter_evidence') is None
+              for r in P1F3_RULES + GAPW_RULES))
 
 # H11 rule_trace 关键字段完整性
 tr_h11 = ph_h7.rule_trace[0]

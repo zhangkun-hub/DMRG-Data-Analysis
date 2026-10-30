@@ -16,7 +16,7 @@
 8. 绕过路径现状（如实固化）：run_candidate_rules 显式 authorized +
    任意 rules 不经过注册入口——引擎不检查候选级冲突（文档性断言，
    防未来误认为引擎有该保护）
-9. 生产授权表内容不变（6 条）与历史行为回归
+9. 生产授权表内容不变（8 条）与历史行为回归
 
 运行方式（在 DMRG data visualization/ 目录下）：
     python -X utf8 tests/test_rule_registration_guard.py
@@ -32,7 +32,7 @@ sys.path.insert(0, ROOT)
 
 from Physical_Quantity.Phase_Diagnosis import (
     AUTHORIZED_RULES, _REGISTERED_RULES, register_candidate_rules,
-    _observation_evaluation, P1F3_RULES, P1F3_CRITERIA_VERSION,
+    _observation_evaluation, P1F3_RULES, GAPW_RULES, P1F3_CRITERIA_VERSION,
     collect_evidence, run_candidate_rules,
     RULE_REJECTED, RULE_STRIPE_V1,
     VERDICT_NOT_MEASURABLE, VERDICT_SUPPORTED)
@@ -72,18 +72,18 @@ def restore(s):
     _REGISTERED_RULES.update(s[1])
 
 
-S = snap()   # 生产状态快照：6 条规则
+S = snap()   # 生产状态快照：8 条规则
 
 # ======================================================================
 # A. 生产注册表内容与单独能力边界行为
 # ======================================================================
 print('===== A. 生产状态 =====')
-check('A', '生产授权表恰为 6 条（P1F3_RULES 经注册入口注册）',
-      set(AUTHORIZED_RULES) == {r['rule_id'] for r in P1F3_RULES}
-      and len(_REGISTERED_RULES) == 6)
+check('A', '生产授权表恰为 8 条（P1F3_RULES ∪ GAPW_RULES 经注册入口注册）',
+      set(AUTHORIZED_RULES) == {r['rule_id'] for r in P1F3_RULES + GAPW_RULES}
+      and len(_REGISTERED_RULES) == 8)
 check('A', '注册表保存规则对象副本且规则类别可识别',
       all(_REGISTERED_RULES[r['rule_id']]['candidate'] == r['candidate']
-          for r in P1F3_RULES))
+          for r in P1F3_RULES + GAPW_RULES))
 ph_a = run_candidate_rules(collect_evidence([]), P1F3_RULES)
 check('A', '单独能力边界规则维持 not_measurable（stripe）',
       ph_a.candidate_verdicts['stripe']['verdict']
@@ -103,7 +103,8 @@ except ValueError:
     check('B', '同候选支持规则注册 → ValueError（拒绝并存）', True)
 check('B', '拒绝后授权表未变化（不得静默并存）',
       'stripe_support_v1' not in AUTHORIZED_RULES
-      and set(AUTHORIZED_RULES) == {r['rule_id'] for r in P1F3_RULES})
+      and set(AUTHORIZED_RULES)
+      == {r['rule_id'] for r in P1F3_RULES + GAPW_RULES})
 
 # 反证规则同候选（d_id_phase）
 ctr_did = make_rule('did_counter_v1', 'd_id_phase', counter=True)
@@ -167,9 +168,9 @@ ph_e = run_candidate_rules(collect_evidence([]), [RULE_STRIPE_V1])
 check('E', '升级后旧版本规则对象执行被拒（rule_rejected）',
       ph_e.rule_trace[0]['rule_level_state'] == RULE_REJECTED)
 restore(S)
-check('E', '恢复生产注册表（6 条、原版本）',
+check('E', '恢复生产注册表（8 条、原版本）',
       AUTHORIZED_RULES['stripe_v1'] == P1F3_CRITERIA_VERSION
-      and len(AUTHORIZED_RULES) == 6)
+      and len(AUTHORIZED_RULES) == 8)
 
 # ======================================================================
 # F. 绕过路径现状（如实固化：引擎不检查候选级冲突）
@@ -317,9 +318,10 @@ check('G', '生产 6 候选历史 verdict 不变（空报告）',
           'sdw': 'data_missing', 'd_id_phase': 'not_measurable',
           'pdw': 'not_measurable', 'stripe': 'not_measurable'},
       str(ph_g.candidate_verdicts))
-check('G', '生产授权表 6 条内容与版本不变',
+check('G', '生产授权表 8 条内容与版本不变',
       set(AUTHORIZED_RULES) == {'sc_assoc_v1', 'cdw_v1', 'sdw_v1',
-                                'did_phase_v1', 'pdw_v1', 'stripe_v1'}
+                                'did_phase_v1', 'pdw_v1', 'stripe_v1',
+                                'gap_v1', 'width_v1'}
       and all(v == P1F3_CRITERIA_VERSION
               for v in AUTHORIZED_RULES.values()))
 

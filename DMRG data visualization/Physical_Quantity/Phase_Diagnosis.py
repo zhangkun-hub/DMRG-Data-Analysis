@@ -36,7 +36,8 @@ from .Analysis_Contract import (
     OBSERVABLE_SPIN_STRUCTURE_FACTOR, OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, OBSERVABLE_SC_PAIRING_SYMMETRY,
     OBSERVABLE_LOCAL_DENSITY,
-    OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT)
+    OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT,
+    OBSERVABLE_ENERGY)
 
 # 结构因子估计报告的精确识别标识（禁止宽泛字符串包含判断）
 ANALYZER_SPIN_SF = 'SpinStructureFactorEstimator'
@@ -1396,6 +1397,77 @@ RULE_STRIPE_V1 = {
 }
 
 
+# ---- P1-G.28：有限尺寸分析能力边界规则 ----
+# 语义声明：以下两条规则的 candidate（'gap_scaling' / 'width_scaling'）是
+# 有限尺寸分析能力诊断对象，**不是物理相候选**——引擎机制层的 candidate
+# 字段是通用诊断对象键（P1-G.28-A 审查核实：_evaluate_candidate /
+# _summarize_verdicts 对 candidate 字符串零类型区分），但本文件规则定义
+# 的候选集合按物理相语境维护，能力诊断对象显式标注以免混用。
+# verdict 恒 not_measurable（与 did/pdw/stripe 同模式）：表达"该分析在
+# 当前数据能力下不可开展"，不表达任何物理量/物理相的存在性结论。
+
+RULE_GAP_V1 = {
+    'rule_id': 'gap_v1',
+    'candidate': 'gap_scaling',
+    'criteria_version': P1F3_CRITERIA_VERSION,
+    'applicability': lambda items: {
+        'applicable': True,
+        'reason': '能力边界规则（分析能力诊断对象，非物理相候选）：'
+                  '能隙定量分析在当前数据下不可测量'},
+    'required_evidence': [
+        # 附属：能量外推观测（存在时纳入关联；缺失不阻塞能力结论）
+        {'observable': OBSERVABLE_ENERGY,
+         'analyzer': ANALYZER_ENERGY,
+         'category': EVIDENCE_OBSERVATION, 'min_entries': 0},
+        # 必需但永不可匹配：激发态/扇区能量差——能隙分析的唯一有效输入
+        {'observable': 'gap_excitation_energy',
+         'analyzer': None, 'category': None, 'min_entries': 1,
+         'missing_interpretation': VERDICT_NOT_MEASURABLE,
+         'basis': ('能隙定量分析（自旋/电荷/单粒子隙及其尺寸标度）需要'
+                   '激发态能量或不同粒子数扇区的基态能量差作为输入；'
+                   '当前全部可用能量数据（Data_Energy 6 doping × 5 N '
+                   '共 30 份日志）均为单扇区基态 DMRG 优化日志（仅 '
+                   'E0/TruncErr 扫描行，无激发态或扇区分辨信息，P1-G.26 '
+                   '已核实）。禁止从基态总能量随掺杂或系统尺寸的变化'
+                   '直接构造激发态能隙。not_measurable 表示输入数据不足，'
+                   '不表示能隙为零、能隙不存在或任何物理相被排除')},
+    ],
+    'quality_gates': [],
+    'evaluation': _observation_evaluation,   # 结构上不可达：必需证据恒缺失
+    'counter_evidence': None,
+}
+# 禁止条款：不得由 E∞(δ)、E∞(1/N) 或任何基态总能曲线构造能隙输入；
+# 能量外推观测仅作附属关联，不构成能隙证据。
+
+
+RULE_WIDTH_V1 = {
+    'rule_id': 'width_v1',
+    'candidate': 'width_scaling',
+    'criteria_version': P1F3_CRITERIA_VERSION,
+    'applicability': lambda items: {
+        'applicable': True,
+        'reason': '能力边界规则（分析能力诊断对象，非物理相候选）：'
+                  '圆柱宽度依赖分析在当前数据下不可测量'},
+    'required_evidence': [
+        # 必需但永不可匹配：可比多宽度序列——宽度外推的唯一有效输入
+        {'observable': 'cylinder_width_series',
+         'analyzer': None, 'category': None, 'min_entries': 1,
+         'missing_interpretation': VERDICT_NOT_MEASURABLE,
+         'basis': ('圆柱宽度依赖分析与宽度外推需要满足可比性要求的多'
+                   '宽度序列（同一系统参数、同一测量协议下多个不同的 '
+                   'y 方向宽度）；当前全部可用数据均为 XC 构型（y 方向'
+                   '恒 2 胞宽，Ly=2√3·a），改变 N 只对应 x 方向长度'
+                   '（胞数）变化，不能当作宽度扫描。not_measurable 表示'
+                   '数据能力不足，不表示宽度依赖为零，也不表示宽度方向'
+                   '的物理行为不存在')},
+    ],
+    'quality_gates': [],
+    'evaluation': _observation_evaluation,   # 结构上不可达：必需证据恒缺失
+    'counter_evidence': None,
+}
+# 禁止条款：不得把沿圆柱长度方向改变 N 当作改变圆柱宽度。
+
+
 # ---- 流程层注册入口（P1-G.6：候选级冲突约束，不动冻结引擎） ----
 _REGISTERED_RULES = {}   # rule_id -> 规则 dict 副本（流程层注册表）
 
@@ -1505,3 +1577,9 @@ def register_candidate_rules(rules, version, replace=None):
 P1F3_RULES = (RULE_SC_ASSOC_V1, RULE_CDW_V1, RULE_SDW_V1,
               RULE_DID_PHASE_V1, RULE_PDW_V1, RULE_STRIPE_V1)
 register_candidate_rules(P1F3_RULES, P1F3_CRITERIA_VERSION)
+
+# P1-G.28：Gap/Width 能力边界规则（独立元组，独立注册；不并入 P1F3_RULES）。
+# 注册只更新授权表；候选 verdict 仅在调用方显式把 GAPW_RULES 传入
+# run_candidate_rules 时产生——注册不等于生产管线接入这些诊断。
+GAPW_RULES = (RULE_GAP_V1, RULE_WIDTH_V1)
+register_candidate_rules(GAPW_RULES, P1F3_CRITERIA_VERSION)
