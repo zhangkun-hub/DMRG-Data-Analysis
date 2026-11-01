@@ -72,8 +72,8 @@ import os
 import numpy as np
 from scipy.optimize import least_squares
 
-from .Honeycomb_Lattice import HoneycombXCGeometry
-from .Physical_Data_Record import SuperCorrRecord
+from ..data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from ..data_records.Physical_Data_Record import SuperCorrRecord
 from .Super_Correlation_Process import SuperCorrProcessor
 from .Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
 from .Correlation_Decay_Analyzer import AnalyzerConfig, CorrelationDecayAnalyzer

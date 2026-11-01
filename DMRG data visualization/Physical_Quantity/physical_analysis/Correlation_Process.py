@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from .Physical_Data_Record import CorrelationRecord
+from ..data_records.Physical_Data_Record import CorrelationRecord
 
 
 #-----------------------------------------------------------------------------------

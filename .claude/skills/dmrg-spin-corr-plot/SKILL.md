@@ -5,7 +5,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据
 
 # DMRG 自旋关联数据处理与作图
 
-本 skill 覆盖自旋关联三分量提取、合成 `<S_i·S_j>` 并作图的完整链路。核心类：`Physical_Quantity/Physical_Data_Record.py` 的 `CorrelationRecord` 与 `Physical_Quantity/Correlation_Process.py` 的 `CorrelationProcessor`。
+本 skill 覆盖自旋关联三分量提取、合成 `<S_i·S_j>` 并作图的完整链路。核心类：`Physical_Quantity/data_records/Physical_Data_Record.py` 的 `CorrelationRecord` 与 `Physical_Quantity/physical_analysis/Correlation_Process.py` 的 `CorrelationProcessor`。
 
 ## 1. 环境准备（每次运行前）
 
@@ -67,10 +67,10 @@ CorrelationProcessor.Spin_Corr_Visualization(SiSj)
 
 ## 5. 衰减类型分析与结构因子（SpinCorrDecayAnalyzer / 统一入口）
 
-作图之外需要衰减分类/拟合时，使用 `Physical_Quantity/Spin_Correlation_Analyzer.py` 的 `SpinCorrDecayAnalyzer`（通用核心 `Correlation_Decay_Analyzer.py`）：
+作图之外需要衰减分类/拟合时，使用 `Physical_Quantity/physical_analysis/Spin_Correlation_Analyzer.py` 的 `SpinCorrDecayAnalyzer`（通用核心 `physical_analysis/Correlation_Decay_Analyzer.py`）：
 
 - `SpinCorrDecayAnalyzer.analyze(recs, config, N, a)` → `DecayAnalysisResult`：8 类分类（constant / power_law / exponential / oscillatory_* / non_monotonic / complex_decay / INCONCLUSIVE）+ 完整证据与 config 快照，可 `to_dict()/to_json()`
-- 结构因子：`Spin_Structure_Factor.py` 的 `SpinStructureFactorEstimator`（受限估计）+ `Spin_Structure_Factor_Analyzer.py` 的峰值分析（只输出数值，不判定物理相）
+- 结构因子：`physical_analysis/Spin_Structure_Factor.py` 的 `SpinStructureFactorEstimator`（受限估计）+ `physical_analysis/Spin_Structure_Factor_Analyzer.py` 的峰值分析（只输出数值，不判定物理相）
 - 统一入口：`run_analysis(OBSERVABLE_SPIN_CORRELATION, operation='decay', ...)`、`run_analysis(OBSERVABLE_SPIN_STRUCTURE_FACTOR, operation='estimate'/'peak_analysis', ...)` 返回 `AnalysisReport`
 
 ## 6. 已知坑

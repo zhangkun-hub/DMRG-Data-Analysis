@@ -48,8 +48,8 @@ import os
 
 import numpy as np
 
-from .Honeycomb_Lattice import HoneycombXCGeometry
-from .Physical_Data_Record import SuperCorrRecord
+from ..data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from ..data_records.Physical_Data_Record import SuperCorrRecord
 from .Spin_Structure_Factor import (
     compute_structure_factor, _xc_geometry_meta, _q_grid_stats)
 from .Super_Correlation_Process import SuperCorrProcessor

@@ -27,7 +27,7 @@ from itertools import combinations
 
 import numpy as np
 
-from .Analysis_Contract import (
+from ..evidence_integration.Analysis_Contract import (
     AnalysisReport, STATUS_FAILED, _convert, ANALYZER_ENERGY,
     ANALYZER_SC_PAIRING_SYMMETRY, ANALYZER_DECAY_SUPERCONDUCTING,
     ANALYZER_DENSITY,

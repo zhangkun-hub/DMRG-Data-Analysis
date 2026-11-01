@@ -26,7 +26,7 @@
 import ast
 import numpy as np
 
-from .Honeycomb_Lattice import HoneycombXCGeometry
+from ..data_records.Honeycomb_Lattice import HoneycombXCGeometry
 
 # 关联量定义标签（严格区分，不混用）
 DEF_SPIN_DOT = 'spin_dot'   # <S_i·S_j> = SzSz + 1/2(SuSd + SdSu)（三分量合成）

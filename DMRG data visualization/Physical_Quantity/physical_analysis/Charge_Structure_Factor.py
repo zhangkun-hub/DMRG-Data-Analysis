@@ -38,8 +38,8 @@ DensityRecord / CorrelationRecord 解析；几何元信息 _xc_geometry_meta。
 
 import numpy as np
 
-from .Honeycomb_Lattice import HoneycombXCGeometry
-from .Physical_Data_Record import DensityRecord, CorrelationRecord
+from ..data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from ..data_records.Physical_Data_Record import DensityRecord, CorrelationRecord
 from .Spin_Structure_Factor import (
     compute_structure_factor, _xc_geometry_meta, _q_grid_stats)
 
@@ -150,7 +150,8 @@ class ChargeStructureFactorEstimator:
         """
         if not measure_specs:
             raise ValueError("measure_specs 为空，无法批量估计")
-        from .Analysis_Integration import charge_structure_factor_report
+        # 函数级延迟导入：避免 Analysis_Integration ↔ Charge_Structure_Factor 环
+        from ..evidence_integration.Analysis_Integration import charge_structure_factor_report
 
         results = {}
         failed = {}

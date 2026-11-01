@@ -21,8 +21,8 @@
 
 import numpy as np
 
-from .Physical_Data_Record import CorrelationRecord
-from .Honeycomb_Lattice import HoneycombXCGeometry
+from ..data_records.Physical_Data_Record import CorrelationRecord
+from ..data_records.Honeycomb_Lattice import HoneycombXCGeometry
 from .Correlation_Decay_Analyzer import (
     ANALYSIS_VERSION, AnalyzerConfig, PreparedData, DecayAnalysisResult,
     CorrelationDecayAnalyzer, _window_mask,

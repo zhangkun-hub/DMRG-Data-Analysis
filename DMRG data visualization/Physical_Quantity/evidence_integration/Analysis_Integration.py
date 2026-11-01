@@ -31,12 +31,12 @@ from .Analysis_Contract import (
     OBSERVABLE_LOCAL_DENSITY,
     STATUS_OK, STATUS_FAILED, STATUS_INCONCLUSIVE,
 )
-from .Physical_Data_Record import DensityRecord
-from .Density_Process import DensityProcessor
-from .Spin_Structure_Factor_Analyzer import SpinStructureFactorPeakAnalyzer
-from .Energy_Process import EnergyProcessor
-from .Charge_Structure_Factor import ChargeStructureFactorEstimator
-from .SC_Pair_Structure_Factor import SCPairStructureFactorEstimator
+from ..data_records.Physical_Data_Record import DensityRecord
+from ..physical_analysis.Density_Process import DensityProcessor
+from ..physical_analysis.Spin_Structure_Factor_Analyzer import SpinStructureFactorPeakAnalyzer
+from ..physical_analysis.Energy_Process import EnergyProcessor
+from ..physical_analysis.Charge_Structure_Factor import ChargeStructureFactorEstimator
+from ..physical_analysis.SC_Pair_Structure_Factor import SCPairStructureFactorEstimator
 
 # 拟合质量指标：按 FitResult 实际字段名（r2/rss/rmse/aic/aicc/bic）提取，
 # 存在才收录；不编造缺失数值
@@ -552,7 +552,8 @@ def sc_pairing_symmetry_analysis_report(condition, config=None) \
     - 不捕获底层异常（目录缺失 FileNotFoundError、分析失败等原样传播）
     - 不注册物理判据；AUTHORIZED_RULES 保持空
     """
-    from .Pairing_Symmetry_Analyzer import (
+    # 函数级延迟导入：避免 Analysis_Integration ↔ Pairing_Symmetry_Analyzer 环
+    from ..physical_analysis.Pairing_Symmetry_Analyzer import (
         build_comparable_set, run_stage4, run_candidate_observations,
         PairingSymmetryConfig)
     config = config if config is not None else PairingSymmetryConfig()

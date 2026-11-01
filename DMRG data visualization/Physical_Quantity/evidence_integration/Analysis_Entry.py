@@ -34,10 +34,10 @@ from .Analysis_Integration import (
     charge_peak_analysis_report,
     charge_spin_peak_alignment_report,
 )
-from .Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
-from .Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
-from .Charge_Correlation_Analyzer import ChargeCorrDecayAnalyzer
-from .Green_Function_Analyzer import GreenFunctionDecayAnalyzer
+from ..physical_analysis.Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
+from ..physical_analysis.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
+from ..physical_analysis.Charge_Correlation_Analyzer import ChargeCorrDecayAnalyzer
+from ..physical_analysis.Green_Function_Analyzer import GreenFunctionDecayAnalyzer
 
 
 # --------------------------------------------------------------------------

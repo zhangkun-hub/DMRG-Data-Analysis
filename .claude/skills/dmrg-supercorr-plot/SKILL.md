@@ -5,7 +5,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的超导关联数据
 
 # DMRG 超导关联数据处理与作图
 
-本 skill 覆盖超导关联 12 文件提取、SU(2) 对称性检验、四通道合成 `<Δ_ij^† Δ_kl>` 并作图的完整链路。核心类：`Physical_Quantity/Physical_Data_Record.py` 的 `SuperCorrRecord` 与 `Physical_Quantity/Super_Correlation_Process.py` 的 `SuperCorrProcessor`。
+本 skill 覆盖超导关联 12 文件提取、SU(2) 对称性检验、四通道合成 `<Δ_ij^† Δ_kl>` 并作图的完整链路。核心类：`Physical_Quantity/data_records/Physical_Data_Record.py` 的 `SuperCorrRecord` 与 `Physical_Quantity/physical_analysis/Super_Correlation_Process.py` 的 `SuperCorrProcessor`。
 
 ## 1. 环境准备（每次运行前）
 
@@ -97,7 +97,7 @@ SuperCorrProcessor.Super_Corr_Visualization_three(super_corr_dict)   # 三键方
 
 ## 7. 衰减类型分析与拟合（SuperCorrDecayAnalyzer / 统一入口）
 
-作图之外需要做衰减类型分类/拟合时，使用同目录 `Super_Correlation_Analyzer.py` 的 `SuperCorrDecayAnalyzer`（通用核心在 `Correlation_Decay_Analyzer.py`，本 skill 覆盖的代码均不被其修改）：
+作图之外需要做衰减类型分类/拟合时，使用同目录 `physical_analysis/Super_Correlation_Analyzer.py` 的 `SuperCorrDecayAnalyzer`（通用核心在 `physical_analysis/Correlation_Decay_Analyzer.py`，本 skill 覆盖的代码均不被其修改）：
 
 - `SuperCorrDecayAnalyzer.analyze(record_list, config=None)` → `DecayAnalysisResult`：输入已合成的 `<Δ†Δ>`（本 skill 第 4 节合成的 `super_corr_dict_UltraDMRG` 值即为合法输入），输出 8 类分类（constant / power_law / exponential / oscillatory_* / non_monotonic / complex_decay / INCONCLUSIVE）+ evidence level
 - 配套：`print_summary(result)` 打印完整报告（含 8 项振荡诊断逐项表、r_min 扫描表、噪声底来源）；`Decay_Visualization(result, r, C)` 画 8 面板综合图（r/C 用 `group_by_distance` 的输出）；`analyze_batch({name: records})` 批量分析（不自动做跨 refbond 物理结论）

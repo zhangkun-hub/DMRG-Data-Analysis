@@ -5,7 +5,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据
 
 # DMRG 格点密度数据处理与作图
 
-本 skill 覆盖从 UltraDMRG 测量 JSON 提取格点密度并作图的完整链路。核心类：`Physical_Quantity/Physical_Data_Record.py` 的 `DensityRecord` 与 `Physical_Quantity/Density_Process.py` 的 `DensityProcessor`。
+本 skill 覆盖从 UltraDMRG 测量 JSON 提取格点密度并作图的完整链路。核心类：`Physical_Quantity/data_records/Physical_Data_Record.py` 的 `DensityRecord` 与 `Physical_Quantity/physical_analysis/Density_Process.py` 的 `DensityProcessor`。
 
 ## 1. 环境准备（每次运行前）
 

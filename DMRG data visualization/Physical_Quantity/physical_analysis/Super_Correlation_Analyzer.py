@@ -16,7 +16,7 @@
 
 import numpy as np
 
-from .Physical_Data_Record import SuperCorrRecord
+from ..data_records.Physical_Data_Record import SuperCorrRecord
 from .Correlation_Decay_Analyzer import (
     # 数据结构与通用核心（re-export 保持旧 import 路径兼容）
     ANALYSIS_VERSION, AnalyzerConfig, FitResult, FamilyDiagnostics,

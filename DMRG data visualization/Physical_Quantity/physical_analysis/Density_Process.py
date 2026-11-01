@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from .Physical_Data_Record import DensityRecord
-from .Honeycomb_Lattice import HoneycombXCGeometry
+from ..data_records.Physical_Data_Record import DensityRecord
+from ..data_records.Honeycomb_Lattice import HoneycombXCGeometry
 
 
 #-----------------------------------------------------------------------------------
