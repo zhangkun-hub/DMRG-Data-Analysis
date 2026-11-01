@@ -44,9 +44,9 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 import Cross_Doping_Summary as cds
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     _convert, OBSERVABLE_SUPERCONDUCTING_CORRELATION)
-from Physical_Quantity.Spin_Structure_Factor import xc_momentum_grid
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import xc_momentum_grid
 
 # ---- 指数状态四分类（映射规则见 classify_state docstring 与 semantics） ----
 STATE_EXPONENT_OK = 'exponent_ok'

@@ -24,13 +24,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - 依赖：`numpy`、`pandas`、`matplotlib`，装在 Anaconda 虚拟环境 **Calculation** 中（无 requirements.txt）。运行前先 `conda activate Calculation` 再启动 Jupyter 或运行脚本；该环境下 numpy 2.2.6 / pandas 2.3.3 / matplotlib 3.10.7（较新，注意部分旧 API 已移除）
 - **测试**：`tests/` 下 35 套脚本（含 N200/N400 回归基线、合成数据、边界用例与规则引擎专项测试）。在 `DMRG data visualization/` 下运行：`python -X utf8 tests/test_*.py`（Calculation 环境，exit 0 = 全过）。回归基线在 `tests/baselines/`（n200 post_refactor / spin v1 / n400 v1），**不得重新生成或覆盖**；`tests/artifacts/` 是运行产物（被 .gitignore 忽略）
-- notebook 内用 `from Physical_Quantity.xxx import ...` 的相对导入，**必须在 `DMRG data visualization/` 目录下启动 Jupyter**，否则导入失败
+- notebook 内用 `from Physical_Quantity.子包名.xxx import ...` 导入，**必须在 `DMRG data visualization/` 目录下启动 Jupyter**，否则导入失败
 - 直接运行脚本：`cd "DMRG data visualization" && python "DMRG_Log_Analyzer.py"`（文件名含零宽字符，见下方"已知坑"）
 - `physical_analysis/Energy_Process.py` 等模块自带 `if __name__ == "__main__"` 的模拟数据演示，可直接 `python Physical_Quantity/physical_analysis/Energy_Process.py` 运行验证
 
 # 架构
 
-`DMRG data visualization/Physical_Quantity/` 是核心包，按四层架构分子包组织：`data_records/`（数据与记录层）、`physical_analysis/`（物理量分析层）、`evidence_integration/`（证据整合层）、`phase_diagnosis/`（相态诊断层）。历史 import 形式 `from Physical_Quantity.模块名 import ...` 由 `Physical_Quantity/__init__.py` 的 sys.modules 别名兼容层继续支持（下游零改动；两种路径 import 同一模块对象）。采用「Record 数据类 + Processor 处理类」模式：
+`DMRG data visualization/Physical_Quantity/` 是核心包，按四层架构分子包组织：`data_records/`（数据与记录层）、`physical_analysis/`（物理量分析层）、`evidence_integration/`（证据整合层）、`phase_diagnosis/`（相态诊断层）。导入一律使用子包路径 `from Physical_Quantity.子包名.模块名 import ...`（`__init__.py` 为空、无兼容层）；包内模块间用相对导入（同子包 `from .X`，跨子包 `from ..X`），跨层上溯只允许函数内延迟 import。采用「Record 数据类 + Processor 处理类」模式：
 
 - **`data_records/Physical_Data_Record.py`** — 数据记录层。抽象基类 `Record`；子类 `DensityRecord`（格点密度）、`CorrelationRecord`（两点关联函数）、`SuperCorrRecord`（四点超导关联，含 reference bond / target bond）。各子类的 `extract_data()` 类方法用 `ast.literal_eval` 解析 DMRG 输出的字符串数据（格式 `[[i, j], [value, 0]]`）并封装为对象列表，封装时用 `HoneycombXCGeometry` 计算格点间距离。
 - **`data_records/Honeycomb_Lattice.py`** — 晶格几何。抽象基类 `HoneycombLattice`；`HoneycombXCGeometry` 定义 XC 构型：格点数 N 必须是 8 的倍数（基元含 8 格点），提供格点坐标 `coords`、欧氏距离 `get_distance`、超导关联用的 bond 中点距离 `sup_corr_distance`、最近邻索引表 `_nearest_neighbor_grid_index`。

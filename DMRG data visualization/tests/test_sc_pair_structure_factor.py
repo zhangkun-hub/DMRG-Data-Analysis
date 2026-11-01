@@ -44,12 +44,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Physical_Data_Record import SuperCorrRecord
-from Physical_Quantity.Spin_Structure_Factor import (
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.data_records.Physical_Data_Record import SuperCorrRecord
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import (
     compute_structure_factor, xc_momentum_grid)
-from Physical_Quantity.Super_Correlation_Process import SuperCorrProcessor
-from Physical_Quantity.SC_Pair_Structure_Factor import (
+from Physical_Quantity.physical_analysis.Super_Correlation_Process import SuperCorrProcessor
+from Physical_Quantity.physical_analysis.SC_Pair_Structure_Factor import (
     SCPairStructureFactorEstimator, DEF_SC_PAIR, VALID_DIRECTIONS)
 
 RESULTS = {}

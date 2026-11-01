@@ -34,8 +34,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-from Physical_Quantity.Physical_Data_Record import DensityRecord  # noqa: E402
-from Physical_Quantity.Analysis_Contract import (  # noqa: E402
+from Physical_Quantity.data_records.Physical_Data_Record import DensityRecord  # noqa: E402
+from Physical_Quantity.evidence_integration.Analysis_Contract import (  # noqa: E402
     OBSERVABLE_SUPERCONDUCTING_CORRELATION,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,
@@ -47,14 +47,14 @@ from Physical_Quantity.Analysis_Contract import (  # noqa: E402
     ANALYZER_DENSITY,
     ANALYZER_SC_PAIRING_SYMMETRY,
     ANALYZER_PEAK)
-from Physical_Quantity.Analysis_Entry import run_analysis  # noqa: E402
-from Physical_Quantity.Phase_Diagnosis import (  # noqa: E402
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis  # noqa: E402
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (  # noqa: E402
     collect_evidence, audit_comparability, evidence_sufficiency_check,
     run_candidate_rules, P1F3_RULES, GAPW_RULES, AUTHORIZED_RULES,
     VERDICT_STATES)
-from Physical_Quantity.Spin_Structure_Factor import xc_momentum_grid  # noqa: E402
-from Physical_Quantity.Density_Process import DensityProcessor  # noqa: E402
-from Physical_Quantity.Energy_Process import EnergyRecord  # noqa: E402
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import xc_momentum_grid  # noqa: E402
+from Physical_Quantity.physical_analysis.Density_Process import DensityProcessor  # noqa: E402
+from Physical_Quantity.physical_analysis.Energy_Process import EnergyRecord  # noqa: E402
 import Cross_Doping_Summary as cds  # noqa: E402
 
 DEFAULT_T_J = 't_J_3'
@@ -369,7 +369,7 @@ def save_figures(outcomes, plots_dir, no_plots=False):
         name = f"spin_peaks_{src}_{o['context']['key_or_definition']}"
         path = os.path.join(plots_dir, name + '.png')
         try:
-            from Physical_Quantity.Spin_Structure_Factor_Analyzer import (
+            from Physical_Quantity.physical_analysis.Spin_Structure_Factor_Analyzer import (
                 SpinStructureFactorPeakAnalyzer)
             SpinStructureFactorPeakAnalyzer.plot_peaks(
                 pair['report'].payload, rep.payload, save_path=path)

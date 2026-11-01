@@ -34,13 +34,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     STATUS_OK, STATUS_FAILED, OBSERVABLE_LOCAL_DENSITY, ANALYZER_DENSITY)
-from Physical_Quantity.Analysis_Entry import run_analysis
-from Physical_Quantity.Density_Process import DensityProcessor
-from Physical_Quantity.Physical_Data_Record import DensityRecord
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
+from Physical_Quantity.physical_analysis.Density_Process import DensityProcessor
+from Physical_Quantity.data_records.Physical_Data_Record import DensityRecord
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     collect_evidence, build_evidence_items,
     EVIDENCE_OBSERVATION, EVIDENCE_NOT_AVAILABLE)
 
@@ -261,7 +261,7 @@ for it in items:
           it['payload_available'] is True)
 # 失败报告 → not_available（不伪造观测）
 rep_none = run_analysis.__wrapped__ if False else None
-from Physical_Quantity.Analysis_Contract import from_density_profile
+from Physical_Quantity.evidence_integration.Analysis_Contract import from_density_profile
 ph2 = collect_evidence([from_density_profile(None)], labels=['bad'])
 check('I', 'None 输入 → status=failed → not_available',
       ph2.entries[0]['status'] == STATUS_FAILED

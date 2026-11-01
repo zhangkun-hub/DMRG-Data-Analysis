@@ -37,7 +37,7 @@ measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
 
 ```python
 from pathlib import Path
-from Physical_Quantity.Physical_Data_Record import SuperCorrRecord
+from Physical_Quantity.data_records.Physical_Data_Record import SuperCorrRecord
 
 base = Path(f'Data_N200/t_J_3/d1_100/1500_measure_super_corr/super_corr_49_50')
 records = {}
@@ -57,7 +57,7 @@ for bond in 'ABC':
 ## 4. SU(2) 对称性检验与合成
 
 ```python
-from Physical_Quantity.Super_Correlation_Process import SuperCorrProcessor
+from Physical_Quantity.physical_analysis.Super_Correlation_Process import SuperCorrProcessor
 
 for bond in 'ABC':
     recs = [records[f'scs{bond}{ch}'] for ch in 'abcd']
@@ -103,4 +103,4 @@ SuperCorrProcessor.Super_Corr_Visualization_three(super_corr_dict)   # 三键方
 - 配套：`print_summary(result)` 打印完整报告（含 8 项振荡诊断逐项表、r_min 扫描表、噪声底来源）；`Decay_Visualization(result, r, C)` 画 8 面板综合图（r/C 用 `group_by_distance` 的输出）；`analyze_batch({name: records})` 批量分析（不自动做跨 refbond 物理结论）
 - 结果含 `analysis_version` 与完整 `AnalyzerConfig` 快照，`to_dict()/to_json(path)` 可追溯
 - 该分析器对"合成后"数据工作；SU(2) 对称性误差大（>1e-3）时合成结果本身存疑，先核对本 skill 第 4 节的 symmetry_check 输出
-- **统一契约入口**（可选）：`from Physical_Quantity.Analysis_Entry import run_analysis` 配合 `OBSERVABLE_SUPERCONDUCTING_CORRELATION` 常量可返回统一 `AnalysisReport`（payload 保留原始 DecayAnalysisResult）。与本 skill 直接相关的还有：SC 配对结构因子 `run_analysis(OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, operation='estimate', ...)`（受限估计，含逐通道）与配对对称 `run_analysis(OBSERVABLE_SC_PAIRING_SYMMETRY, operation='analyze', ...)`（D5 阶段 1–4 + 5B 候选观测，候选支持判定恒 not_evaluated）。统一入口共 13 条路由（衰减 ×4 / SF 估计 ×3 / 峰值 ×2 / 能量外推 / 配对对称 / 密度 profile / 峰位对齐），见项目 CLAUDE.md 架构一节
+- **统一契约入口**（可选）：`from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis` 配合 `OBSERVABLE_SUPERCONDUCTING_CORRELATION` 常量可返回统一 `AnalysisReport`（payload 保留原始 DecayAnalysisResult）。与本 skill 直接相关的还有：SC 配对结构因子 `run_analysis(OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, operation='estimate', ...)`（受限估计，含逐通道）与配对对称 `run_analysis(OBSERVABLE_SC_PAIRING_SYMMETRY, operation='analyze', ...)`（D5 阶段 1–4 + 5B 候选观测，候选支持判定恒 not_evaluated）。统一入口共 13 条路由（衰减 ×4 / SF 估计 ×3 / 峰值 ×2 / 能量外推 / 配对对称 / 密度 profile / 峰位对齐），见项目 CLAUDE.md 架构一节

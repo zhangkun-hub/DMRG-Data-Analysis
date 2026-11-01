@@ -36,9 +36,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)   # DMRG data visualization/
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Physical_Data_Record import SuperCorrRecord
-from Physical_Quantity.Super_Correlation_Process import SuperCorrProcessor
-from Physical_Quantity.Super_Correlation_Analyzer import (
+from Physical_Quantity.data_records.Physical_Data_Record import SuperCorrRecord
+from Physical_Quantity.physical_analysis.Super_Correlation_Process import SuperCorrProcessor
+from Physical_Quantity.physical_analysis.Super_Correlation_Analyzer import (
     SuperCorrDecayAnalyzer, AnalyzerConfig)
 
 BASELINE = os.path.join(HERE, 'baselines', 'n200_baseline_post_refactor.json')
@@ -282,7 +282,7 @@ fd = res.family_diagnostics
 check('edge_case', '单族数据族诊断 insufficient 降级', fd is not None and fd.insufficient)
 
 # P1：旧模块路径 re-export
-from Physical_Quantity.Super_Correlation_Analyzer import (  # noqa: E402
+from Physical_Quantity.physical_analysis.Super_Correlation_Analyzer import (  # noqa: E402
     _fmt_sci, _rel_mad, _mad_abs, _mad_circular, _max_circular,
     _r2_in_space, _scaled_fit_problem, _aicc_bic_core, _logspace_lstsq,
     _local_slopes, _spearman)

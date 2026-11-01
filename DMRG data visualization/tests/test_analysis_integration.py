@@ -31,19 +31,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Physical_Data_Record import CorrelationRecord, SuperCorrRecord
-from Physical_Quantity.Correlation_Process import CorrelationProcessor
-from Physical_Quantity.Super_Correlation_Process import SuperCorrProcessor
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
-from Physical_Quantity.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
-from Physical_Quantity.Correlation_Decay_Analyzer import DecayAnalysisResult
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.data_records.Physical_Data_Record import CorrelationRecord, SuperCorrRecord
+from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationProcessor
+from Physical_Quantity.physical_analysis.Super_Correlation_Process import SuperCorrProcessor
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.physical_analysis.Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
+from Physical_Quantity.physical_analysis.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import DecayAnalysisResult
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     STATUS_OK, STATUS_FAILED,
     OBSERVABLE_SUPERCONDUCTING_CORRELATION, OBSERVABLE_SPIN_CORRELATION,
     from_decay_result,
 )
-from Physical_Quantity.Analysis_Integration import analyze_with_report
+from Physical_Quantity.evidence_integration.Analysis_Integration import analyze_with_report
 
 RESULTS = {}
 
@@ -132,7 +132,7 @@ check('B', 'SC：直接 analyze 仍返回 DecayAnalysisResult（旧接口不变�
 
 # payload 引用语义：mock 分析器返回已知对象 → report.payload is 该对象
 # （集成函数内部一次调用与测试另一次调用是不同的对象，必须用 mock 验证引用）
-from Physical_Quantity.Correlation_Decay_Analyzer import FitResult
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import FitResult
 _mock_result = DecayAnalysisResult(
     classification='power_law', evidence_level='moderate', n_points=10,
     envelope_fit=FitResult(model='envelope_power', fit_space='log_absC',

@@ -22,11 +22,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Physical_Data_Record import CorrelationRecord
-from Physical_Quantity.Correlation_Process import CorrelationProcessor
-from Physical_Quantity.Spin_Structure_Factor import (
+from Physical_Quantity.data_records.Physical_Data_Record import CorrelationRecord
+from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationProcessor
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import (
     compute_structure_factor, xc_momentum_grid, SpinStructureFactorEstimator)
-from Physical_Quantity.Spin_Structure_Factor_Analyzer import (
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor_Analyzer import (
     SpinStructureFactorPeakAnalyzer)
 
 ART = os.path.join(HERE, 'artifacts')

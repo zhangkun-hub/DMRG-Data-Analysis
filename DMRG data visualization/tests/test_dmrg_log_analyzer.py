@@ -40,7 +40,7 @@ _spec = importlib.util.spec_from_file_location('dmrg_log_analyzer', _SCRIPT)
 analyzer = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(analyzer)
 
-from Physical_Quantity.DMRG_Log_Parser import DMRGLogParser
+from Physical_Quantity.data_records.DMRG_Log_Parser import DMRGLogParser
 
 RESULTS = {}
 

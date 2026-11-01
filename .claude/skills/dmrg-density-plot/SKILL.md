@@ -34,7 +34,7 @@ JSON 格式统一为嵌套列表：`[[[0], [0.9998, 0]], [[1], [0.9999, 0]], ...
 ## 3. 提取：DensityRecord
 
 ```python
-from Physical_Quantity.Physical_Data_Record import DensityRecord
+from Physical_Quantity.data_records.Physical_Data_Record import DensityRecord
 
 text = open(".../nf.json", encoding="utf-8").read()   # 或 Path(...).read_text(encoding='utf-8')
 records = DensityRecord.extract_data(text, N=200, a=1.0)   # a 是晶格常数，默认 1.0
@@ -47,7 +47,7 @@ records = DensityRecord.extract_data(text, N=200, a=1.0)   # a 是晶格常数�
 ## 4. 作图：DensityProcessor
 
 ```python
-from Physical_Quantity.Density_Process import DensityProcessor
+from Physical_Quantity.physical_analysis.Density_Process import DensityProcessor
 
 DensityProcessor.Line_Chart_Visualization(records)   # 单组数据：4 条水平行折线图
 summary = DensityProcessor.profile_summary(records)  # 数值汇总：row_mean（i%4 四行均值）

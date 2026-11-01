@@ -45,7 +45,7 @@ _SPEC = importlib.util.spec_from_file_location(
 cds = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(cds)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     AnalysisReport, STATUS_OK, STATUS_FAILED,
     OBSERVABLE_SUPERCONDUCTING_CORRELATION,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,

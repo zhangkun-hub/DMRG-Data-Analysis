@@ -37,10 +37,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Energy_Process import EnergyRecord, EnergyProcessor
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.physical_analysis.Energy_Process import EnergyRecord, EnergyProcessor
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     STATUS_OK, OBSERVABLE_ENERGY, ANALYZER_ENERGY)
-from Physical_Quantity.Analysis_Integration import energy_extrapolation_report
+from Physical_Quantity.evidence_integration.Analysis_Integration import energy_extrapolation_report
 
 RESULTS = {}
 

@@ -18,7 +18,7 @@ D 阶段内重启（每阶段 1..N）；不使用 E0 行内的瞬时 D（如重�
 """
 import sys
 
-from Physical_Quantity.DMRG_Log_Parser import DMRGLogParser
+from Physical_Quantity.data_records.DMRG_Log_Parser import DMRGLogParser
 
 # 中段值口径（保留，交叉核验用）：限定 Site (40, 41) 的 E0 行
 MID_ENERGY_PATTERN = (

@@ -35,9 +35,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     AnalysisReport, STATUS_OK, STATUS_FAILED)
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     collect_evidence, build_evidence_items, run_candidate_rules,
     EVIDENCE_OBSERVATION,
     RULE_EXECUTED_SUPPORTED, RULE_EXECUTED_UNSATISFIED,
@@ -405,7 +405,7 @@ check('G', 'to_json 含新键且严格可解析（无 NaN/Infinity）',
 # H. P1-D.2.2：候选清单与混合状态收尾
 # ======================================================================
 print('===== H. 候选清单与混合状态 =====')
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     AUTHORIZED_RULES, P1F3_RULES, GAPW_RULES)
 
 # H1 显式候选清单：无规则候选 → criteria_undefined（判定不可执行）

@@ -34,14 +34,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Spin_Structure_Factor import xc_momentum_grid
-from Physical_Quantity.Charge_Structure_Factor import (
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import xc_momentum_grid
+from Physical_Quantity.physical_analysis.Charge_Structure_Factor import (
     ChargeStructureFactorEstimator, DEF_CHARGE_DENSITY_CONNECTED)
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     STATUS_OK, OBSERVABLE_CHARGE_STRUCTURE_FACTOR)
-from Physical_Quantity.Analysis_Integration import charge_structure_factor_report
-from Physical_Quantity.Analysis_Entry import run_analysis
+from Physical_Quantity.evidence_integration.Analysis_Integration import charge_structure_factor_report
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
 
 RESULTS = {}
 
@@ -253,7 +253,7 @@ check('F', '真实数据：虚部残差报告（数值有限即可）',
 # G. 批量估计（estimate_batch）
 # ==========================================================================
 print('===== G. 批量估计 =====')
-from Physical_Quantity.Analysis_Contract import AnalysisReport
+from Physical_Quantity.evidence_integration.Analysis_Contract import AnalysisReport
 
 # 1. 两组均成功
 batch_ok = ChargeStructureFactorEstimator.estimate_batch(

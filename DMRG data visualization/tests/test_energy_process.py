@@ -40,7 +40,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Energy_Process import EnergyRecord, EnergyProcessor
+from Physical_Quantity.physical_analysis.Energy_Process import EnergyRecord, EnergyProcessor
 
 # 零宽字符文件名：glob 定位后 importlib 加载（与日志分析器测试同款）
 _SCRIPT = glob.glob(os.path.join(ROOT, 'DMRG_Log_Analyzer*.py'))[0]

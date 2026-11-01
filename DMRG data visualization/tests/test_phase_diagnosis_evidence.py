@@ -28,9 +28,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     AnalysisReport, STATUS_OK, STATUS_FAILED)
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     collect_evidence, build_evidence_items,
     EVIDENCE_OBSERVATION, EVIDENCE_DERIVED_OBSERVATION,
     EVIDENCE_QUALITY_DIAGNOSTIC, EVIDENCE_CAPABILITY_LIMITATION,

@@ -30,25 +30,25 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Physical_Data_Record import CorrelationRecord, SuperCorrRecord
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Spin_Structure_Factor import SpinStructureFactorEstimator
-from Physical_Quantity.Energy_Process import EnergyRecord
-from Physical_Quantity.Correlation_Decay_Analyzer import AnalyzerConfig
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.data_records.Physical_Data_Record import CorrelationRecord, SuperCorrRecord
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import SpinStructureFactorEstimator
+from Physical_Quantity.physical_analysis.Energy_Process import EnergyRecord
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import AnalyzerConfig
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     OBSERVABLE_SUPERCONDUCTING_CORRELATION,
     OBSERVABLE_SPIN_CORRELATION,
     OBSERVABLE_CHARGE_CORRELATION,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,
     OBSERVABLE_ENERGY,
 )
-from Physical_Quantity.Analysis_Integration import (
+from Physical_Quantity.evidence_integration.Analysis_Integration import (
     analyze_with_report, structure_factor_report,
     peak_analysis_report, energy_extrapolation_report)
-from Physical_Quantity.Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
-from Physical_Quantity.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
-from Physical_Quantity.Charge_Correlation_Analyzer import ChargeCorrDecayAnalyzer
-from Physical_Quantity.Analysis_Entry import run_analysis
+from Physical_Quantity.physical_analysis.Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
+from Physical_Quantity.physical_analysis.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
+from Physical_Quantity.physical_analysis.Charge_Correlation_Analyzer import ChargeCorrDecayAnalyzer
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
 
 RESULTS = {}
 
@@ -101,7 +101,7 @@ def _est_synth(arg, q_list, N, a=1.0, **kwargs):
 # A. 六条路由返回 AnalysisReport + 与包装函数一致
 # ==========================================================================
 print('===== A. 六条路由 =====')
-from Physical_Quantity.Analysis_Contract import AnalysisReport
+from Physical_Quantity.evidence_integration.Analysis_Contract import AnalysisReport
 
 pairs = [
     ('SC 衰减', OBSERVABLE_SUPERCONDUCTING_CORRELATION, None,

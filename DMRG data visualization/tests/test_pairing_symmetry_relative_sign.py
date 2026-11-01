@@ -33,7 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Pairing_Symmetry_Analyzer import (
+from Physical_Quantity.physical_analysis.Pairing_Symmetry_Analyzer import (
     relative_sign_pair_reports, RELPAIR_AVAILABLE, RELPAIR_UNAVAILABLE,
     SIGN_EXTRACTED, SIGN_INSUFFICIENT, SIGN_UNAVAILABLE,
     LAYER_OSC, LAYER_NON_OSC, LAYER_UNKNOWN)

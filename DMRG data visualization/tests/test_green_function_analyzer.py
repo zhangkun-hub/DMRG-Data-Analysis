@@ -28,12 +28,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Physical_Data_Record import SingleParticleRecord
-from Physical_Quantity.Green_Function_Analyzer import GreenFunctionDecayAnalyzer
-from Physical_Quantity.Correlation_Decay_Analyzer import AnalyzerConfig
-from Physical_Quantity.Analysis_Entry import run_analysis
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.data_records.Physical_Data_Record import SingleParticleRecord
+from Physical_Quantity.physical_analysis.Green_Function_Analyzer import GreenFunctionDecayAnalyzer
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import AnalyzerConfig
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     OBSERVABLE_SINGLE_PARTICLE_CORRELATION, STATUS_OK)
 
 RESULTS = {}

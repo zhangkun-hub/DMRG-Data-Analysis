@@ -35,13 +35,13 @@ sys.path.insert(0, ROOT)
 
 import numpy as np
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     STATUS_OK, OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,
     OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT,
     ANALYZER_CHARGE_SPIN_PEAK_ALIGNMENT)
-from Physical_Quantity.Analysis_Entry import run_analysis
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     collect_evidence, build_evidence_items, EVIDENCE_DERIVED_OBSERVATION)
 
 RESULTS = {}

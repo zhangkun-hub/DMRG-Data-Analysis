@@ -28,11 +28,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     AnalysisReport, STATUS_OK, STATUS_INCONCLUSIVE, STATUS_FAILED,
     OBSERVABLE_SPIN_CORRELATION, OBSERVABLE_SPIN_STRUCTURE_FACTOR,
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR, OBSERVABLE_ENERGY)
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     PhaseDiagnosisReport, collect_evidence, audit_comparability,
     evidence_sufficiency_check,
     CONCLUSION_EVIDENCE_COLLECTED, CONCLUSION_INCONCLUSIVE,

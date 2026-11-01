@@ -30,7 +30,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     AnalysisReport, _convert,
     STATUS_OK, STATUS_INCONCLUSIVE, STATUS_FAILED,
     ANALYZER_DECAY_SUPERCONDUCTING, ANALYZER_DECAY_SPIN,
@@ -40,7 +40,7 @@ from Physical_Quantity.Analysis_Contract import (
     from_decay_result, from_structure_factor, from_peak_report,
     from_energy_extrapolation,
 )
-from Physical_Quantity.Correlation_Decay_Analyzer import (
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import (
     DecayAnalysisResult, FitResult, OscillationInfo, StabilityReport,
     AnalyzerConfig)
 

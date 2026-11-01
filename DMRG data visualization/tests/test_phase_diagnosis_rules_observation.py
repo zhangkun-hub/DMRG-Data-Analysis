@@ -36,12 +36,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     AnalysisReport, STATUS_OK, OBSERVABLE_SUPERCONDUCTING_CORRELATION,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR, OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, OBSERVABLE_SC_PAIRING_SYMMETRY,
     ANALYZER_SC_PAIR_SF, ANALYZER_SC_PAIRING_SYMMETRY)
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     collect_evidence, run_candidate_rules, AUTHORIZED_RULES, P1F3_RULES,
     GAPW_RULES, P1F3_CRITERIA_VERSION,
     VERDICT_SUPPORTED, VERDICT_CONTRADICTED, VERDICT_CONFLICTING,

@@ -32,7 +32,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
 import Phase_Analysis_Report as par  # noqa: E402
-from Physical_Quantity.Phase_Diagnosis import VERDICT_STATES  # noqa: E402
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import VERDICT_STATES  # noqa: E402
 
 RESULTS = {}
 

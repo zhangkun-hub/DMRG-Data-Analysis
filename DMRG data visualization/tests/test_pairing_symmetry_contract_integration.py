@@ -27,10 +27,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     STATUS_OK, STATUS_FAILED, STATUS_INCONCLUSIVE)
-from Physical_Quantity.Analysis_Integration import sc_pairing_symmetry_report
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.evidence_integration.Analysis_Integration import sc_pairing_symmetry_report
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     collect_evidence, build_evidence_items,
     EVIDENCE_OBSERVATION, EVIDENCE_QUALITY_DIAGNOSTIC,
     EVIDENCE_CAPABILITY_LIMITATION, EVIDENCE_NOT_AVAILABLE)
@@ -258,11 +258,11 @@ print('===== F. 标准入口 =====')
 import json
 import tempfile
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     OBSERVABLE_SC_PAIRING_SYMMETRY)
-from Physical_Quantity.Analysis_Entry import run_analysis
-from Physical_Quantity.Pairing_Symmetry_Analyzer import PairingSymmetryConfig
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
+from Physical_Quantity.physical_analysis.Pairing_Symmetry_Analyzer import PairingSymmetryConfig
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
 
 g200 = HoneycombXCGeometry(200, 1.0)
 

@@ -29,13 +29,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Physical_Data_Record import CorrelationRecord
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Charge_Correlation_Analyzer import ChargeCorrDecayAnalyzer
-from Physical_Quantity.Correlation_Decay_Analyzer import DecayAnalysisResult
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.data_records.Physical_Data_Record import CorrelationRecord
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.physical_analysis.Charge_Correlation_Analyzer import ChargeCorrDecayAnalyzer
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import DecayAnalysisResult
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     STATUS_OK, OBSERVABLE_CHARGE_CORRELATION)
-from Physical_Quantity.Analysis_Integration import analyze_with_report
+from Physical_Quantity.evidence_integration.Analysis_Integration import analyze_with_report
 
 RESULTS = {}
 

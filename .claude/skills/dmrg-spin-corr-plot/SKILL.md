@@ -34,7 +34,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据
 `extract_data` 需要 A/B 子格序列 `sequence`，用于筛选有效源点/场点：
 
 ```python
-from Physical_Quantity.Physical_Data_Record import CorrelationRecord
+from Physical_Quantity.data_records.Physical_Data_Record import CorrelationRecord
 
 N = 200
 src_off, max_off = 1, -3        # A 子格；B 子格用 (2, -2)
@@ -53,7 +53,7 @@ SzSz = CorrelationRecord.extract_data(text_szsz, sequence, N, a=1.0)
 ## 4. 合成与作图：CorrelationProcessor
 
 ```python
-from Physical_Quantity.Correlation_Process import CorrelationProcessor
+from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationProcessor
 
 SiSj = CorrelationProcessor.Combined_spin_correlation(SzSz, SuSd, SdSu)
 # 即 <S_i·S_j> = <SzSz> + 1/2 (<SuSd> + <SdSu>)

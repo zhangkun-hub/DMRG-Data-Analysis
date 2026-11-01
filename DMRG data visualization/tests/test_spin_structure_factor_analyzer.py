@@ -18,7 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Spin_Structure_Factor_Analyzer import (
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor_Analyzer import (
     SpinStructureFactorPeakAnalyzer)
 
 RESULTS = {}

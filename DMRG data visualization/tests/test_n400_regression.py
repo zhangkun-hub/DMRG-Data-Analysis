@@ -37,11 +37,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Physical_Data_Record import SuperCorrRecord, CorrelationRecord
-from Physical_Quantity.Super_Correlation_Process import SuperCorrProcessor
-from Physical_Quantity.Correlation_Process import CorrelationProcessor
-from Physical_Quantity.Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
-from Physical_Quantity.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
+from Physical_Quantity.data_records.Physical_Data_Record import SuperCorrRecord, CorrelationRecord
+from Physical_Quantity.physical_analysis.Super_Correlation_Process import SuperCorrProcessor
+from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationProcessor
+from Physical_Quantity.physical_analysis.Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
+from Physical_Quantity.physical_analysis.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
 
 BASELINE = os.path.join(HERE, 'baselines', 'n400_baseline_v1.json')
 RESULTS = {}

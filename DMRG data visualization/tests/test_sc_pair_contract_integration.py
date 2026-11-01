@@ -34,12 +34,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     AnalysisReport, STATUS_OK,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, ANALYZER_SC_PAIR_SF,
 )
-from Physical_Quantity.Analysis_Entry import run_analysis
-from Physical_Quantity.SC_Pair_Structure_Factor import (
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
+from Physical_Quantity.physical_analysis.SC_Pair_Structure_Factor import (
     SCPairStructureFactorEstimator)
 
 RESULTS = {}

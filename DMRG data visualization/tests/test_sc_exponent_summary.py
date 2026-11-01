@@ -50,16 +50,16 @@ _SPEC_SES = importlib.util.spec_from_file_location(
 ses = importlib.util.module_from_spec(_SPEC_SES)
 _SPEC_SES.loader.exec_module(ses)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     AnalysisReport, STATUS_OK,
     OBSERVABLE_SUPERCONDUCTING_CORRELATION,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR)
-from Physical_Quantity.Physical_Data_Record import SuperCorrRecord
-from Physical_Quantity.Correlation_Decay_Analyzer import (
+from Physical_Quantity.data_records.Physical_Data_Record import SuperCorrRecord
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import (
     FitResult, StabilityReport)
-from Physical_Quantity.Analysis_Entry import run_analysis
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
 
 SC_OBS = OBSERVABLE_SUPERCONDUCTING_CORRELATION
 

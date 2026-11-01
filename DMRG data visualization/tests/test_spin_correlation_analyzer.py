@@ -23,11 +23,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Physical_Data_Record import CorrelationRecord
-from Physical_Quantity.Correlation_Process import CorrelationProcessor
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
-from Physical_Quantity.Correlation_Decay_Analyzer import AnalyzerConfig
+from Physical_Quantity.data_records.Physical_Data_Record import CorrelationRecord
+from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationProcessor
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.physical_analysis.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import AnalyzerConfig
 
 BASELINE = os.path.join(HERE, 'baselines', 'spin_n200_baseline_v1.json')
 RESULTS = {'synthetic': [], 'edge_case': [], 'real_data': []}
@@ -164,7 +164,7 @@ check('edge_case', '4 点数据 → 通用核心数据不足传递（INCONCLUSIV
       f"{res.classification}/{res.evidence_level}")
 
 # 关联定义不混用：Spin 分析器只读 correlation 字段（sup_corr 字段不存在也不报错）
-from Physical_Quantity.Physical_Data_Record import SuperCorrRecord
+from Physical_Quantity.data_records.Physical_Data_Record import SuperCorrRecord
 sc_recs = [SuperCorrRecord((50, 51), (60, 61), d, v) for d, v in zip(dists[:6], C_pow[:6])]
 try:
     SpinCorrDecayAnalyzer.analyze(sc_recs, N=200)

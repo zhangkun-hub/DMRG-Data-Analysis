@@ -30,7 +30,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     AUTHORIZED_RULES, _REGISTERED_RULES, register_candidate_rules,
     _observation_evaluation, P1F3_RULES, GAPW_RULES, P1F3_CRITERIA_VERSION,
     collect_evidence, run_candidate_rules,

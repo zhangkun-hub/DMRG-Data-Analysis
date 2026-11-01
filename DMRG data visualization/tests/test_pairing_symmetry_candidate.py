@@ -36,14 +36,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Pairing_Symmetry_Analyzer import (
+from Physical_Quantity.physical_analysis.Pairing_Symmetry_Analyzer import (
     PairingSymmetryConfig, build_comparable_set,
     fit_symmetric_rank1, fit_general_rank1,
     candidate_observation_report, run_candidate_observations,
     relative_sign_pair_reports, RELPAIR_AVAILABLE,
     OSC_AMPLITUDE_BIAS_WARNING, CAND_OBSERVATIONAL, CAND_INCONCLUSIVE,
     CAND_STATUS_NOT_EVALUATED, LAYER_OSC, LAYER_NON_OSC)
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
 
 RESULTS = {}
 

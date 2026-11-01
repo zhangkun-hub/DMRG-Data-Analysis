@@ -62,23 +62,23 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-from Physical_Quantity.Analysis_Contract import (
+from Physical_Quantity.evidence_integration.Analysis_Contract import (
     _convert, STATUS_FAILED,
     OBSERVABLE_SUPERCONDUCTING_CORRELATION,
     OBSERVABLE_SPIN_STRUCTURE_FACTOR,
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
 )
-from Physical_Quantity.Analysis_Entry import run_analysis
-from Physical_Quantity.Phase_Diagnosis import (
+from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis
+from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (
     collect_evidence, audit_comparability, evidence_sufficiency_check)
-from Physical_Quantity.Physical_Data_Record import (
+from Physical_Quantity.data_records.Physical_Data_Record import (
     SuperCorrRecord, CorrelationRecord)
-from Physical_Quantity.Correlation_Process import CorrelationProcessor
-from Physical_Quantity.Super_Correlation_Process import SuperCorrProcessor
-from Physical_Quantity.Spin_Structure_Factor import (
+from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationProcessor
+from Physical_Quantity.physical_analysis.Super_Correlation_Process import SuperCorrProcessor
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import (
     xc_momentum_grid, SpinStructureFactorEstimator, _q_grid_stats)
-from Physical_Quantity.Correlation_Decay_Analyzer import AnalyzerConfig
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import AnalyzerConfig
 
 DEFAULT_DOPINGS = ['d1_10', 'd1_20', 'd1_25', 'd1_100', 'd2_25', 'd3_20', 'd3_25']
 DEFAULT_T_J = 't_J_3'

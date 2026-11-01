@@ -19,8 +19,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
-from Physical_Quantity.Honeycomb_Lattice import HoneycombXCGeometry
-from Physical_Quantity.Spin_Structure_Factor import (
+from Physical_Quantity.data_records.Honeycomb_Lattice import HoneycombXCGeometry
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import (
     compute_structure_factor, xc_momentum_grid, SpinStructureFactorEstimator,
     DEF_SPIN_DOT, DEF_SZ_SZ)
 
@@ -195,8 +195,8 @@ check('H', 'sz_sz 输出含 meta（几何元信息透传，来自实际几何对
       res.get('meta'))
 
 # 源点 49/50 三分量合成 spin_dot 受限估计
-from Physical_Quantity.Physical_Data_Record import CorrelationRecord
-from Physical_Quantity.Correlation_Process import CorrelationProcessor
+from Physical_Quantity.data_records.Physical_Data_Record import CorrelationRecord
+from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationProcessor
 all_recs = []
 for measure, ver, seq in [('measure_49', '49', range(1, 300, 4)),
                           ('measure_50', '50', range(2, 300, 4))]:
@@ -225,7 +225,7 @@ check('H', 'spin_dot 输出同样含 meta（与 sz_sz 同几何，n_cells_x=25�
 # 11. q_grid 实际网格统计（D4.5-T1：与电荷侧语义一致）
 # ==========================================================================
 print('===== I. q_grid 网格统计 =====')
-from Physical_Quantity.Spin_Structure_Factor import _q_grid_stats
+from Physical_Quantity.physical_analysis.Spin_Structure_Factor import _q_grid_stats
 
 # I1. 规则网格
 qs_i1, _ = xc_momentum_grid(200, a=1.0, n_qx=11, n_qy=4)
