@@ -10,6 +10,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的超导关联数据
 ## 1. 环境准备（每次运行前）
 
 - 用 Anaconda 环境 **Calculation** 运行：`conda activate Calculation`（numpy 2.2.6 / pandas 2.3.3 / matplotlib 3.10.7，勿用旧版 API）
+- bash 里 `python` 默认指向 Anaconda base（numpy 1.21.5），不是 Calculation——跑脚本前必须先 `conda activate Calculation` 或用全路径 `/d/Anaconda/envs/Calculation/python.exe`，跨环境跑会因浮点尾数差异导致基线逐字段比较失败
 - 包导入 `from Physical_Quantity...` 依赖 cwd 在 `sys.path`，因此**必须在 `DMRG data visualization/` 目录下运行**脚本或启动 Jupyter
 - Windows 控制台默认 GBK：用 `python -X utf8` 运行，脚本内加 `sys.stdout.reconfigure(encoding='utf-8')`；JSON 统一 `encoding='utf-8'` 读取
 - 批处理/无显示环境作图：先 `import matplotlib; matplotlib.use("Agg")` 再 `plt.savefig(...)`
@@ -102,4 +103,4 @@ SuperCorrProcessor.Super_Corr_Visualization_three(super_corr_dict)   # 三键方
 - 配套：`print_summary(result)` 打印完整报告（含 8 项振荡诊断逐项表、r_min 扫描表、噪声底来源）；`Decay_Visualization(result, r, C)` 画 8 面板综合图（r/C 用 `group_by_distance` 的输出）；`analyze_batch({name: records})` 批量分析（不自动做跨 refbond 物理结论）
 - 结果含 `analysis_version` 与完整 `AnalyzerConfig` 快照，`to_dict()/to_json(path)` 可追溯
 - 该分析器对"合成后"数据工作；SU(2) 对称性误差大（>1e-3）时合成结果本身存疑，先核对本 skill 第 4 节的 symmetry_check 输出
-- **统一契约入口**（可选）：`from Physical_Quantity.Analysis_Entry import run_analysis` 配合 `OBSERVABLE_SUPERCONDUCTING_CORRELATION` 常量可返回统一 `AnalysisReport`（payload 保留原始 DecayAnalysisResult）；自旋/电荷关联、结构因子、峰值与能量外推也有对应路由，见项目 CLAUDE.md 架构一节
+- **统一契约入口**（可选）：`from Physical_Quantity.Analysis_Entry import run_analysis` 配合 `OBSERVABLE_SUPERCONDUCTING_CORRELATION` 常量可返回统一 `AnalysisReport`（payload 保留原始 DecayAnalysisResult）。与本 skill 直接相关的还有：SC 配对结构因子 `run_analysis(OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, operation='estimate', ...)`（受限估计，含逐通道）与配对对称 `run_analysis(OBSERVABLE_SC_PAIRING_SYMMETRY, operation='analyze', ...)`（D5 阶段 1–4 + 5B 候选观测，候选支持判定恒 not_evaluated）。统一入口共 13 条路由（衰减 ×4 / SF 估计 ×3 / 峰值 ×2 / 能量外推 / 配对对称 / 密度 profile / 峰位对齐），见项目 CLAUDE.md 架构一节

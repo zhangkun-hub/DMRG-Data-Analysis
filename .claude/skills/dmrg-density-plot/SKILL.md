@@ -10,6 +10,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据
 ## 1. 环境准备（每次运行前）
 
 - 用 Anaconda 环境 **Calculation** 运行：`conda activate Calculation`（numpy 2.2.6 / pandas 2.3.3 / matplotlib 3.10.7，勿用旧版 API）
+- bash 里 `python` 默认指向 Anaconda base（numpy 1.21.5），不是 Calculation——跑脚本前必须先 `conda activate Calculation` 或用全路径 `/d/Anaconda/envs/Calculation/python.exe`，跨环境跑会因浮点尾数差异导致基线逐字段比较失败
 - 包导入 `from Physical_Quantity...` 依赖 cwd 在 `sys.path`，因此**必须在 `DMRG data visualization/` 目录下运行**脚本或启动 Jupyter
 - Windows 控制台默认 GBK，代码里有中文/Unicode 字符时用 `python -X utf8` 运行，脚本内加 `sys.stdout.reconfigure(encoding='utf-8')`；JSON 文件统一用 `encoding='utf-8'` 读取
 - 批处理/无显示环境作图：先 `import matplotlib; matplotlib.use("Agg")` 再 `plt.savefig(...)`，避免 `plt.show()` 阻塞
@@ -49,7 +50,11 @@ records = DensityRecord.extract_data(text, N=200, a=1.0)   # a 是晶格常数�
 from Physical_Quantity.Density_Process import DensityProcessor
 
 DensityProcessor.Line_Chart_Visualization(records)   # 单组数据：4 条水平行折线图
+summary = DensityProcessor.profile_summary(records)  # 数值汇总：row_mean（i%4 四行均值）
+# / sub_lattice_mean（A/B 子格均值）/ unit_cell_mean（每胞 N/8 个均值，P1-G.1 密度报告契约）
 ```
+
+- 密度数值汇总用 `profile_summary`；统一入口路由 `run_analysis(OBSERVABLE_LOCAL_DENSITY, operation='profile', records=...)` 返回 `AnalysisReport`（适配器 `from_density_profile`）
 
 - 按 `horizontal_starting_point`（0/1/2/3）把格点分成 4 条水平行曲线
 - **四行长度必须完全一致**，数据文件缺格点会抛 ValueError（数据不完整时先检查 nf.json 是否有 N 个元素）

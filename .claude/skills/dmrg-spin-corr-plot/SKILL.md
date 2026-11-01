@@ -10,6 +10,7 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据
 ## 1. 环境准备（每次运行前）
 
 - 用 Anaconda 环境 **Calculation** 运行：`conda activate Calculation`（numpy 2.2.6 / pandas 2.3.3 / matplotlib 3.10.7，勿用旧版 API）
+- bash 里 `python` 默认指向 Anaconda base（numpy 1.21.5），不是 Calculation——跑脚本前必须先 `conda activate Calculation` 或用全路径 `/d/Anaconda/envs/Calculation/python.exe`，跨环境跑会因浮点尾数差异导致基线逐字段比较失败
 - 包导入 `from Physical_Quantity...` 依赖 cwd 在 `sys.path`，因此**必须在 `DMRG data visualization/` 目录下运行**脚本或启动 Jupyter
 - Windows 控制台默认 GBK：用 `python -X utf8` 运行，脚本内加 `sys.stdout.reconfigure(encoding='utf-8')`；JSON 统一 `encoding='utf-8'` 读取
 - 批处理/无显示环境作图：先 `import matplotlib; matplotlib.use("Agg")` 再 `plt.savefig(...)`
@@ -64,7 +65,15 @@ CorrelationProcessor.Spin_Corr_Visualization(SiSj)
 - 作图固定 1×3 子图：线性（原始值）/ y-log（|值|，判断指数衰减）/ log-log（|值|，判断幂律衰减）；负值取对数前必须取绝对值
 - 两组数据对比用 `Spin_Corr_Visualization_difference({'UltraDMRG': r1, 'Itensor': r2})`，取字典前两组，要求长度与源点一致
 
-## 5. 已知坑
+## 5. 衰减类型分析与结构因子（SpinCorrDecayAnalyzer / 统一入口）
+
+作图之外需要衰减分类/拟合时，使用 `Physical_Quantity/Spin_Correlation_Analyzer.py` 的 `SpinCorrDecayAnalyzer`（通用核心 `Correlation_Decay_Analyzer.py`）：
+
+- `SpinCorrDecayAnalyzer.analyze(recs, config, N, a)` → `DecayAnalysisResult`：8 类分类（constant / power_law / exponential / oscillatory_* / non_monotonic / complex_decay / INCONCLUSIVE）+ 完整证据与 config 快照，可 `to_dict()/to_json()`
+- 结构因子：`Spin_Structure_Factor.py` 的 `SpinStructureFactorEstimator`（受限估计）+ `Spin_Structure_Factor_Analyzer.py` 的峰值分析（只输出数值，不判定物理相）
+- 统一入口：`run_analysis(OBSERVABLE_SPIN_CORRELATION, operation='decay', ...)`、`run_analysis(OBSERVABLE_SPIN_STRUCTURE_FACTOR, operation='estimate'/'peak_analysis', ...)` 返回 `AnalysisReport`
+
+## 6. 已知坑
 
 - 三分量文件与变量的**交叉对应**（见第 2 节）最容易搞错；搞反后合成值物理上不对但不会报错，务必核对
 - A/B 子格序列参数：A 子格 `src_off=1, max_off=-3`；B 子格 `src_off=2, max_off=-2`；步长恒为 4
