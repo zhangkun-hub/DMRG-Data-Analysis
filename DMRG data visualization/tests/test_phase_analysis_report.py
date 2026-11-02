@@ -133,7 +133,7 @@ check('B', 'report.json 严格解析且键结构完整',
                          encoding='utf-8')).keys())
       == {'generated_by', 'config', 'reports', 'rows',
           'comparability_groups', 'phase_report', 'checklist',
-          'figure_refs', 'section_failures', 'semantics'})
+          'figure_refs', 'convergence', 'section_failures', 'semantics'})
 
 # ======================================================================
 # C. 判据检查表与矩阵文档一致性

@@ -25,6 +25,7 @@ import datetime
 import json
 import math
 import os
+import re
 import sys
 
 # 绘图纪律：必须在 import 包模块（热导入 matplotlib）之前设定
@@ -55,6 +56,16 @@ from Physical_Quantity.phase_diagnosis.Phase_Diagnosis import (  # noqa: E402
 from Physical_Quantity.physical_analysis.Spin_Structure_Factor import xc_momentum_grid  # noqa: E402
 from Physical_Quantity.physical_analysis.Density_Process import DensityProcessor  # noqa: E402
 from Physical_Quantity.physical_analysis.Energy_Process import EnergyRecord  # noqa: E402
+from Physical_Quantity.physical_analysis.Convergence_Check import (  # noqa: E402
+    convergence_verdict, VERDICTS)
+from Physical_Quantity.physical_analysis.Correlation_Process import (  # noqa: E402
+    CorrelationProcessor)
+from Physical_Quantity.physical_analysis.Super_Correlation_Process import (  # noqa: E402
+    SuperCorrProcessor)
+from Physical_Quantity.data_records.DMRG_Log_Parser import (  # noqa: E402
+    DMRGLogParser)
+from Physical_Quantity.data_records.Physical_Data_Record import (  # noqa: E402
+    CorrelationRecord, SuperCorrRecord)
 import Cross_Doping_Summary as cds  # noqa: E402
 
 DEFAULT_T_J = 't_J_3'
@@ -284,6 +295,237 @@ def run_pairing_symmetry_section(doping, root, t_j, bond_dim, N):
 
 
 # ==========================================================================
+# 收敛诊断节（--convergence-dims）
+# ==========================================================================
+_E0_RE = re.compile(r'E0\s*=\s*([-+]?\d+\.\d+(?:[eE][-+]?\d+)?)')
+_TE_RE = re.compile(r'TruncErr\s*=\s*([-+]?\d+\.\d+(?:[eE][-+]?\d+)?)')
+
+
+def _find_log_for_dim(doping_dir, dim):
+    """doping 目录下含该 D 档的优化日志（slurm-*-Zk_tJ.log）。
+
+    匹配真实日志的阶段头行格式（如 'Bond dimension:\\t 1500/1500'）。
+    """
+    logs = [f for f in os.listdir(doping_dir)
+            if f.endswith('.log') and 'Zk_tJ' in f]
+    for name in logs:
+        text = open(os.path.join(doping_dir, name), encoding='utf-8',
+                    errors='replace').read()
+        if f'{dim}/{dim}' in text:
+            return os.path.join(doping_dir, name), text
+    return None, None
+
+
+def _su2_max_residual(super_root, dim, N, a):
+    """该 D 档全部 refbond × 键方向的 SU(2) 通道残差最大值。"""
+    root = os.path.join(super_root, f'{dim}_measure_super_corr')
+    worst = 0.0
+    n = 0
+    if not os.path.isdir(root):
+        return None
+    for refdir in sorted(os.listdir(root)):
+        m = re.match(r'super_corr_(\d+)_(\d+)$', refdir)
+        if not m:
+            continue
+        refbond = (int(m.group(1)), int(m.group(2)))
+        base = os.path.join(root, refdir)
+        for key in 'ABC':
+            recs = []
+            for ch in 'abcd':
+                path = os.path.join(
+                    base, f'scs{key}{ch}_fix_refbond_{refbond[0]}'
+                          f'_{refbond[1]}.json')
+                if not os.path.isfile(path):
+                    break
+                recs.append(SuperCorrRecord.extract_data(
+                    open(path, encoding='utf-8').read(), N, a))
+            if len(recs) != 4:
+                continue
+            err_ad, err_bc = SuperCorrProcessor.symmetry_check(*recs)
+            worst = max(worst, err_ad, err_bc)
+            n += 1
+    return worst if n else None
+
+
+def _sc_params_by_dim(doping, root, t_j, dim, N, a, q_list, refbonds):
+    """该 D 档 SC 衰减的分类组合与 (refbond,key)→(参数,误差)。"""
+    try:
+        outs = cds.analyze_doping(
+            doping, root=root, t_j=t_j, bond_dim=dim, N=N, a=a,
+            q_list=q_list, refbonds=refbonds,
+            only_observables={OBSERVABLE_SUPERCONDUCTING_CORRELATION})
+    except Exception:  # noqa: BLE001
+        return None, None, None
+    classes, params, errs = [], {}, {}
+    for o in outs:
+        rep = o['report']
+        if rep is None or rep.observable != OBSERVABLE_SUPERCONDUCTING_CORRELATION:
+            continue
+        ctx = o['context']
+        tag = f"{ctx['refbond_or_source']}_{ctx['key_or_definition']}"
+        classes.append((tag, rep.classification))
+        p, m = rep.parameters or {}, rep.metadata or {}
+        pe = m.get('param_errors') or {}
+        if p.get('K') is not None:
+            params[f'{tag}_K'], errs[f'{tag}_K'] = p['K'], pe.get('K')
+        elif p.get('xi') is not None:
+            params[f'{tag}_xi'], errs[f'{tag}_xi'] = p['xi'], pe.get('xi')
+    classes.sort()
+    return tuple(c for _, c in classes), params, errs
+
+
+def run_convergence_section(config, dims):
+    """收敛诊断：五项检查输入 + verdict + 证据图。
+
+    返回 dict：inputs / verdict / figures / failures。
+    证据图：能量收敛图 + 密度/自旋/超导两档 |差值| 图。
+    阈值来源：Convergence_Check.DEFAULT_THRESHOLDS（未获物理授权）。
+    """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    root, t_j, doping = config['root'], config['t_j'], config['doping']
+    N, a = config['N'], config['a']
+    doping_dir = os.path.join(root, t_j, doping)
+    q_list, _ = xc_momentum_grid(N, a=a, n_qx=config['n_qx'],
+                                 n_qy=config['n_qy'])
+    e0_by_dim, te_by_dim, su2_by_dim = {}, {}, {}
+    classes_by_dim, params_by_dim, errs_by_dim = {}, {}, {}
+    figures, failures = [], []
+    dims = [str(d) for d in dims]
+
+    for dim in dims:
+        # E0 / TruncErr（优化日志）
+        log_path, text = _find_log_for_dim(doping_dir, dim)
+        if text is None:
+            failures.append({'dim': dim, 'type': 'FileNotFoundError',
+                             'message': f'无含 D={dim} 的优化日志'})
+        else:
+            e0s = [float(v) for v in _E0_RE.findall(text)]
+            tes = [float(v) for v in _TE_RE.findall(text)]
+            if e0s:
+                e0_by_dim[dim] = e0s[-1]
+            if tes:
+                te_by_dim[dim] = max(tes[-5:])
+        # SU(2) 残差
+        su2_res = _su2_max_residual(os.path.join(root, t_j, doping),
+                                    dim, N, a)
+        if su2_res is not None:
+            su2_by_dim[dim] = su2_res
+        # SC 分类/参数
+        cl, ps, es = _sc_params_by_dim(doping, root, t_j, dim, N, a,
+                                       q_list, config['refbonds'])
+        if cl is not None:
+            classes_by_dim[dim] = cl
+        if ps:
+            params_by_dim[dim], errs_by_dim[dim] = ps, es
+
+    result = convergence_verdict(
+        e0_by_dim=e0_by_dim or None, truncerr_by_dim=te_by_dim or None,
+        su2_by_dim=su2_by_dim or None, classes_by_dim=classes_by_dim or None,
+        params_by_dim=params_by_dim or None,
+        param_errors_by_dim=errs_by_dim or None)
+
+    # ---- 证据图（每图失败不阻断） ----
+    if not config.get('no_plots') and len(dims) >= 2:
+        d1, d2 = dims[0], dims[1]
+        # 能量收敛图（合并两档日志 → DMRGLogParser）
+        try:
+            parser = DMRGLogParser()
+            texts = []
+            for dim in dims:
+                _, t = _find_log_for_dim(doping_dir, dim)
+                if t:
+                    texts.append(t)
+            if texts:
+                parser.parse_from_string('\n'.join(texts))
+                parser.plot_E0()
+                path = os.path.join(config['outdir'], 'plots',
+                                    'convergence_energy.png')
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                plt.savefig(path)
+                plt.close('all')
+                figures.append(os.path.join('plots',
+                                            'convergence_energy.png'))
+        except Exception:  # noqa: BLE001
+            plt.close('all')
+        # 密度两档差值
+        try:
+            recs = {}
+            for dim in (d1, d2):
+                phys = os.path.join(root, t_j, doping,
+                                    f'{dim}_measure_phys_qty')
+                measures = [os.path.join(phys, d) for d in os.listdir(phys)
+                            if d.startswith('measure_')]
+                nf = os.path.join(measures[0], 'nf.json')
+                recs[f'D{dim}'] = DensityRecord.extract_data(
+                    open(nf, encoding='utf-8').read(), N, a)
+            DensityProcessor.Line_Chart_Visualization_difference(recs)
+            path = os.path.join(config['outdir'], 'plots',
+                                'convergence_density_diff.png')
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            plt.savefig(path)
+            plt.close('all')
+            figures.append(os.path.join('plots',
+                                        'convergence_density_diff.png'))
+        except Exception:  # noqa: BLE001
+            plt.close('all')
+        # 自旋两档差值（复用 Cross_Doping_Summary 装载约定）
+        try:
+            sp = {}
+            for dim in (d1, d2):
+                phys = os.path.join(root, t_j, doping,
+                                    f'{dim}_measure_phys_qty')
+                sp[f'D{dim}'] = cds.load_spin_dot_records(phys, N, a)
+            CorrelationProcessor.Spin_Corr_Visualization_difference(sp)
+            path = os.path.join(config['outdir'], 'plots',
+                                'convergence_spin_diff.png')
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            plt.savefig(path)
+            plt.close('all')
+            figures.append(os.path.join('plots',
+                                        'convergence_spin_diff.png'))
+        except Exception:  # noqa: BLE001
+            plt.close('all')
+        # 超导两档差值（首个 refbond 三键）
+        try:
+            sc = {}
+            for dim in (d1, d2):
+                root_dir = os.path.join(root, t_j, doping,
+                                        f'{dim}_measure_super_corr')
+                refdirs = [d for d in sorted(os.listdir(root_dir))
+                           if re.match(r'super_corr_\d+_\d+$', d)]
+                if not refdirs:
+                    break
+                m = re.match(r'super_corr_(\d+)_(\d+)$', refdirs[0])
+                refbond = (int(m.group(1)), int(m.group(2)))
+                labels = {'A': 'A key (blue bond)', 'B': 'B key (green bond)',
+                          'C': 'C key (orange bond)'}
+                sc[f'D{dim}'] = {
+                    label: cds.load_super_corr_records(
+                        os.path.join(root_dir, refdirs[0]), refbond, k, N, a)
+                    for k, label in labels.items()}
+            if len(sc) == 2:
+                SuperCorrProcessor.Super_Corr_Visualization_difference(sc)
+                path = os.path.join(config['outdir'], 'plots',
+                                    'convergence_supercorr_diff.png')
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                plt.savefig(path)
+                plt.close('all')
+                figures.append(os.path.join('plots',
+                                            'convergence_supercorr_diff.png'))
+        except Exception:  # noqa: BLE001
+            plt.close('all')
+
+    return {'dims': dims, 'inputs': {
+                'e0_by_dim': e0_by_dim, 'truncerr_by_dim': te_by_dim,
+                'su2_by_dim': su2_by_dim, 'classes_by_dim': classes_by_dim,
+            },
+            'verdict': result, 'figures': figures, 'failures': failures}
+
+
+# ==========================================================================
 # 判据检查表：静态清单 + 本次运行采集计数
 # ==========================================================================
 def build_checklist(outcomes):
@@ -491,7 +733,7 @@ VERDICT_EXPLAIN = {
 
 
 def render_markdown(config, outcomes, summary, checklist, figure_refs,
-                    section_failures) -> str:
+                    section_failures, convergence=None) -> str:
     phase_report = summary['phase_report']
     n_ok = sum(1 for o in outcomes if o['report'] is not None)
     n_fail = sum(1 for o in outcomes if o.get('failure'))
@@ -596,7 +838,35 @@ def render_markdown(config, outcomes, summary, checklist, figure_refs,
     else:
         lines.append('- （未生成图件：--no-plots 或无可绘图结果）')
     lines.append('')
-    lines.append('## 5. 结论')
+    if convergence is not None:
+        lines.append('## 5. 收敛诊断（bond dimension 稳定性）')
+        lines.append('')
+        cv = convergence['verdict']
+        lines.append(f"**结论：{cv['verdict']}**——{cv['reason']}")
+        lines.append('')
+        lines.append('> 注意：本开关只回答"数值是否稳定、D 是否还需增加"，'
+                     '**不回答能否判相**（判相另需尺寸序列等证据）；阈值为'
+                     '默认值（threshold_status: '
+                     f"{cv['threshold_status']}，未获物理授权）。")
+        lines.append('')
+        lines.append('| 检查项 | 结果 | 证据 |')
+        lines.append('|---|---|---|')
+        for c in cv['checks']:
+            mark = '✅' if c['passed'] is True else ('❌' if c['passed']
+                                                    is False else '—（证据不足）')
+            lines.append(f"| {c['name']} | {mark} | {c['evidence']} |")
+        lines.append('')
+        for ref in convergence['figures']:
+            lines.append(f'- ![收敛证据]({ref})')
+        if convergence['failures']:
+            lines.append('')
+            lines.append('**收集失败项**：')
+            for f in convergence['failures']:
+                lines.append(f"- D={f['dim']}: {f['type']}: {f['message']}")
+        lines.append('')
+        lines.append('## 6. 结论')
+    else:
+        lines.append('## 5. 结论')
     lines.append('')
     lines.append(f'1. **观测结果**：{n_ok} 项分析成功完成，核心数值见'
                  '第 1 节速览表；全部拟合参数与质量诊断可追溯到 report.json。')
@@ -618,7 +888,7 @@ def render_markdown(config, outcomes, summary, checklist, figure_refs,
 
 
 def build_json(config, outcomes, summary, checklist, figure_refs,
-               section_failures) -> dict:
+               section_failures, convergence=None) -> dict:
     return {
         'generated_by': 'Phase_Analysis_Report',
         'config': config,
@@ -633,6 +903,7 @@ def build_json(config, outcomes, summary, checklist, figure_refs,
         'phase_report': summary['phase_report'].to_dict(),
         'checklist': checklist,
         'figure_refs': figure_refs,
+        'convergence': convergence,
         'section_failures': section_failures,
         'semantics': {
             'discipline': ('受控证据汇编：只输出观测数值 + 已注册规则的'
@@ -682,6 +953,10 @@ def build_report(config) -> dict:
         outcomes.extend(ps)
         if fail:
             section_failures['pairing_symmetry'] = fail
+    convergence = None
+    if config.get('convergence_dims'):
+        convergence = run_convergence_section(config,
+                                              config['convergence_dims'])
 
     summary = cds.summarize(outcomes, q_list=q_list, config=config)
     # 规则引擎：显式传入已注册规则集（P1F3 + GAPW），授权来自注册表
@@ -692,11 +967,12 @@ def build_report(config) -> dict:
                                                       'plots'),
                                no_plots=config.get('no_plots', False))
     md = render_markdown(config, outcomes, summary, checklist, figure_refs,
-                         section_failures)
+                         section_failures, convergence)
     return {'markdown': md,
             'json': build_json(config, outcomes, summary, checklist,
-                               figure_refs, section_failures),
-            'summary': summary, 'outcomes': outcomes}
+                               figure_refs, section_failures, convergence),
+            'summary': summary, 'outcomes': outcomes,
+            'convergence': convergence}
 
 
 def write_report(result, outdir) -> dict:
@@ -753,11 +1029,17 @@ def main(argv=None) -> int:
                         help='运行密度 profile 分析（默认关闭）')
     parser.add_argument('--no-plots', action='store_true',
                         help='跳过绘图')
+    parser.add_argument('--convergence-dims', default=None,
+                        help='逗号分隔的 D 档（如 1500,5000），提供时运行'
+                             '收敛诊断（能量/TruncErr/SU(2)/分类/参数五项'
+                             '检查 + 证据图）')
     parser.add_argument('--outdir', default=DEFAULT_OUTDIR)
     args = parser.parse_args(argv)
 
     refbonds = ([s.strip() for s in args.refbonds.split(',') if s.strip()]
                 if args.refbonds else None)
+    conv_dims = ([s.strip() for s in args.convergence_dims.split(',')
+                  if s.strip()] if args.convergence_dims else None)
     doping = _prompt_doping(args.doping)
     config = {
         'root': args.root, 't_j': args.t_j, 'doping': doping,
@@ -767,6 +1049,7 @@ def main(argv=None) -> int:
         'with_pairing_symmetry': args.with_pairing_symmetry,
         'with_density_profile': args.with_density_profile,
         'no_plots': args.no_plots, 'outdir': args.outdir,
+        'convergence_dims': conv_dims,
         'generated_at': datetime.datetime.now().isoformat(timespec='seconds'),
     }
     result = build_report(config)
