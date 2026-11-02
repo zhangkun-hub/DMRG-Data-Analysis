@@ -24,6 +24,7 @@ from .Analysis_Contract import (
     OBSERVABLE_SC_PAIRING_SYMMETRY,
     OBSERVABLE_LOCAL_DENSITY,
     OBSERVABLE_LOCAL_SZ,
+    OBSERVABLE_PAIRING_G2_COMPARISON,
     OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT,
 )
 from .Analysis_Integration import (
@@ -32,6 +33,7 @@ from .Analysis_Integration import (
     charge_structure_factor_report, sc_pair_structure_factor_report,
     sc_pairing_symmetry_analysis_report,
     density_profile_report, sz_profile_report,
+    pairing_g2_report,
     charge_peak_analysis_report,
     charge_spin_peak_alignment_report,
 )
@@ -74,6 +76,7 @@ _ROUTES = {
         sc_pairing_symmetry_analysis_report,
     (OBSERVABLE_LOCAL_DENSITY, 'profile'): density_profile_report,
     (OBSERVABLE_LOCAL_SZ, 'profile'): sz_profile_report,
+    (OBSERVABLE_PAIRING_G2_COMPARISON, 'compare'): pairing_g2_report,
     (OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT, 'align'):
         charge_spin_peak_alignment_report,
 }
@@ -91,6 +94,7 @@ _DEFAULT_OPERATION = {
     OBSERVABLE_SC_PAIRING_SYMMETRY: 'analyze',
     OBSERVABLE_LOCAL_DENSITY: 'profile',
     OBSERVABLE_LOCAL_SZ: 'profile',
+    OBSERVABLE_PAIRING_G2_COMPARISON: 'compare',
     OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT: 'align',
 }
 

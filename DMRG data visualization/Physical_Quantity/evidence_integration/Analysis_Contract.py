@@ -46,6 +46,7 @@ ANALYZER_SC_PAIRING_SYMMETRY = 'PairingSymmetryAnalyzer'
 ANALYZER_SC_PAIR_SF = 'SCPairStructureFactorEstimator'
 ANALYZER_DENSITY = 'DensityEstimator'
 ANALYZER_SZ_PROFILE = 'SzProfileEstimator'
+ANALYZER_PAIRING_G2 = 'PairingG2Comparison'
 ANALYZER_CHARGE_SPIN_PEAK_ALIGNMENT = 'ChargeSpinPeakAlignmentEstimator'
 
 # ---- 物理量标识 ----
@@ -60,6 +61,7 @@ OBSERVABLE_SC_PAIRING_SYMMETRY = 'sc_pairing_symmetry'
 OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR = 'sc_pair_structure_factor'
 OBSERVABLE_LOCAL_DENSITY = 'local_density'
 OBSERVABLE_LOCAL_SZ = 'local_sz'
+OBSERVABLE_PAIRING_G2_COMPARISON = 'pairing_g2_comparison'
 OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT = 'charge_spin_peak_alignment'
 
 
@@ -330,6 +332,50 @@ def from_sz_profile(profile_dict) -> AnalysisReport:
         warnings=warnings,
         metadata=metadata,
         payload=profile_dict,
+    )
+
+
+def from_pairing_g2_comparison(cmp_dict) -> AnalysisReport:
+    """Pairing_G2_Comparison.compare_pairing_vs_g2 的 dict 输出 →
+    AnalysisReport。
+
+    映射规则：
+    - status：cmp_dict 为 None → 'failed'；否则 'ok'
+    - classification / evidence：数值诊断，无模型分类与证据等级 → None
+    - parameters：verdict / k_sc / k_g / k_g2 / slope_diff / detail
+    - data_restricted：None（诊断不引入受限口径概念）
+    - metadata：阈值与来源状态 + 语义说明（配对 vs G² 是参照基准
+      检验，不判相；pairing_dominant ≠ 超导相）
+    - payload：cmp_dict 原对象引用（默认不序列化）
+    """
+    if cmp_dict is None:
+        return AnalysisReport(analyzer=ANALYZER_PAIRING_G2,
+                              observable=OBSERVABLE_PAIRING_G2_COMPARISON,
+                              status=STATUS_FAILED)
+    params = {'verdict': cmp_dict['verdict'],
+              'k_sc': cmp_dict['k_sc'], 'k_g': cmp_dict['k_g'],
+              'k_g2': cmp_dict['k_g2'],
+              'slope_diff': cmp_dict['slope_diff'],
+              'detail': cmp_dict['detail']}
+    metadata = {
+        'thresholds': cmp_dict['thresholds'],
+        'threshold_status': cmp_dict['threshold_status'],
+        'note': ('配对关联 ⟨Δ†Δ⟩(r) 与单粒子关联平方 G(r)² 的衰减斜率'
+                 '比较：数值诊断，不判相——pairing_dominant 不等于'
+                 '超导相；single_particle_dominant 不等于无超导；'
+                 '阈值为默认值（未获物理授权）'),
+    }
+    return AnalysisReport(
+        analyzer=ANALYZER_PAIRING_G2,
+        observable=OBSERVABLE_PAIRING_G2_COMPARISON,
+        status=STATUS_OK,
+        classification=None,
+        parameters=params,
+        evidence=None,
+        data_restricted=None,
+        warnings=[],
+        metadata=metadata,
+        payload=cmp_dict,
     )
 
 

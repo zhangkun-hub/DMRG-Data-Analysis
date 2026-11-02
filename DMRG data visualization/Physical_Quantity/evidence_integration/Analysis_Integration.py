@@ -24,7 +24,8 @@ import numpy as np
 from .Analysis_Contract import (
     AnalysisReport, from_decay_result, from_structure_factor, from_peak_report,
     from_energy_extrapolation, from_density_profile,
-    from_sz_profile, from_charge_spin_peak_alignment,
+    from_sz_profile, from_pairing_g2_comparison,
+    from_charge_spin_peak_alignment,
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, ANALYZER_SC_PAIR_SF,
     OBSERVABLE_SC_PAIRING_SYMMETRY, ANALYZER_SC_PAIRING_SYMMETRY,
@@ -459,6 +460,44 @@ def sz_profile_report(sz_path, N, a=1.0) -> AnalysisReport:
         records = DensityRecord.extract_data(f.read(), N, a)
     profile = DensityProcessor.profile_summary(records, N, a)
     return from_sz_profile(profile)
+
+
+def pairing_g2_report(pairing_recs, g_recs, window=None,
+                      thresholds=None) -> AnalysisReport:
+    """配对关联 vs 单粒子关联平方的斜率比较（数值诊断，不判相）。
+
+    链：pairing_recs（SuperCorrRecord 合成 ⟨Δ†Δ⟩ 列表，属性
+    distance/sup_corr）与 g_recs（SingleParticleRecord 列表，属性
+    distance/correlation）→ 同距离平均 |·| → 公共距离集合 →
+    compare_pairing_vs_g2 → from_pairing_g2_comparison。
+
+    语义约定：
+    - 同距离平均在包装内完成（叶子模块只收数值序列）
+    - 只输出数值比较与三态结论，不判相（适配器 metadata 有纪律说明）
+    - 不捕获底层异常（空输入/全非正点等 ValueError 原样传播）
+    - payload 保留 compare 原始 dict 引用（默认不序列化）
+    """
+    import numpy as np
+    from ..physical_analysis.Pairing_G2_Comparison import (
+        compare_pairing_vs_g2)
+
+    def _avg_by_distance(recs, value_attr):
+        out = {}
+        for rec in recs:
+            key = round(rec.distance, 9)
+            out.setdefault(key, []).append(
+                abs(getattr(rec, value_attr)))
+        return {k: float(np.mean(v)) for k, v in out.items()}
+
+    p = _avg_by_distance(pairing_recs, 'sup_corr')
+    g = _avg_by_distance(g_recs, 'correlation')
+    common = sorted(set(p) & set(g))
+    r = common
+    pairing_abs = [p[k] for k in common]
+    g_abs = [g[k] for k in common]
+    result = compare_pairing_vs_g2(r, pairing_abs, g_abs,
+                                   window=window, thresholds=thresholds)
+    return from_pairing_g2_comparison(result)
 
 
 def sc_pairing_symmetry_report(report_dict) -> AnalysisReport:

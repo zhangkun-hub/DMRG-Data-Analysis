@@ -45,9 +45,11 @@ from Physical_Quantity.evidence_integration.Analysis_Contract import (  # noqa: 
     OBSERVABLE_SC_PAIRING_SYMMETRY,
     OBSERVABLE_LOCAL_DENSITY,
     OBSERVABLE_LOCAL_SZ,
+    OBSERVABLE_PAIRING_G2_COMPARISON,
     ANALYZER_ENERGY,
     ANALYZER_DENSITY,
     ANALYZER_SZ_PROFILE,
+    ANALYZER_PAIRING_G2,
     ANALYZER_SC_PAIRING_SYMMETRY,
     ANALYZER_PEAK)
 from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis  # noqa: E402
@@ -67,7 +69,7 @@ from Physical_Quantity.physical_analysis.Super_Correlation_Process import (  # n
 from Physical_Quantity.data_records.DMRG_Log_Parser import (  # noqa: E402
     DMRGLogParser)
 from Physical_Quantity.data_records.Physical_Data_Record import (  # noqa: E402
-    CorrelationRecord, SuperCorrRecord)
+    CorrelationRecord, SuperCorrRecord, SingleParticleRecord)
 import Cross_Doping_Summary as cds  # noqa: E402
 
 DEFAULT_T_J = 't_J_3'
@@ -93,7 +95,9 @@ CRITERIA_CHECKLIST = [
      'data_availability': 'SC 衰减/配对 SF：N200 四 doping 全有（1500/5000）；'
                           '配对对称可运行但候选支持判定恒 not_evaluated',
      'report_inclusion': 'included', 'status': '证据具备',
-     'note': '观测级规则：不产生相级支持/反证；幂律衰减不确立配对',
+     'note': '观测级规则：不产生相级支持/反证；幂律衰减不确立配对；'
+             '配对 vs G² 斜率比较（--with-g2-comparison）是参照基准数值'
+             '诊断（不判相，阈值未授权）',
      'doc_quoted': True},
     {'criterion_id': 'sc_lro_v1', 'section_ref': '§6 sc_lro_v1',
      'candidate': 'SC', 'registration': 'deferred',
@@ -280,6 +284,59 @@ def run_density_section(doping, root, t_j, bond_dim, N, a):
     except Exception as ex:  # noqa: BLE001
         return [_make_outcome(ctx, failure={'type': type(ex).__name__,
                                             'message': str(ex)})], None
+
+
+def run_g2_section(doping, root, t_j, bond_dim, N, a):
+    """配对关联 vs 单粒子关联平方比较（每个 refbond × 键方向一行）。
+
+    数值诊断（不判相）：SC 合成 ⟨Δ†Δ⟩（SuperCorrRecord）对比
+    单粒子 G(r)（single_particle_corr2 的 ↓ 分量，corr2/corr4 等价）。
+    """
+    outcomes = []
+    super_root = os.path.join(root, t_j, doping,
+                              f'{bond_dim}_measure_super_corr')
+    phys_dir = os.path.join(root, t_j, doping,
+                            f'{bond_dim}_measure_phys_qty')
+    measures = sorted(os.path.basename(p) for p in
+                      (os.path.join(phys_dir, d) for d in os.listdir(phys_dir)
+                       if d.startswith('measure_'))
+                      if os.path.isdir(p)) if os.path.isdir(phys_dir) else []
+    g_path = os.path.join(phys_dir, measures[0],
+                          'single_particle_corr2.json') if measures else None
+    if g_path is None or not os.path.isfile(g_path):
+        return [], {'type': 'FileNotFoundError',
+                    'message': f'无单粒子关联文件: '
+                               f'{phys_dir}/measure_*/single_particle_corr2.json'}
+    try:
+        g_recs = SingleParticleRecord.extract_data(
+            open(g_path, encoding='utf-8').read(), N, a)
+    except Exception as ex:  # noqa: BLE001
+        return [], {'type': type(ex).__name__, 'message': str(ex)}
+    if not os.path.isdir(super_root):
+        return [], {'type': 'FileNotFoundError',
+                    'message': f'无超导目录: {super_root}'}
+    for refdir in sorted(os.listdir(super_root)):
+        m = re.match(r'super_corr_(\d+)_(\d+)$', refdir)
+        if not m:
+            continue
+        refbond = (int(m.group(1)), int(m.group(2)))
+        for key in 'ABC':
+            ctx = {'doping': doping, 'N': N, 'bond_dim': bond_dim,
+                   'observable': OBSERVABLE_PAIRING_G2_COMPARISON,
+                   'analyzer': ANALYZER_PAIRING_G2,
+                   'refbond_or_source': refdir,
+                   'key_or_definition': key}
+            try:
+                pairing_recs = cds.load_super_corr_records(
+                    os.path.join(super_root, refdir), refbond, key, N, a)
+                rep = run_analysis(OBSERVABLE_PAIRING_G2_COMPARISON,
+                                   operation='compare',
+                                   pairing_recs=pairing_recs, g_recs=g_recs)
+                outcomes.append(_make_outcome(ctx, report=rep))
+            except Exception as ex:  # noqa: BLE001
+                outcomes.append(_make_outcome(ctx, failure={
+                    'type': type(ex).__name__, 'message': str(ex)}))
+    return outcomes, None
 
 
 def run_sz_section(doping, root, t_j, bond_dim, N, a):
@@ -720,6 +777,14 @@ def _core_fields(rep):
         return [('A/B 子格均值', p.get('sub_lattice_mean')),
                 ('子格磁化差', p.get('staggered_magnetization')),
                 ('四行均值', p.get('row_mean'))]
+    if obs == OBSERVABLE_PAIRING_G2_COMPARISON:
+        # 存储为 log 斜率（负值）；表格显示衰减指数（正值）
+        return [('结论', p.get('verdict')),
+                ('K_sc 指数',
+                 None if p.get('k_sc') is None else -p['k_sc']),
+                ('2·K_G 指数',
+                 None if p.get('k_g2') is None else -p['k_g2']),
+                ('斜率差', p.get('slope_diff'))]
     if obs == OBSERVABLE_SC_PAIRING_SYMMETRY:
         return [('阶段状态', p.get('phase') or rep.classification),
                 ('元素数', p.get('n_elements'))]
@@ -820,6 +885,7 @@ def render_markdown(config, outcomes, summary, checklist, figure_refs,
                 OBSERVABLE_ENERGY,
                 OBSERVABLE_LOCAL_DENSITY,
                 OBSERVABLE_LOCAL_SZ,
+                OBSERVABLE_PAIRING_G2_COMPARISON,
                 OBSERVABLE_SC_PAIRING_SYMMETRY):
         analyzers = sorted({o['context']['analyzer'] for o in outcomes
                             if o['context']['observable'] == obs})
@@ -992,6 +1058,13 @@ def build_report(config) -> dict:
                                config['t_j'], config['bond_dim'],
                                config['N'], config['a'])
         outcomes.extend(sz)
+    if config.get('with_g2_comparison'):
+        g2, fail = run_g2_section(config['doping'], config['root'],
+                                  config['t_j'], config['bond_dim'],
+                                  config['N'], config['a'])
+        outcomes.extend(g2)
+        if fail:
+            section_failures['g2_comparison'] = fail
     if config.get('with_pairing_symmetry'):
         ps, fail = run_pairing_symmetry_section(
             config['doping'], config['root'], config['t_j'],
@@ -1076,6 +1149,9 @@ def main(argv=None) -> int:
     parser.add_argument('--with-sz-profile', action='store_true',
                         help='运行局域自旋 profile 分析（sz.json 单点'
                              '⟨S^z_i⟩，默认关闭）')
+    parser.add_argument('--with-g2-comparison', action='store_true',
+                        help='运行配对关联 vs G² 衰减斜率比较（数值诊断，'
+                             '不判相，默认关闭）')
     parser.add_argument('--no-plots', action='store_true',
                         help='跳过绘图')
     parser.add_argument('--convergence-dims', default=None,
@@ -1098,6 +1174,7 @@ def main(argv=None) -> int:
         'with_pairing_symmetry': args.with_pairing_symmetry,
         'with_density_profile': args.with_density_profile,
         'with_sz_profile': args.with_sz_profile,
+        'with_g2_comparison': args.with_g2_comparison,
         'no_plots': args.no_plots, 'outdir': args.outdir,
         'convergence_dims': conv_dims,
         'generated_at': datetime.datetime.now().isoformat(timespec='seconds'),
