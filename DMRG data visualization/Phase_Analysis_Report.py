@@ -385,71 +385,204 @@ def save_figures(outcomes, plots_dir, no_plots=False):
 def _fmt(v):
     if isinstance(v, float):
         return f'{v:.6g}' if math.isfinite(v) else 'null'
+    if isinstance(v, list):
+        if len(v) <= 3:
+            return '[' + ', '.join(_fmt(x) for x in v) + ']'
+        return '[' + ', '.join(_fmt(x) for x in v[:3]) + ', …]'
     return str(v)
+
+
+def _core_fields(rep):
+    """按观测量类型提炼核心数值（人读表格用；完整数据见 report.json）。"""
+    p = rep.parameters or {}
+    m = rep.metadata or {}
+    obs = rep.observable
+    if obs == OBSERVABLE_SUPERCONDUCTING_CORRELATION:
+        fq = m.get('fit_quality') or {}
+        pe = m.get('param_errors') or {}
+        # 幂律族有 K 指数；指数族/非单调有 ξ 关联长度——按实际参数键自适应
+        if p.get('K') is not None:
+            exp_rows = [('K 指数', p.get('K')), ('ΔK', pe.get('K'))]
+        elif p.get('xi') is not None:
+            exp_rows = [('ξ 关联长度', p.get('xi')), ('Δξ', pe.get('xi'))]
+        else:
+            exp_rows = []
+        return ([('分类', rep.classification)] + exp_rows
+                + [('A 振幅', p.get('A')), ('r²', fq.get('r2')),
+                   ('rmse', fq.get('rmse')), ('稳定性', m.get('verdict')),
+                   ('拟合点数', m.get('n_points'))])
+    if rep.analyzer == ANALYZER_PEAK:
+        return [('峰数', p.get('n_peaks')),
+                ('峰位 q', p.get('peak_positions')),
+                ('峰高', p.get('peak_heights'))]
+    if obs in (OBSERVABLE_SPIN_STRUCTURE_FACTOR,
+               OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
+               OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR):
+        rows = []
+        if m.get('measured_pair_count') is not None:
+            rows.append(('已测对数', m.get('measured_pair_count')))
+        if m.get('source_coverage') is not None:
+            rows.append(('源点覆盖', m.get('source_coverage')))
+        if m.get('imaginary_residual') is not None:
+            rows.append(('虚部残差', m.get('imaginary_residual')))
+        if m.get('channel_target_consistency') is not None:
+            rows.append(('通道一致性', m.get('channel_target_consistency')))
+        if rows:
+            rows.append(('受限', rep.data_restricted))
+        return rows
+    if obs == OBSERVABLE_ENERGY:
+        return [('E∞', p.get('E_inf')), ('外推幂次', p.get('power')),
+                ('N 序列', p.get('N_values')),
+                ('异常点诊断', m.get('outlier_diagnosis') is not None)]
+    if obs == OBSERVABLE_LOCAL_DENSITY:
+        return [('四行均值', p.get('row_mean')),
+                ('A/B 子格均值', p.get('sub_lattice_mean')),
+                ('胞均值数', len(p.get('unit_cell_mean') or []))]
+    if obs == OBSERVABLE_SC_PAIRING_SYMMETRY:
+        return [('阶段状态', p.get('phase') or rep.classification),
+                ('元素数', p.get('n_elements'))]
+    # 通用兜底：顶层标量参数（截断）
+    scalars = [(k, v) for k, v in p.items()
+               if isinstance(v, (int, float, str, bool))]
+    return ([(k, v) for k, v in scalars[:4]]
+            + [('data_restricted', rep.data_restricted)])
+
+
+def _summarize_outcome_table(outcomes, observable, analyzer=None):
+    """同 (observable, analyzer) 的 outcome → 紧凑表格（行=outcome）。"""
+    rows = [o for o in outcomes
+            if o['context']['observable'] == observable
+            and (analyzer is None or o['context']['analyzer'] == analyzer)]
+    ok_rows = [o for o in rows if o['report'] is not None]
+    if not ok_rows:
+        return None
+    field_names = [k for k, _ in _core_fields(ok_rows[0]['report'])]
+    header = ['refbond/源点', '键/定义', 'status'] + field_names
+    lines = ['| ' + ' | '.join(header) + ' |',
+             '|' + '---|' * len(header)]
+    for o in rows:
+        ctx = o['context']
+        if o['report'] is None:
+            f = o.get('failure') or {}
+            cells = [str(ctx['refbond_or_source']),
+                     str(ctx['key_or_definition']), 'failed',
+                     f"{f.get('type', '?')}: {(f.get('message') or '')[:40]}"]
+            cells += [''] * (len(field_names) - 1)
+        else:
+            vals = dict(_core_fields(o['report']))
+            cells = ([str(ctx['refbond_or_source']),
+                      str(ctx['key_or_definition']), o['report'].status]
+                     + [_fmt(vals.get(k)) for k in field_names])
+        lines.append('| ' + ' | '.join(cells) + ' |')
+    return '\n'.join(lines)
+
+
+VERDICT_EXPLAIN = {
+    'supported': '支持条件成立（当前注册规则集不会产生此值）',
+    'contradicted': '正式反证成立（当前注册规则集不会产生此值）',
+    'conflicting': '支持与反证同时成立（当前不会产生）',
+    'insufficient': '证据不足以判断（观测级规则的正常状态，非反证）',
+    'quality_failed': '数据质量门失败（数据不合格，不等于被否定）',
+    'criteria_undefined': '判据未定义或规则未授权',
+    'data_missing': '必需观测缺失',
+    'analysis_unavailable': '分析执行异常，本次不可用',
+    'not_measurable': '当前数据能力不足，无法测量（不代表物理不存在）',
+}
 
 
 def render_markdown(config, outcomes, summary, checklist, figure_refs,
                     section_failures) -> str:
     phase_report = summary['phase_report']
+    n_ok = sum(1 for o in outcomes if o['report'] is not None)
+    n_fail = sum(1 for o in outcomes if o.get('failure'))
     lines = []
-    lines.append('# 受控证据报告：' + config['doping'])
+    lines.append(f"# 受控证据报告：{config['doping']}")
     lines.append('')
-    lines.append(DISCIPLINE_STATEMENT)
+    lines.append('> 纪律声明：本报告只汇总数值观测与已注册规则的候选状态，'
+                 '**不判定物理相态**。软件正确性 ≠ 物理正确性；'
+                 'not_measurable ≠ 物理不存在；insufficient ≠ 反证。')
+    lines.append('')
+    lines.append('## 报告导读')
+    lines.append('')
+    lines.append('- **第 1 节**：各物理量的数值分析结果速览（核心指标表；'
+                 '完整参数与警告见 report.json）')
+    lines.append('- **第 2 节**：候选状态表（规则引擎输出；每格附中文含义）')
+    lines.append('- **第 3 节**：判据检查表（每条判据的证据具备/缺失/'
+                 '不可测量状态）')
+    lines.append('- **第 4 节**：图件；**第 5 节**：结论')
     lines.append('')
     lines.append('## 0. 运行配置')
     lines.append('')
     lines.append('| 项 | 值 |')
     lines.append('|---|---|')
-    for k in ('root', 't_j', 'doping', 'N', 'bond_dim', 'a', 'n_qx',
-              'n_qy', 'energy_root', 'with_pairing_symmetry',
-              'with_density_profile', 'no_plots', 'generated_at'):
-        lines.append(f'| {k} | {config.get(k)} |')
+    for k, label in (('doping', 'doping'), ('N', 'N'), ('bond_dim', 'bond_dim'),
+                     ('t_j', 't_J'), ('root', '数据目录'),
+                     ('energy_root', '能量外推目录'),
+                     ('n_qx', 'q 网格 qx 数'), ('n_qy', 'q 网格 qy 数'),
+                     ('a', '晶格常数 a'),
+                     ('with_pairing_symmetry', '配对对称分析'),
+                     ('with_density_profile', '密度 profile'),
+                     ('no_plots', '跳过绘图'), ('generated_at', '生成时间')):
+        lines.append(f'| {label} | {config.get(k)} |')
     lines.append('')
-    lines.append('## 1. 逐观测量分析结果')
+    lines.append('## 1. 分析结果速览')
     lines.append('')
-    for o in outcomes:
-        ctx = o['context']
-        obs, an = ctx['observable'], ctx['analyzer']
-        lines.append(f"### {obs} | {an} | "
-                     f"ref={ctx['refbond_or_source']} | "
-                     f"key={ctx['key_or_definition']}")
-        lines.append('')
-        if o.get('failure'):
-            lines.append(f"- **失败**：{o['failure']['type']}："
-                         f"{o['failure']['message']}")
+    lines.append(f'共 {len(outcomes)} 项分析：**{n_ok} 项成功**，'
+                 f'{n_fail} 项失败（失败项单独列出，不阻断其他分析）。')
+    lines.append('')
+    seen = set()
+    for obs in (OBSERVABLE_SUPERCONDUCTING_CORRELATION,
+                OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
+                OBSERVABLE_SPIN_STRUCTURE_FACTOR,
+                OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
+                OBSERVABLE_ENERGY,
+                OBSERVABLE_LOCAL_DENSITY,
+                OBSERVABLE_SC_PAIRING_SYMMETRY):
+        analyzers = sorted({o['context']['analyzer'] for o in outcomes
+                            if o['context']['observable'] == obs})
+        for an in analyzers:
+            key = (obs, an)
+            if key in seen:
+                continue
+            seen.add(key)
+            table = _summarize_outcome_table(outcomes, obs, analyzer=an)
+            if not table:
+                continue
+            lines.append(f'### {obs}（{an}）')
             lines.append('')
-            continue
-        rep = o['report']
-        lines.append(f"- status={rep.status}，"
-                     f"classification={rep.classification}，"
-                     f"data_restricted={rep.data_restricted}")
-        if rep.parameters:
-            lines.append(f"- parameters：{_fmt(rep.parameters)}")
-        if rep.metadata:
-            meta = {k: v for k, v in rep.metadata.items()
-                    if isinstance(v, (str, int, float, bool, list, dict))}
-            if meta:
-                lines.append(f"- metadata：{_fmt(meta)}")
-        if rep.warnings:
-            lines.append(f"- warnings：{rep.warnings}")
+            lines.append(table)
+            lines.append('')
+    failures = [o for o in outcomes if o.get('failure')]
+    if failures:
+        lines.append('### 失败项')
         lines.append('')
-    lines.append('## 2. 候选 verdict（规则引擎，仅已注册规则）')
+        lines.append('| 观测 | ref/源点 | 原因 |')
+        lines.append('|---|---|---|')
+        for o in failures:
+            f = o['failure']
+            lines.append(f"| {o['context']['observable']} | "
+                         f"{o['context']['refbond_or_source']} | "
+                         f"{f['type']}: {f['message']} |")
+        lines.append('')
+    lines.append('> 完整参数、误差、warnings 与配置快照见 report.json 的 '
+                 'reports 数组。')
+    lines.append('')
+    lines.append('## 2. 候选状态（规则引擎，仅已注册规则）')
     lines.append('')
     vd = phase_report.candidate_verdicts
-    lines.append('| candidate | verdict | reason |')
+    lines.append('| 候选 | 状态 | 含义 |')
     lines.append('|---|---|---|')
     for cand, v in vd.items():
-        lines.append(f'| {cand} | {v["verdict"]} | {v["reason"]} |')
+        lines.append(f'| {cand} | {v["verdict"]} | '
+                     f'{VERDICT_EXPLAIN.get(v["verdict"], v["verdict"])} |')
     lines.append('')
-    vs = phase_report.verdict_summary
-    lines.append(f"- 汇总：{_fmt(vs)}")
-    lines.append(f"- 总体 conclusion：{phase_report.conclusion}")
+    lines.append(f'- 总体 conclusion：{phase_report.conclusion}')
     lines.append(f"- 规则执行 {len(phase_report.rule_trace)} 条，"
                  f"完整轨迹见 report.json 的 phase_report.rule_trace")
     lines.append('')
     lines.append('## 3. 判据检查表')
     lines.append('')
-    lines.append('| criterion | candidate | 状态 | 依据 |')
+    lines.append('| 判据 | 物理量 | 状态 | 数据现状 |')
     lines.append('|---|---|---|---|')
     for row in checklist:
         lines.append(f"| {row['criterion_id']} | {row['candidate']} | "
@@ -465,17 +598,15 @@ def render_markdown(config, outcomes, summary, checklist, figure_refs,
     lines.append('')
     lines.append('## 5. 结论')
     lines.append('')
-    lines.append('1. 观测数值汇总：见第 1 节各条目（status/parameters/'
-                 'metadata 逐项可追溯，机读底稿 report.json 含全部 '
-                 'AnalysisReport 序列化）。')
-    lines.append('2. 候选状态：见第 2 节 verdict 表。当前注册规则下，'
-                 '观测级候选为 insufficient/data_missing，能力边界候选为 '
-                 'not_measurable——**本报告不据此判定任何物理相态**。')
-    lines.append('3. 判据完备性：见第 3 节检查表。sc_lro_v1 冻结未注册；'
+    lines.append(f'1. **观测结果**：{n_ok} 项分析成功完成，核心数值见'
+                 '第 1 节速览表；全部拟合参数与质量诊断可追溯到 report.json。')
+    lines.append('2. **候选状态**：见第 2 节表。当前注册规则集下，'
+                 '观测级候选为 insufficient/data_missing（证据不足以判断），'
+                 '能力边界候选为 not_measurable（当前数据不可测量）——'
+                 '**本报告不据此判定任何物理相态**。')
+    lines.append('3. **判据完备性**：见第 3 节检查表。sc_lro_v1 冻结未注册；'
                  'GapScaling/WidthScaling 算法未实现；相级判据注册属物理'
                  '决策，需负责人批准。')
-    lines.append('')
-    lines.append(DISCIPLINE_STATEMENT)
     lines.append('')
     if section_failures:
         lines.append('## 附录：节级收集失败（不阻断其他节）')
@@ -580,6 +711,20 @@ def write_report(result, outdir) -> dict:
     return {'report.md': md_path, 'report.json': json_path}
 
 
+DOPING_HINT = ('可用 doping（Data_N200/t_J_3 实际有数据）: '
+               'd1_10 / d1_20 / d1_100 / d2_25；'
+               'N=400 时用 d1_10/d1_20/d1_40/d1_80/d2_25 并加 --N 400')
+
+
+def _prompt_doping(explicit=None):
+    """--doping 未提供时的交互式获取（空输入 → 默认 d1_100）。"""
+    if explicit:
+        return explicit
+    print(DOPING_HINT)
+    raw = input('请输入 doping（回车使用默认 d1_100）: ').strip()
+    return raw or 'd1_100'
+
+
 def main(argv=None) -> int:
     sys.stdout.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(
@@ -588,8 +733,9 @@ def main(argv=None) -> int:
     parser.add_argument('--root', default=os.path.join(SCRIPT_DIR,
                                                        'Data_N200'))
     parser.add_argument('--t-j', default=DEFAULT_T_J)
-    parser.add_argument('--doping', required=True,
-                        help='单个 doping（如 d1_100）；不自动混 doping')
+    parser.add_argument('--doping', default=None,
+                        help='单个 doping（如 d1_100）；不提供时交互式'
+                             '提示输入；不自动混 doping')
     parser.add_argument('--N', type=int, default=DEFAULT_N)
     parser.add_argument('--bond-dim', default=DEFAULT_BOND_DIM)
     parser.add_argument('--refbonds', default=None,
@@ -612,8 +758,9 @@ def main(argv=None) -> int:
 
     refbonds = ([s.strip() for s in args.refbonds.split(',') if s.strip()]
                 if args.refbonds else None)
+    doping = _prompt_doping(args.doping)
     config = {
-        'root': args.root, 't_j': args.t_j, 'doping': args.doping,
+        'root': args.root, 't_j': args.t_j, 'doping': doping,
         'N': args.N, 'bond_dim': args.bond_dim, 'refbonds': refbonds,
         'n_qx': args.n_qx, 'n_qy': args.n_qy, 'a': args.a,
         'energy_root': args.energy_root, 'j_value': args.j_value,

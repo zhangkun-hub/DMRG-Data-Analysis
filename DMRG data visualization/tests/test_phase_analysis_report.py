@@ -44,19 +44,38 @@ def check(cat, name, cond, detail=''):
 
 
 # ======================================================================
-# A. CLI 解析
+# A. CLI 解析与交互提示
 # ======================================================================
-print('===== A. CLI 解析 =====')
-try:
-    par.main(['--root', '.'])
-    check('A', '缺少 --doping → SystemExit(2)', False, '未退出')
-except SystemExit as e:
-    check('A', '缺少 --doping → SystemExit(2)', e.code == 2, f'code={e.code}')
+print('===== A. CLI 解析与交互提示 =====')
+from unittest.mock import patch
+
+with patch('builtins.input', return_value=''):
+    check('A', '_prompt_doping 空输入 → 默认 d1_100',
+          par._prompt_doping() == 'd1_100')
+with patch('builtins.input', return_value=' d1_10 '):
+    check('A', '_prompt_doping 输入带空白 → 去空白取 d1_10',
+          par._prompt_doping() == 'd1_10')
+check('A', '_prompt_doping 显式传参 → 直通',
+      par._prompt_doping('d2_25') == 'd2_25')
 try:
     par.main(['--doping', 'd1_100', '--N', 'abc'])
     check('A', '--N 非整数 → SystemExit(2)', False, '未退出')
 except SystemExit as e:
     check('A', '--N 非整数 → SystemExit(2)', e.code == 2, f'code={e.code}')
+
+# main 缺 --doping 时走交互路径：patch input 默认值 + stub 构建/写出
+from types import SimpleNamespace
+_stub_summary = {'phase_report': SimpleNamespace(
+    candidate_verdicts={}, conclusion='INCONCLUSIVE')}
+with patch('builtins.input', return_value=''), \
+        patch.object(par, 'build_report',
+                     return_value={'markdown': 'x', 'json': {},
+                                   'summary': _stub_summary,
+                                   'outcomes': []}), \
+        patch.object(par, 'write_report',
+                     return_value={'report.md': 'x', 'report.json': 'x'}):
+    rc = par.main(['--no-plots'])
+check('A', 'main 缺 --doping：走交互提示（空输入取默认）且 exit 0', rc == 0)
 
 # ======================================================================
 # B. 合成数据端到端（能量 + 密度；核心四类目录缺失 → 失败行不阻断）
@@ -177,9 +196,10 @@ if os.path.isdir(os.path.join(REAL_ROOT, 'd1_100')):
           (r.stdout + r.stderr)[-200:])
     real_md = os.path.join(ROOT, 'tests', 'artifacts', 'par_real',
                            'report.md')
-    check('E', '真实报告生成且含 8 个候选 verdict 表',
-          os.path.isfile(real_md) and '候选 verdict' in
-          open(real_md, encoding='utf-8').read())
+    real_text = open(real_md, encoding='utf-8').read()
+    check('E', '真实报告生成且含候选状态表与结论',
+          os.path.isfile(real_md) and '候选状态' in real_text
+          and 'INCONCLUSIVE' in real_text)
 else:
     check('E', '真实数据组（Data_N200/t_J_3/d1_100 不存在，跳过）',
           True, '跳过')
