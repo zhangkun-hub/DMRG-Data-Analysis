@@ -45,6 +45,7 @@ ANALYZER_ENERGY = 'EnergyProcessor'
 ANALYZER_SC_PAIRING_SYMMETRY = 'PairingSymmetryAnalyzer'
 ANALYZER_SC_PAIR_SF = 'SCPairStructureFactorEstimator'
 ANALYZER_DENSITY = 'DensityEstimator'
+ANALYZER_SZ_PROFILE = 'SzProfileEstimator'
 ANALYZER_CHARGE_SPIN_PEAK_ALIGNMENT = 'ChargeSpinPeakAlignmentEstimator'
 
 # ---- 物理量标识 ----
@@ -58,6 +59,7 @@ OBSERVABLE_ENERGY = 'energy'
 OBSERVABLE_SC_PAIRING_SYMMETRY = 'sc_pairing_symmetry'
 OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR = 'sc_pair_structure_factor'
 OBSERVABLE_LOCAL_DENSITY = 'local_density'
+OBSERVABLE_LOCAL_SZ = 'local_sz'
 OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT = 'charge_spin_peak_alignment'
 
 
@@ -261,6 +263,65 @@ def from_density_profile(profile_dict) -> AnalysisReport:
     return AnalysisReport(
         analyzer=ANALYZER_DENSITY,
         observable=OBSERVABLE_LOCAL_DENSITY,
+        status=STATUS_OK,
+        classification=None,
+        parameters=params,
+        evidence=None,
+        data_restricted=False,
+        warnings=warnings,
+        metadata=metadata,
+        payload=profile_dict,
+    )
+
+
+def from_sz_profile(profile_dict) -> AnalysisReport:
+    """局域 ⟨S^z_i⟩ 单点测量（sz.json）的数值摘要 → AnalysisReport。
+
+    复用 DensityProcessor.profile_summary 的结构（sz.json 与 nf.json
+    同格式，经 DensityRecord.extract_data 解析），额外给出
+    staggered_magnetization = sub_lattice_mean['A'] - sub_lattice_mean['B']
+    ——这是 SDW/AFM 相关的核心数值观测，但**只作观测、不判相**
+    （A/B 子格均值差不构成 SDW 判定）。
+
+    映射规则与 from_density_profile 一致（status/parameters/
+    data_restricted=False/warnings/metadata/payload）。
+    """
+    if profile_dict is None:
+        return AnalysisReport(analyzer=ANALYZER_SZ_PROFILE,
+                              observable=OBSERVABLE_LOCAL_SZ,
+                              status=STATUS_FAILED)
+    sub = profile_dict['sub_lattice_mean']
+    staggered = (sub.get('A', 0.0) - sub.get('B', 0.0)
+                 if isinstance(sub, dict) else None)
+    params = {
+        'N': profile_dict['N'],
+        'sz_by_site': list(profile_dict['density_by_site']),
+        'row_mean': dict(profile_dict['row_mean']),
+        'sub_lattice_mean': dict(sub) if isinstance(sub, dict) else sub,
+        'unit_cell_mean': list(profile_dict['unit_cell_mean']),
+        'staggered_magnetization': staggered,
+    }
+    geo = profile_dict.get('geometry') or {}
+    partition = profile_dict.get('sub_lattice_partition') or {}
+    metadata = {
+        'N': profile_dict['N'],
+        'a': profile_dict.get('a'),
+        'lattice_geometry': geo.get('lattice'),
+        'unit_cell_size': geo.get('unit_cell_size'),
+        'boundary': geo.get('boundary'),
+        'row_partition': geo.get('row_partition'),
+        'sub_lattice_derivation': partition.get('derivation'),
+        'sub_lattice_labels': partition.get('site_labels'),
+        'note': ('局域 ⟨S^z_i⟩ 单点测量（sz.json）；staggered_magnetization'
+                 ' 是 A/B 子格均值差的数值观测，不构成 SDW/AFM 判定'),
+    }
+    warnings = []
+    if profile_dict.get('non_finite_count'):
+        warnings.append(f"{profile_dict['non_finite_count']} 个非有限"
+                        "局域自旋值（向量原样保留，序列化转 null）")
+    return AnalysisReport(
+        analyzer=ANALYZER_SZ_PROFILE,
+        observable=OBSERVABLE_LOCAL_SZ,
         status=STATUS_OK,
         classification=None,
         parameters=params,

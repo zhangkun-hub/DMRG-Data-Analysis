@@ -24,7 +24,7 @@ import numpy as np
 from .Analysis_Contract import (
     AnalysisReport, from_decay_result, from_structure_factor, from_peak_report,
     from_energy_extrapolation, from_density_profile,
-    from_charge_spin_peak_alignment,
+    from_sz_profile, from_charge_spin_peak_alignment,
     OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
     OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR, ANALYZER_SC_PAIR_SF,
     OBSERVABLE_SC_PAIRING_SYMMETRY, ANALYZER_SC_PAIRING_SYMMETRY,
@@ -438,6 +438,27 @@ def density_profile_report(nf_path, N, a=1.0) -> AnalysisReport:
         records = DensityRecord.extract_data(f.read(), N, a)
     profile = DensityProcessor.profile_summary(records, N, a)
     return from_density_profile(profile)
+
+
+def sz_profile_report(sz_path, N, a=1.0) -> AnalysisReport:
+    """读取 sz.json 局域自旋数据并包装为 AnalysisReport（观测层）。
+
+    链：open(sz_path) → DensityRecord.extract_data →
+    DensityProcessor.profile_summary → from_sz_profile。
+
+    语义约定（与 density_profile_report 同款）：
+    - 只产生数值观测（逐格点向量/行平均/子晶格平均/晶胞分组平均 +
+      staggered_magnetization + 几何边界元数据），**不输出任何相级
+      判定**（A/B 子格均值差不判 SDW/AFM）
+    - 不捕获底层异常：文件缺失 FileNotFoundError、畸形 JSON
+      ValueError、格点数不匹配 ValueError、N 非 8 倍数 ValueError
+      均原样传播
+    - payload 保留 profile_summary 原始 dict 引用（默认不序列化）
+    """
+    with open(sz_path, encoding='utf-8') as f:
+        records = DensityRecord.extract_data(f.read(), N, a)
+    profile = DensityProcessor.profile_summary(records, N, a)
+    return from_sz_profile(profile)
 
 
 def sc_pairing_symmetry_report(report_dict) -> AnalysisReport:

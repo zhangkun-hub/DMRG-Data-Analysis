@@ -44,8 +44,10 @@ from Physical_Quantity.evidence_integration.Analysis_Contract import (  # noqa: 
     OBSERVABLE_ENERGY,
     OBSERVABLE_SC_PAIRING_SYMMETRY,
     OBSERVABLE_LOCAL_DENSITY,
+    OBSERVABLE_LOCAL_SZ,
     ANALYZER_ENERGY,
     ANALYZER_DENSITY,
+    ANALYZER_SZ_PROFILE,
     ANALYZER_SC_PAIRING_SYMMETRY,
     ANALYZER_PEAK)
 from Physical_Quantity.evidence_integration.Analysis_Entry import run_analysis  # noqa: E402
@@ -127,9 +129,12 @@ CRITERIA_CHECKLIST = [
      'required_evidence': '自旋 SF + 峰值 + 自旋衰减',
      'evidence_observables': [OBSERVABLE_SPIN_STRUCTURE_FACTOR],
      'data_availability': '自旋 SF（sz_sz 源点 0 + spin_dot 源点 49/50）'
-                          '与峰值分析：全有；自旋衰减本报告 v1 未纳入',
+                          '与峰值分析：全有；局域 ⟨S^z_i⟩（sz.json）报告'
+                          '接口已补齐（--with-sz-profile，观测层，未接入'
+                          '规则）；自旋衰减本报告 v1 未纳入',
      'report_inclusion': 'partial', 'status': '证据具备',
-     'note': '观测级规则：q 位置不解释为 AFM/Γ/K；⟨Sz⟩≈0 不排除 SDW',
+     'note': '观测级规则：q 位置不解释为 AFM/Γ/K；⟨Sz⟩≈0 不排除 SDW；'
+             'A/B 子格磁化差是数值观测，不判 AFM/SDW',
      'doc_quoted': True},
     {'criterion_id': 'pdw_v1', 'section_ref': '§6 pdw_v1',
      'candidate': 'PDW', 'registration': 'capability_boundary',
@@ -271,6 +276,31 @@ def run_density_section(doping, root, t_j, bond_dim, N, a):
     try:
         rep = run_analysis(OBSERVABLE_LOCAL_DENSITY, operation='profile',
                            nf_path=nf_path, N=N, a=a)
+        return [_make_outcome(ctx, report=rep)], None
+    except Exception as ex:  # noqa: BLE001
+        return [_make_outcome(ctx, failure={'type': type(ex).__name__,
+                                            'message': str(ex)})], None
+
+
+def run_sz_section(doping, root, t_j, bond_dim, N, a):
+    """局域自旋 profile（sz.json 单点 ⟨S^z_i⟩ 测量；观测层，不判相）。"""
+    phys_dir = os.path.join(root, t_j, doping,
+                            f'{bond_dim}_measure_phys_qty')
+    measures = sorted(os.path.basename(p) for p in
+                      (os.path.join(phys_dir, d) for d in os.listdir(phys_dir)
+                       if d.startswith('measure_'))
+                      if os.path.isdir(p)) if os.path.isdir(phys_dir) else []
+    ctx = {'doping': doping, 'N': N, 'bond_dim': bond_dim,
+           'observable': OBSERVABLE_LOCAL_SZ, 'analyzer': ANALYZER_SZ_PROFILE,
+           'refbond_or_source': '-', 'key_or_definition': 'sz'}
+    if not measures:
+        return [_make_outcome(ctx, failure={'type': 'FileNotFoundError',
+                                            'message': f'无 measure 目录: '
+                                                       f'{phys_dir}'})], None
+    sz_path = os.path.join(phys_dir, measures[0], 'sz.json')
+    try:
+        rep = run_analysis(OBSERVABLE_LOCAL_SZ, operation='profile',
+                           sz_path=sz_path, N=N, a=a)
         return [_make_outcome(ctx, report=rep)], None
     except Exception as ex:  # noqa: BLE001
         return [_make_outcome(ctx, failure={'type': type(ex).__name__,
@@ -686,6 +716,10 @@ def _core_fields(rep):
         return [('四行均值', p.get('row_mean')),
                 ('A/B 子格均值', p.get('sub_lattice_mean')),
                 ('胞均值数', len(p.get('unit_cell_mean') or []))]
+    if obs == OBSERVABLE_LOCAL_SZ:
+        return [('A/B 子格均值', p.get('sub_lattice_mean')),
+                ('子格磁化差', p.get('staggered_magnetization')),
+                ('四行均值', p.get('row_mean'))]
     if obs == OBSERVABLE_SC_PAIRING_SYMMETRY:
         return [('阶段状态', p.get('phase') or rep.classification),
                 ('元素数', p.get('n_elements'))]
@@ -785,6 +819,7 @@ def render_markdown(config, outcomes, summary, checklist, figure_refs,
                 OBSERVABLE_CHARGE_STRUCTURE_FACTOR,
                 OBSERVABLE_ENERGY,
                 OBSERVABLE_LOCAL_DENSITY,
+                OBSERVABLE_LOCAL_SZ,
                 OBSERVABLE_SC_PAIRING_SYMMETRY):
         analyzers = sorted({o['context']['analyzer'] for o in outcomes
                             if o['context']['observable'] == obs})
@@ -952,6 +987,11 @@ def build_report(config) -> dict:
                                      config['t_j'], config['bond_dim'],
                                      config['N'], config['a'])
         outcomes.extend(den)
+    if config.get('with_sz_profile'):
+        sz, _ = run_sz_section(config['doping'], config['root'],
+                               config['t_j'], config['bond_dim'],
+                               config['N'], config['a'])
+        outcomes.extend(sz)
     if config.get('with_pairing_symmetry'):
         ps, fail = run_pairing_symmetry_section(
             config['doping'], config['root'], config['t_j'],
@@ -1033,6 +1073,9 @@ def main(argv=None) -> int:
                         help='运行配对对称性分析（重，默认关闭）')
     parser.add_argument('--with-density-profile', action='store_true',
                         help='运行密度 profile 分析（默认关闭）')
+    parser.add_argument('--with-sz-profile', action='store_true',
+                        help='运行局域自旋 profile 分析（sz.json 单点'
+                             '⟨S^z_i⟩，默认关闭）')
     parser.add_argument('--no-plots', action='store_true',
                         help='跳过绘图')
     parser.add_argument('--convergence-dims', default=None,
@@ -1054,6 +1097,7 @@ def main(argv=None) -> int:
         'energy_root': args.energy_root, 'j_value': args.j_value,
         'with_pairing_symmetry': args.with_pairing_symmetry,
         'with_density_profile': args.with_density_profile,
+        'with_sz_profile': args.with_sz_profile,
         'no_plots': args.no_plots, 'outdir': args.outdir,
         'convergence_dims': conv_dims,
         'generated_at': datetime.datetime.now().isoformat(timespec='seconds'),
