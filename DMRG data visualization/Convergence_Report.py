@@ -1,0 +1,232 @@
+# -*- coding: utf-8 -*-
+"""
+DMRG 收敛判断独立入口（P1 阶段 1）。
+
+对指定参数组（N、t/J、doping）判断其数据的 bond dimension 收敛状态：
+- 五项检查（E0 饱和 / TruncErr / SU(2) 残差 / 分类一致 / 参数误差内一致）
+  → 三档结论（converged / needs_higher_D / suspicious）
+- 证据：能量收敛图 + 密度/自旋/超导两档 |差值| 图
+
+只回答"数值是否稳定、D 是否还需增加"，**不回答能否判相**。
+阈值为默认值（未获物理授权，报告内标注 defaults_not_authorized）。
+
+运行方式（Calculation 环境）：
+    python -X utf8 Convergence_Report.py --doping d1_10 \
+        --dims 1500,5000
+"""
+import argparse
+import datetime
+import json
+import os
+import re
+import sys
+
+os.environ.setdefault('MPLBACKEND', 'Agg')
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
+
+import Phase_Analysis_Report as par  # noqa: E402
+
+DEFAULT_T_J = 't_J_3'
+DEFAULT_DIMS = '1500,5000'
+DEFAULT_N = 200
+DEFAULT_OUTDIR = os.path.join(SCRIPT_DIR, 'convergence_report_output')
+
+DISCIPLINE = (
+    '> 阈值为默认值（defaults_not_authorized，未获物理授权）。'
+    'converged ≠ 物理结论可信；needs_higher_D ≠ 数据作废。'
+    '本报告只判断数值稳定性（bond dimension 收敛），不回答能否判相。')
+
+
+def _fraction_to_doping(value):
+    """d 小数（如 0.1）→ 目录名（如 d1_10）；目录名输入直通。"""
+    v = str(value).strip()
+    if re.match(r'^d\d+_\d+$', v):
+        return v
+    from fractions import Fraction
+    try:
+        f = Fraction(v).limit_denominator(10000)
+    except (ValueError, ZeroDivisionError):
+        return None
+    if f.numerator <= 0:
+        return None
+    return f'd{f.numerator}_{f.denominator}'
+
+
+def _prompt_config(n_explicit, t_j_explicit, doping_explicit):
+    """缺省参数的交互式获取：N（默认 200）、t/J（默认 3）、d（默认 0.1）。
+
+    非交互环境（stdin 无输入，如管道/子进程）下回退默认值，不报错。
+    """
+    def _ask(prompt, default):
+        try:
+            raw = input(prompt).strip()
+        except EOFError:
+            return default
+        return raw if raw else default
+
+    n = n_explicit
+    if n is None:
+        n = int(_ask('请输入格点数 N（回车使用默认 200）: ', '200'))
+    t_j = t_j_explicit
+    if t_j is None:
+        t_j_val = float(_ask('请输入 t/J（回车使用默认 3）: ', '3'))
+        t_j = f't_J_{t_j_val:g}'
+    doping = doping_explicit
+    if doping is None:
+        raw = _ask('请输入空穴率 d（如 0.1；回车使用默认 0.1）: ', '0.1')
+        doping = _fraction_to_doping(raw)
+        if doping is None:
+            raise ValueError(f'无法解析空穴率输入: {raw!r}（示例: 0.1、'
+                             '0.05、0.01、d1_10）')
+    return n, t_j, doping
+
+
+def render_markdown(config, conv, outdir) -> str:
+    cv = conv['verdict']
+    lines = [
+        f"# 收敛诊断报告：{config['doping']}（N={config['N']}，"
+        f"t/J={config['t_j'].replace('t_J_', '')}）",
+        '',
+        DISCIPLINE,
+        '',
+        '## 0. 运行配置',
+        '',
+        '| 项 | 值 |',
+        '|---|---|',
+        f"| doping | {config['doping']} |",
+        f"| N | {config['N']} |",
+        f"| t_J | {config['t_j']} |",
+        f"| D 档 | {', '.join(conv['dims'])} |",
+        f"| 生成时间 | {config['generated_at']} |",
+        '',
+        '## 1. 判定结论',
+        '',
+        f"**{cv['verdict']}**——{cv['reason']}",
+        '',
+        '## 2. 检查明细',
+        '',
+        '| 检查项 | 结果 | 证据 |',
+        '|---|---|---|',
+    ]
+    for c in cv['checks']:
+        mark = ('✅ 通过' if c['passed'] is True else
+                ('❌ 未通过' if c['passed'] is False else '— 证据不足'))
+        note = f"（{c['note']}）" if c.get('note') else ''
+        lines.append(f"| {c['name']} | {mark} | {c['evidence']}{note} |")
+    # 分类逐方向对比表（classes_detail_by_dim 提供标签）
+    detail = conv['inputs'].get('classes_detail_by_dim') or {}
+    if len(detail) >= 2:
+        dims = conv['dims']
+        tags = sorted(set().union(*(set(v) for v in detail.values())))
+        lines += ['', '### 衰减分类逐方向对比', '',
+                  '| 参考键_方向 | ' + ' | '.join(f'D={d}' for d in dims)
+                  + ' |',
+                  '|' + '---|' * (len(dims) + 1)]
+        for tag in tags:
+            lines.append(f'| {tag} | ' + ' | '.join(
+                str(detail[d].get(tag, '—')) for d in dims) + ' |')
+    lines += [
+        '',
+        f"- 阈值来源状态：{cv['threshold_status']}",
+        f"- 阈值数值：{json.dumps(cv['thresholds'], ensure_ascii=False)}",
+        '',
+        '## 3. 证据图',
+        '',
+    ]
+    if conv['figures']:
+        for ref in conv['figures']:
+            lines.append(f'- ![收敛证据]({ref})')
+    else:
+        lines.append('- （--no-plots 或无证据图）')
+    if conv['failures']:
+        lines += ['', '## 附录：收集失败项', '']
+        for f in conv['failures']:
+            lines.append(f"- D={f['dim']}: {f['type']}: {f['message']}")
+    lines.append('')
+    return '\n'.join(lines)
+
+
+def build_json(config, conv) -> dict:
+    return {'generated_by': 'Convergence_Report', 'config': config,
+            'verdict': conv['verdict'], 'inputs': conv['inputs'],
+            'figures': conv['figures'], 'failures': conv['failures'],
+            'semantics': {
+                'discipline': ('只判断 bond dimension 收敛（数值稳定性），'
+                               '不回答能否判相；阈值未获物理授权'),
+                'threshold_status': conv['verdict']['threshold_status'],
+            }}
+
+
+def build_report(config) -> dict:
+    """核心入口（独立于 main，便于测试）。"""
+    config.setdefault('generated_at',
+                      datetime.datetime.now().isoformat(timespec='seconds'))
+    conv = par.run_convergence_section(config, config['dims'])
+    md = render_markdown(config, conv, config['outdir'])
+    return {'markdown': md, 'convergence': conv,
+            'json': build_json(config, conv)}
+
+
+def write_report(result, outdir) -> dict:
+    os.makedirs(outdir, exist_ok=True)
+    md_path = os.path.join(outdir, 'convergence_report.md')
+    json_path = os.path.join(outdir, 'convergence_report.json')
+    with open(md_path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(result['markdown'])
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(result['json'], f, ensure_ascii=False, indent=2,
+                  allow_nan=False)
+    return {'convergence_report.md': md_path,
+            'convergence_report.json': json_path}
+
+
+def main(argv=None) -> int:
+    sys.stdout.reconfigure(encoding='utf-8')
+    parser = argparse.ArgumentParser(
+        description='DMRG 收敛诊断独立入口（bond dimension 稳定性；'
+                    '不判相，详见脚本 docstring）')
+    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR,
+                                                       'Data_N200'))
+    parser.add_argument('--t-j', default=None,
+                        help='t/J 目录后缀（如 t_J_3）；不提供时交互式'
+                             '提示输入 t/J 值（默认 3）')
+    parser.add_argument('--doping', default=None,
+                        help='单个 doping（如 d1_10 或空穴率 0.1）；'
+                             '不提供时交互式提示输入（默认 d=0.1）')
+    parser.add_argument('--N', type=int, default=None,
+                        help='格点数（默认 200）；不提供时交互式提示输入')
+    parser.add_argument('--dims', default=DEFAULT_DIMS,
+                        help='逗号分隔的 D 档（默认 1500,5000）')
+    parser.add_argument('--a', type=float, default=1.0)
+    parser.add_argument('--refbonds', default=None)
+    parser.add_argument('--n-qx', type=int, default=41)
+    parser.add_argument('--n-qy', type=int, default=4)
+    parser.add_argument('--no-plots', action='store_true')
+    parser.add_argument('--outdir', default=DEFAULT_OUTDIR)
+    args = parser.parse_args(argv)
+
+    n, t_j, doping = _prompt_config(args.N, args.t_j, args.doping)
+    dims = [s.strip() for s in args.dims.split(',') if s.strip()]
+    config = {'root': args.root, 't_j': t_j, 'doping': doping,
+              'N': n, 'a': args.a,
+              'refbonds': ([s.strip() for s in args.refbonds.split(',')
+                            if s.strip()] if args.refbonds else None),
+              'n_qx': args.n_qx, 'n_qy': args.n_qy,
+              'outdir': args.outdir, 'no_plots': args.no_plots,
+              'dims': dims, 'bond_dim': dims[0] if dims else '1500'}
+    result = build_report(config)
+    paths = write_report(result, args.outdir)
+    v = result['convergence']['verdict']
+    print(f"收敛判定：{v['verdict']}——{v['reason']}")
+    print(f"输出: {paths['convergence_report.md']}")
+    print(f"      {paths['convergence_report.json']}")
+    print('说明: 只判断 bond dimension 收敛（数值稳定性），不判相；'
+          '阈值为默认值（未获物理授权）。')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

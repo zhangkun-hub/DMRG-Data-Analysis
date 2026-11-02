@@ -62,10 +62,11 @@ def check_e0_saturation(e0_by_dim, thresholds):
             worst, worst_pair = rel, (d1, d2)
     ok = worst <= th['e0_rel_tol']
     return _mk('e0_saturation', ok,
-               f'相邻 D 档最大相对能量差 {worst:.3g}'
-               f'（阈值 {th["e0_rel_tol"]:.0e}）'
-               + ('' if worst_pair is None else
-                  f'，出现在 {worst_pair[0]}→{worst_pair[1]}'))
+               f'相邻两档能量相差 {worst * 100:.3g}%'
+               f'（上限 {th["e0_rel_tol"] * 100:.1g}%），'
+               + ('能量已稳定' if ok else '能量仍在变化') +
+               ('' if worst_pair is None else
+                f'；最大变化在 {worst_pair[0]} 与 {worst_pair[1]} 之间'))
 
 
 def check_truncerr(truncerr_by_dim, thresholds):
@@ -76,10 +77,10 @@ def check_truncerr(truncerr_by_dim, thresholds):
     fails = [(d, v) for d, v in _dims_sorted(truncerr_by_dim)
              if v > th['truncerr_max']]
     ok = not fails
+    vals = '、'.join(f'D={d} 为 {v:.1e}' for d, v in _dims_sorted(truncerr_by_dim))
     return _mk('truncerr', ok,
-               f'{len(truncerr_by_dim)} 档 TruncErr，'
-               f'超限档: {fails if fails else "无"}'
-               f'（阈值 {th["truncerr_max"]:.0e}）')
+               f'截断误差：{vals}（上限 {th["truncerr_max"]:.0e}），'
+               + ('全部达标' if ok else '存在超限（数值精度不足）'))
 
 
 def check_su2(su2_by_dim, thresholds):
@@ -98,9 +99,10 @@ def check_su2(su2_by_dim, thresholds):
             worst, worst_d = w, d
     ok = worst <= th['su2_max']
     return _mk('su2', ok,
-               f'各档最大残差 {worst:.3g}（D={worst_d}；'
-               f'阈值 {th["su2_max"]:.0e}——残差随 D 减小是收敛的'
-               '正向信号，但归因不唯一，见协议锁定清单 §2.1）')
+               f'SU(2) 通道一致性误差最大 {worst:.3g}'
+               f'（出现在 D={worst_d}；上限 {th["su2_max"]:.0e}）'
+               + ('，自旋对称恢复良好' if ok else '，自旋对称未恢复'
+                  '（截断/未收敛信号）'))
 
 
 def check_classification_consistency(classes_by_dim, thresholds):
@@ -111,8 +113,11 @@ def check_classification_consistency(classes_by_dim, thresholds):
     classes = set(classes_by_dim.values())
     ok = len(classes) == 1
     return _mk('classification_consistency', ok,
-               f'各档分类: {dict(_dims_sorted(classes_by_dim))}'
-               + ('（一致）' if ok else '（不一致——数值振荡信号）'))
+               ('两档的衰减分类完全相同' if ok
+                else '两档的衰减分类不一致（数值振荡信号）'),
+               note=('分类（如 power_law / exponential / non_monotonic）'
+                     '是各拟合窗口的数值分类；随 D 变化说明拟合结果'
+                     '对截断敏感。详细逐方向对比见报告的分类对比表'))
 
 
 def check_parameter_consistency(params_by_dim, errors_by_dim, thresholds):
@@ -148,8 +153,9 @@ def check_parameter_consistency(params_by_dim, errors_by_dim, thresholds):
                    '参数或误差缺失，无法对比')
     ok = not bad
     return _mk('parameter_consistency', ok,
-               ('各参数在误差内一致' if ok
-                else f'超容差参数: {bad}；n_sigma={th["param_n_sigma"]}'))
+               ('两档拟合参数在误差范围内一致' if ok
+                else f'超出误差范围的参数: {bad}'
+                     f'（容许 {th["param_n_sigma"]} 倍误差）'))
 
 
 def convergence_verdict(e0_by_dim=None, truncerr_by_dim=None,

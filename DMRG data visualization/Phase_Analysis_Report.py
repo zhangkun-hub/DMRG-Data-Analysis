@@ -355,8 +355,8 @@ def _sc_params_by_dim(doping, root, t_j, dim, N, a, q_list, refbonds):
             q_list=q_list, refbonds=refbonds,
             only_observables={OBSERVABLE_SUPERCONDUCTING_CORRELATION})
     except Exception:  # noqa: BLE001
-        return None, None, None
-    classes, params, errs = [], {}, {}
+        return None, None, None, None
+    classes, detail, params, errs = [], {}, {}, {}
     for o in outs:
         rep = o['report']
         if rep is None or rep.observable != OBSERVABLE_SUPERCONDUCTING_CORRELATION:
@@ -364,6 +364,7 @@ def _sc_params_by_dim(doping, root, t_j, dim, N, a, q_list, refbonds):
         ctx = o['context']
         tag = f"{ctx['refbond_or_source']}_{ctx['key_or_definition']}"
         classes.append((tag, rep.classification))
+        detail[tag] = rep.classification
         p, m = rep.parameters or {}, rep.metadata or {}
         pe = m.get('param_errors') or {}
         if p.get('K') is not None:
@@ -371,7 +372,8 @@ def _sc_params_by_dim(doping, root, t_j, dim, N, a, q_list, refbonds):
         elif p.get('xi') is not None:
             params[f'{tag}_xi'], errs[f'{tag}_xi'] = p['xi'], pe.get('xi')
     classes.sort()
-    return tuple(c for _, c in classes), params, errs
+    return (tuple(c for _, c in classes), params, errs,
+            dict(sorted(detail.items())))
 
 
 def run_convergence_section(config, dims):
@@ -391,7 +393,8 @@ def run_convergence_section(config, dims):
     q_list, _ = xc_momentum_grid(N, a=a, n_qx=config['n_qx'],
                                  n_qy=config['n_qy'])
     e0_by_dim, te_by_dim, su2_by_dim = {}, {}, {}
-    classes_by_dim, params_by_dim, errs_by_dim = {}, {}, {}
+    classes_by_dim, classes_detail_by_dim = {}, {}
+    params_by_dim, errs_by_dim = {}, {}
     figures, failures = [], []
     dims = [str(d) for d in dims]
 
@@ -414,10 +417,12 @@ def run_convergence_section(config, dims):
         if su2_res is not None:
             su2_by_dim[dim] = su2_res
         # SC 分类/参数
-        cl, ps, es = _sc_params_by_dim(doping, root, t_j, dim, N, a,
-                                       q_list, config['refbonds'])
+        cl, ps, es, detail = _sc_params_by_dim(
+            doping, root, t_j, dim, N, a, q_list, config['refbonds'])
         if cl is not None:
             classes_by_dim[dim] = cl
+        if detail is not None:
+            classes_detail_by_dim[dim] = detail
         if ps:
             params_by_dim[dim], errs_by_dim[dim] = ps, es
 
@@ -471,7 +476,7 @@ def run_convergence_section(config, dims):
                                         'convergence_density_diff.png'))
         except Exception:  # noqa: BLE001
             plt.close('all')
-        # 自旋两档差值（复用 Cross_Doping_Summary 装载约定）
+        # 自旋两档差值（复用 Cross_Doping_Summary 装载约定与现成绘图）
         try:
             sp = {}
             for dim in (d1, d2):
@@ -488,7 +493,7 @@ def run_convergence_section(config, dims):
                                         'convergence_spin_diff.png'))
         except Exception:  # noqa: BLE001
             plt.close('all')
-        # 超导两档差值（首个 refbond 三键）
+        # 超导两档差值（首个 refbond 三键，复用现成绘图）
         try:
             sc = {}
             for dim in (d1, d2):
@@ -521,6 +526,7 @@ def run_convergence_section(config, dims):
     return {'dims': dims, 'inputs': {
                 'e0_by_dim': e0_by_dim, 'truncerr_by_dim': te_by_dim,
                 'su2_by_dim': su2_by_dim, 'classes_by_dim': classes_by_dim,
+                'classes_detail_by_dim': classes_detail_by_dim,
             },
             'verdict': result, 'figures': figures, 'failures': failures}
 
