@@ -1,6 +1,6 @@
 ---
 name: dmrg-density-plot
-description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据：解析 Data_N200/Data_N400 下 nf.json 测量文件、用 DensityRecord.extract_data 封装、用 DensityProcessor 画密度分布折线图（按 i%4 分成 4 条水平行）或两组数据（UltraDMRG vs Itensor）的绝对误差对比图。当用户提到密度/电子密度/电荷密度分布、nf.json、DensityRecord、DensityProcessor、密度误差对比，或要在本 DMRG 仓库里处理格点密度数据时使用——只要涉及本仓库密度数据的提取或作图就应触发，即使用户没提"DMRG"。
+description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据：解析 Data/Data_N200/Data/Data_N400 下 nf.json 测量文件、用 DensityRecord.extract_data 封装、用 DensityProcessor 画密度分布折线图（按 i%4 分成 4 条水平行）或两组数据（UltraDMRG vs Itensor）的绝对误差对比图。当用户提到密度/电子密度/电荷密度分布、nf.json、DensityRecord、DensityProcessor、密度误差对比，或要在本 DMRG 仓库里处理格点密度数据时使用——只要涉及本仓库密度数据的提取或作图就应触发，即使用户没提"DMRG"。
 ---
 
 # DMRG 格点密度数据处理与作图
@@ -20,8 +20,8 @@ description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的格点密度数据
 密度数据文件是 `Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/nf.json`：
 
 - 实际有数据的组合（其余目录为空骨架）：
-  - `Data_N200/t_J_3`：doping 4 种（`d1_10`、`d1_20`、`d1_100`、`d2_25`；`d1_25`、`d3_20`、`d3_25` 已因数据问题删除）；bond_dim 1500 与 5000 四组全有；measure 版本 49/50
-  - `Data_N400/t_J_3`：doping 5 种（`d1_10`、`d1_20`、`d1_40`、`d1_80`、`d2_25`）；bond_dim 1500 与 5000 全有；measure 版本 97/98
+  - `Data/Data_N200/t_J_3`：doping 4 种（`d1_10`、`d1_20`、`d1_100`、`d2_25`；`d1_25`、`d3_20`、`d3_25` 已因数据问题删除）；bond_dim 1500 与 5000 四组全有；measure 版本 49/50
+  - `Data/Data_N400/t_J_3`：doping 5 种（`d1_10`、`d1_20`、`d1_40`、`d1_80`、`d2_25`）；bond_dim 1500 与 5000 全有；measure 版本 97/98
 - 其他 `t_J_5/10/15/20` 只有空目录；**仓库没有 Data_N96**（旧文档引用已过时）
 - `version`：测量版本号，实际为 49/50（N200）或 97/98（N400）
 

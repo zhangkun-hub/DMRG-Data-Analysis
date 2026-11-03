@@ -83,7 +83,7 @@ check('A', 'main 缺 --doping：走交互提示（空输入取默认）且 exit 
 print('===== B. 合成数据端到端 =====')
 tmp = tempfile.mkdtemp(prefix='par_test_')
 # 能量数据：3 个 N 的基态日志（满足外推 ≥3）
-energy_root = os.path.join(tmp, 'Data_Energy')
+energy_root = os.path.join(tmp, 'Data/Data_Energy')
 for n, e0 in ((80, -40.0), (160, -40.1), (240, -40.15)):
     ndir = os.path.join(energy_root, 't_J_3', 'd1_10', f'N{n}')
     os.makedirs(ndir, exist_ok=True)
@@ -93,7 +93,7 @@ for n, e0 in ((80, -40.0), (160, -40.1), (240, -40.15)):
                 f'Site (   1,   2) E0 = {e0} TruncErr = 1.00e-09 '
                 'D =  500 Iter =   2\n')
 # 密度数据：N=8 的 nf.json（XC 最小构型）
-root_syn = os.path.join(tmp, 'Data_N200')
+root_syn = os.path.join(tmp, 'Data/Data_N200')
 mdir = os.path.join(root_syn, 't_J_3', 'd1_10',
                     '1500_measure_phys_qty', 'measure_49')
 os.makedirs(mdir, exist_ok=True)
@@ -184,7 +184,7 @@ check('D', 'report.md 不含相级结论模式（精确正则，避免相位/相
 # E. 真实数据组（存在性门控）
 # ======================================================================
 print('===== E. 真实数据组 =====')
-REAL_ROOT = os.path.join(ROOT, 'Data_N200', 't_J_3')
+REAL_ROOT = os.path.join(ROOT, 'Data/Data_N200', 't_J_3')
 if os.path.isdir(os.path.join(REAL_ROOT, 'd1_100')):
     r = subprocess.run(
         [sys.executable, '-X', 'utf8', 'Phase_Analysis_Report.py',
@@ -201,7 +201,7 @@ if os.path.isdir(os.path.join(REAL_ROOT, 'd1_100')):
           os.path.isfile(real_md) and '候选状态' in real_text
           and 'INCONCLUSIVE' in real_text)
 else:
-    check('E', '真实数据组（Data_N200/t_J_3/d1_100 不存在，跳过）',
+    check('E', '真实数据组（Data/Data_N200/t_J_3/d1_100 不存在，跳过）',
           True, '跳过')
 
 # ======================================================================

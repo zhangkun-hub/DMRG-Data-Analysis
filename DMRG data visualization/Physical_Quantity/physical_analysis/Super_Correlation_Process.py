@@ -124,8 +124,9 @@ class SuperCorrProcessor:
         :param record_list: 超导关联函数对象列表。
         :label: 图例，用于表示超导关联函数的哪个键方向(固定格式: "A key (blue bond)")
         """
-        ## 1. 提取出超导关联函数的reference bond(i, j)
+        ## 1. 提取出超导关联函数的reference bond(i, j)与键方向
         ref_bond = record_list[0].ref_bond
+        bond_key = label.split()[0]     # 键方向名（如 'A'）；颜色解析仍依赖原始 label 格式
 
         ## 2. 将数据存储到x轴和y轴列表中
         x_data = [] # 存储两格点之间的距离数据
@@ -136,14 +137,14 @@ class SuperCorrProcessor:
 
         ## 3. 创建1行3列的子图布局
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
-        
+
         ## 4. 添加总标题和颜色
-        fig.suptitle(f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond: {ref_bond})', 
+        fig.suptitle(f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond {bond_key}: {ref_bond})',
                      fontsize=20, fontweight='bold', y=1.0)
         color = label.split("(")[1].split(")")[0].split()[0]
         
         ## 5. 线性坐标图（原始）
-        axs[0].scatter(x_data, y_data, color=color, s=60, label=label, zorder=3)
+        axs[0].scatter(x_data, y_data, color=color, s=60, label=f'target {bond_key}', zorder=3)
         axs[0].plot(x_data, y_data, color='red', alpha=0.5, linewidth=2)
         axs[0].set_title(f'Linear Scale', fontsize=16)
         axs[0].set_xlabel('distance r', fontsize=14)
@@ -155,7 +156,7 @@ class SuperCorrProcessor:
         ## 6. 半对数坐标图（y轴对数）- 用于判断指数衰减
         # 注意：如果y_data有负值，对数坐标会有问题，这里取绝对值
         y_abs = np.abs(y_data)
-        axs[1].scatter(x_data, y_abs, color=color, s=60, label=label, zorder=3)
+        axs[1].scatter(x_data, y_abs, color=color, s=60, label=f'target {bond_key}', zorder=3)
         axs[1].plot(x_data, y_abs, color='orange', alpha=0.5, linewidth=2)
         axs[1].set_yscale('log')
         axs[1].set_title(f'Log-Linear Scale (y-log)\nExponential decay check', fontsize=16)
@@ -165,7 +166,7 @@ class SuperCorrProcessor:
         axs[1].legend(fontsize=14, loc='best')
 
         ## 7. 双对数坐标图 - 用于判断幂律衰减
-        axs[2].scatter(x_data, y_abs, color=color, s=60, label=label, zorder=3)
+        axs[2].scatter(x_data, y_abs, color=color, s=60, label=f'target {bond_key}', zorder=3)
         axs[2].plot(x_data, y_abs, color='brown', alpha=0.5, linewidth=2)
         axs[2].set_xscale('log')
         axs[2].set_yscale('log')
@@ -198,9 +199,10 @@ class SuperCorrProcessor:
         if not records_dict:
             raise ValueError("records_dict cannot be empty")
 
-        ## 1. 获取reference bond（取第一组第一条）
+        ## 1. 获取reference bond（取第一组第一条）与键方向
         first_key = next(iter(records_dict)) # 获取字典的第一个键(字典是无序的，但在Python 3.7+中插入顺序保留，这里取第一个插入的键)
         ref_bond = records_dict[first_key][0].ref_bond
+        ref_key = first_key.split()[0]
 
         ## 2. 给三种键方向准备相应的颜色与形状进行区分
         colors = ['blue', 'green', 'orange']
@@ -209,7 +211,7 @@ class SuperCorrProcessor:
         ## 3. 创建子图
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
         fig.suptitle(
-            f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond: {ref_bond})',
+            f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond {ref_key}: {ref_bond})',
             fontsize=20, fontweight='bold', y=1.0
         )
 
@@ -221,17 +223,18 @@ class SuperCorrProcessor:
 
             c = colors[idx % len(colors)]
             m = markers[idx % len(markers)]
+            legend_label = f'target {label.split()[0]}'
 
             # 4.1 --- 线性图 --- (原始数据图)
-            axs[0].scatter(x_data, y_data, color=c, marker=m, s=60, label=label, zorder=3)
+            axs[0].scatter(x_data, y_data, color=c, marker=m, s=60, label=legend_label, zorder=3)
             axs[0].plot(x_data, y_data, color=c, alpha=0.5, linewidth=2)
 
             # 4.2 --- 半对数图（y轴对数）--- (用于判断指数衰减)
-            axs[1].scatter(x_data, y_abs, color=c, marker=m, s=60, label=label, zorder=3)
+            axs[1].scatter(x_data, y_abs, color=c, marker=m, s=60, label=legend_label, zorder=3)
             axs[1].plot(x_data, y_abs, color=c, alpha=0.5, linewidth=2)
 
             # 4.3 --- 双对数图 --- (用于判断幂律衰减)
-            axs[2].scatter(x_data, y_abs, color=c, marker=m, s=60, label=label, zorder=3)
+            axs[2].scatter(x_data, y_abs, color=c, marker=m, s=60, label=legend_label, zorder=3)
             axs[2].plot(x_data, y_abs, color=c, alpha=0.5, linewidth=2)
 
         ## 5. 设置各子图属性
@@ -308,9 +311,10 @@ class SuperCorrProcessor:
         records_dict_2 = super_corr_dict[title_2]
 
 
-        ### 获取reference bond（取第一组第一条）
+        ### 获取reference bond（取第一组第一条）与键方向
         first_key_1 = next(iter(records_dict_1)) # 获取字典的第一个键(字典是无序的，但在Python 3.7+中插入顺序保留，这里取第一个插入的键)
         ref_bond = records_dict_1[first_key_1][0].ref_bond
+        ref_key = first_key_1.split()[0]
 
         ### 给三种键方向准备相应的颜色与形状进行区分
         colors = ['blue', 'green', 'orange']
@@ -319,7 +323,7 @@ class SuperCorrProcessor:
         ### 创建子图
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
         fig.suptitle(
-            f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond: {ref_bond})',
+            f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond {ref_key}: {ref_bond})',
             fontsize=20, fontweight='bold', y=1.0
         )
 
@@ -339,17 +343,18 @@ class SuperCorrProcessor:
             ## 输入颜色与数据形状
             c = colors[idx % len(colors)]
             m = markers[idx % len(markers)]
+            legend_label = f'target {label.split()[0]}'
 
             # record_dict_1数据的可视化
-            axs[0].scatter(x_data, y_data_1, color=c, marker=m, s=60, label=label, zorder=3)
+            axs[0].scatter(x_data, y_data_1, color=c, marker=m, s=60, label=legend_label, zorder=3)
             axs[0].plot(x_data, y_data_1, color=c, alpha=0.5, linewidth=2)
-            
+
             # record_dict_2数据的可视化
-            axs[1].scatter(x_data, y_data_2, color=c, marker=m, s=60, label=label, zorder=3)
+            axs[1].scatter(x_data, y_data_2, color=c, marker=m, s=60, label=legend_label, zorder=3)
             axs[1].plot(x_data, y_data_2, color=c, alpha=0.5, linewidth=2)
 
             # record_dict_1与record_dict_2之差的数据可视化
-            axs[2].scatter(x_data, y_data_3, color=c, marker=m, s=60, label=label, zorder=3)
+            axs[2].scatter(x_data, y_data_3, color=c, marker=m, s=60, label=legend_label, zorder=3)
             axs[2].plot(x_data, y_data_3, color=c, alpha=0.5, linewidth=2)
 
             

@@ -211,7 +211,7 @@ except ValueError as e:
 # C. 通道等价性回归（B1.1 审计规则：绝对 1e-14 / 相对 1e-12）
 # ======================================================================
 print('===== C. 通道等价性回归 =====')
-DATA = os.path.join(ROOT, 'Data_N200', 't_J_3', 'd1_100',
+DATA = os.path.join(ROOT, 'Data/Data_N200', 't_J_3', 'd1_100',
                     '1500_measure_phys_qty', 'measure_49')
 ch = {}
 for c in range(1, 5):
@@ -247,11 +247,11 @@ check('C', 'ch1≠ch3（上下自旋通道物理不同，不错误等同）',
 # D. 真实数据回归（代表性参数点 × 四通道独立分析）
 # ======================================================================
 print('===== D. 真实数据回归 =====')
-POINTS = [('Data_N200', 'd1_100', '1500', 'measure_49', 200),
-          ('Data_N200', 'd1_100', '5000', 'measure_49', 200),
-          ('Data_N200', 'd1_10', '1500', 'measure_49', 200),
-          ('Data_N200', 'd1_10', '5000', 'measure_49', 200),
-          ('Data_N400', 'd1_10', '1500', 'measure_97', 400)]
+POINTS = [('Data/Data_N200', 'd1_100', '1500', 'measure_49', 200),
+          ('Data/Data_N200', 'd1_100', '5000', 'measure_49', 200),
+          ('Data/Data_N200', 'd1_10', '1500', 'measure_49', 200),
+          ('Data/Data_N200', 'd1_10', '5000', 'measure_49', 200),
+          ('Data/Data_N400', 'd1_10', '1500', 'measure_97', 400)]
 for base, dop, bd, ver, N in POINTS:
     for c in range(1, 5):
         p = os.path.join(ROOT, base, 't_J_3', dop,
@@ -273,7 +273,7 @@ for base, dop, bd, ver, N in POINTS:
 # E. 统一入口路由 + 严格 JSON
 # ======================================================================
 print('===== E. 统一入口 =====')
-p0 = os.path.join(ROOT, 'Data_N200', 't_J_3', 'd1_100',
+p0 = os.path.join(ROOT, 'Data/Data_N200', 't_J_3', 'd1_100',
                   '1500_measure_phys_qty', 'measure_49',
                   'single_particle_corr1.json')
 with open(p0, encoding='utf-8') as f:

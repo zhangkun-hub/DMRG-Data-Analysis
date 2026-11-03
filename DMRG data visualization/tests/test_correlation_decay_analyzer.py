@@ -50,7 +50,7 @@ def recs(r, C):
 
 
 def load_n200(doping, ref, bond, N=200):
-    base = f'{ROOT}/Data_N200/t_J_3/{doping}/1500_measure_super_corr/super_corr_{ref}'
+    base = f'{ROOT}/Data/Data_N200/t_J_3/{doping}/1500_measure_super_corr/super_corr_{ref}'
     recs4 = {}
     for ch in 'abcd':
         recs4[ch] = SuperCorrRecord.extract_data(

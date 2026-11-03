@@ -53,10 +53,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`physical_analysis/Pairing_G2_Comparison.py`**（P1 阶段 3）— 配对关联 vs 单粒子关联平方比较（叶子模块，数值诊断）：`compare_pairing_vs_g2()` 比较 |ΔΔ|(r) 与 G(r)² 的 log 空间衰减斜率，三态结论（pairing_dominant / single_particle_dominant / insufficient）。**不判相**——pairing_dominant ≠ 超导相；阈值为默认值（未获物理授权）。经统一入口（observable `pairing_g2_comparison`，operation `compare`）与 `Phase_Analysis_Report.py --with-g2-comparison` 接入。
 - **`evidence_integration/Analysis_Contract.py`** — 统一分析结果契约：`AnalysisReport`（status/classification/evidence/data_restricted 语义正交、payload 引用、严格 JSON 序列化）+ 4 个纯函数适配器（from_decay_result / from_structure_factor / from_peak_report / from_energy_extrapolation）+ observable/analyzer 常量。
 - **`evidence_integration/Analysis_Integration.py`** — 集成层：`analyze_with_report`（SC/Spin/Charge 衰减包装，误差棒与拟合优度独立存放）、`structure_factor_report`、`peak_analysis_report`、`charge_structure_factor_report`、`energy_extrapolation_report`。
-- **`phase_diagnosis/Phase_Diagnosis.py`** — 多观测量证据汇总契约（P1/P2/P3）：`collect_evidence` 将多份 AnalysisReport 汇总为 `PhaseDiagnosisReport`（结论仅 `evidence_collected`，无物理判据）；`audit_comparability` 结构因子可比性审计（q_grid 摘要逐对覆盖自旋/电荷/SC 配对三个 SF 估计器；source_set 仅电荷；四态 consistent/inconsistent/unknown/not_applicable）；`evidence_sufficiency_check` 证据充分性检查（保守语义，rules=None → overall 恒 unknown）。另含规则引擎 `run_candidate_rules`（候选级九态 verdict，规则须注册并授权才执行）与注册守卫（P3-1 显式替换 / P3-2 幽灵 ID 拒绝 / 候选级冲突检查）。P1-G.28 新增两条**有限尺寸分析能力边界规则**（能力诊断对象，**不是物理相候选**）：`RULE_GAP_V1`（candidate=`gap_scaling`）与 `RULE_WIDTH_V1`（candidate=`width_scaling`），经独立 `GAPW_RULES` 元组独立注册（**不属于 `P1F3_RULES`**），verdict 恒 `not_measurable`——Gap：Data_Energy 仅有单扇区基态日志（无激发态能量/粒子数扇区能量差，禁止从基态总能随 doping 或 N 的变化构造激发态能隙）；Width：XC 构型 y 方向恒 2 胞宽（N 变化是长度方向，不构成多宽度扫描）。`not_measurable` 只表示证据不足，不表示能隙/宽度依赖为零、物理行为不存在或任何物理相被排除。**仅注册、未接入生产执行链路**：`run_analysis`/`Cross_Doping_Summary` 不执行 `GAPW_RULES`，生产报告不产生 Gap/Width verdict；GapScaling/WidthScaling 算法**仍未实现**。专项测试 `tests/test_phase_diagnosis_rules_gap_width.py`（34 项）。
+- **`phase_diagnosis/Phase_Diagnosis.py`** — 多观测量证据汇总契约（P1/P2/P3）：`collect_evidence` 将多份 AnalysisReport 汇总为 `PhaseDiagnosisReport`（结论仅 `evidence_collected`，无物理判据）；`audit_comparability` 结构因子可比性审计（q_grid 摘要逐对覆盖自旋/电荷/SC 配对三个 SF 估计器；source_set 仅电荷；四态 consistent/inconsistent/unknown/not_applicable）；`evidence_sufficiency_check` 证据充分性检查（保守语义，rules=None → overall 恒 unknown）。另含规则引擎 `run_candidate_rules`（候选级九态 verdict，规则须注册并授权才执行）与注册守卫（P3-1 显式替换 / P3-2 幽灵 ID 拒绝 / 候选级冲突检查）。P1-G.28 新增两条**有限尺寸分析能力边界规则**（能力诊断对象，**不是物理相候选**）：`RULE_GAP_V1`（candidate=`gap_scaling`）与 `RULE_WIDTH_V1`（candidate=`width_scaling`），经独立 `GAPW_RULES` 元组独立注册（**不属于 `P1F3_RULES`**），verdict 恒 `not_measurable`——Gap：Data/Data_Energy 仅有单扇区基态日志（无激发态能量/粒子数扇区能量差，禁止从基态总能随 doping 或 N 的变化构造激发态能隙）；Width：XC 构型 y 方向恒 2 胞宽（N 变化是长度方向，不构成多宽度扫描）。`not_measurable` 只表示证据不足，不表示能隙/宽度依赖为零、物理行为不存在或任何物理相被排除。**仅注册、未接入生产执行链路**：`run_analysis`/`Cross_Doping_Summary` 不执行 `GAPW_RULES`，生产报告不产生 Gap/Width verdict；GapScaling/WidthScaling 算法**仍未实现**。专项测试 `tests/test_phase_diagnosis_rules_gap_width.py`（34 项）。
 - **`evidence_integration/Analysis_Entry.py`** — 统一入口：`run_analysis(observable, *, operation=None, config=None, **kwargs)` 按 (observable, operation) 路由到集成层包装函数（15 条路由：衰减 ×4 / SF 估计 ×3 / 峰值 ×2 / 能量外推 / 配对对称 / 密度 profile / 局域自旋 profile / 配对-G² 比较 / 峰位对齐），未知路由抛 ValueError，不吞底层异常。
 - **`Cross_Doping_Summary.py`**（根目录独立脚本，P4.3）— 跨 doping 受控数值汇总：`analyze_doping()` 逐 doping 经 run_analysis 运行 SC 衰减/SC 配对 SF/自旋 SF+峰值/电荷 SF（`only_observables=None` 可选筛选，筛选发生在分析调用之前，未知 observable 抛 ValueError）；`build_rows()` 固定列序行构建（含 source_identity_kind / peak_estimate_entry_index）；`assign_comparability()` 可比性四档分组（硬性限制优先，P2 审计只读引用）；`summarize()` 串联 P1/P2/P3；`write_outputs()` CSV+JSON 覆盖写。细节见"跨 doping 汇总"一节。
-- **`SC_Exponent_Summary.py`**（根目录独立脚本，D1）— SC 指数跨数据汇总：经 `analyze_doping(only_observables={superconducting_correlation})` 复用 refbond 发现/失败机制跑 SC 衰减，**不重新拟合**——指数直接取自 `report.payload`（envelope_fit 的 K/xi ± 误差、StabilityReport 的 rel_mad_K/model_consistency/spearman_rho、候选幂律族模型的 K+AICc 证据）。指数状态四分类（exponent_ok/unstable/data_insufficient/input_missing，moderate≠失败）；K 与 xi 严格分列分组建；分组按身份全等（N/bond_dim/refbond/方向/指数类型），组间不合并趋势；comparability_bucket 复用 Cross_Doping_Summary 机械规则。输出 CSV+严格 JSON，不判定物理相态/d+id。注意其默认输出目录未被 .gitignore 覆盖，正式运行建议 `--outdir tests/artifacts/<name>`。
+- **`SC_Exponent_Summary.py`**（根目录独立脚本，D1）— SC 指数跨数据汇总：经 `analyze_doping(only_observables={superconducting_correlation})` 复用 refbond 发现/失败机制跑 SC 衰减，**不重新拟合**——指数直接取自 `report.payload`（envelope_fit 的 K/xi ± 误差、StabilityReport 的 rel_mad_K/model_consistency/spearman_rho、候选幂律族模型的 K+AICc 证据）。指数状态四分类（exponent_ok/unstable/data_insufficient/input_missing，moderate≠失败）；K 与 xi 严格分列分组建；分组按身份全等（N/bond_dim/refbond/方向/指数类型），组间不合并趋势；comparability_bucket 复用 Cross_Doping_Summary 机械规则。输出 CSV+严格 JSON，不判定物理相态/d+id。默认输出到 `output/sc_exponent_summary/`，已被 .gitignore 覆盖。
 
 Notebook 位于 `DMRG data visualization/` 根目录，是实际使用入口（每个 cell 顶部有"需要修改的部分"参数块）：`Density.ipynb`、`Energy.ipynb`、`Spin_Correlation.ipynb`、`Superconductivity_Correlation.ipynb`（1500 后缀版对比不同 bond dimension）。`Superconductivity_Correlation.ipynb` 在可视化 cell 之后接有 `SuperCorrDecayAnalyzer` 衰减分析 cell（A/C 键方向循环，title=label）。Itensor 数据没有文件，通过 `getpass.getpass()` 粘贴输入。
 
@@ -72,7 +72,7 @@ Notebook 位于 `DMRG data visualization/` 根目录，是实际使用入口（�
 
 # 数据目录约定
 
-UltraDMRG 集群计算结果存放在 `DMRG data visualization/Data_N200/`、`Data_N400/` 与 `Data_Energy/`（**没有 Data_N96**，旧文档引用已过时），层级：
+UltraDMRG 集群计算结果存放在 `DMRG data visualization/Data/Data_N200/`、`Data/Data_N400/` 与 `Data/Data_Energy/`（**没有 Data_N96**，旧文档引用已过时），层级：
 
 ```
 Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/*.json
@@ -80,8 +80,8 @@ Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_super_corr/super_corr_{i}_{j}/
 ```
 
 实际有数据的组合（其余目录为空骨架）：
-- **Data_N200/t_J_3**：doping 4 种（d1_10、d1_20、d1_100、d2_25）；**d1_25、d3_20、d3_25 已因数据问题删除**，不属于当前可用数据，不得假定存在或恢复；bond_dim 1500 与 5000 四组全有；measure 版本 49/50；超导 refbond 49_50/50_51/50_54
-- **Data_N400/t_J_3**：doping 5 种（d1_10、d1_20、d1_40、d1_80、d2_25）；bond_dim 1500 与 5000 全有；measure 版本 97/98；超导 refbond 97_98/98_99/98_102；每个 doping 目录内另有 2 份 DMRG 优化日志（低 D 500/1000/1500 + 高 D 2000→5000，均正常结束，N=400）
+- **Data/Data_N200/t_J_3**：doping 4 种（d1_10、d1_20、d1_100、d2_25）；**d1_25、d3_20、d3_25 已因数据问题删除**，不属于当前可用数据，不得假定存在或恢复；bond_dim 1500 与 5000 四组全有；measure 版本 49/50；超导 refbond 49_50/50_51/50_54
+- **Data/Data_N400/t_J_3**：doping 5 种（d1_10、d1_20、d1_40、d1_80、d2_25）；bond_dim 1500 与 5000 全有；measure 版本 97/98；超导 refbond 97_98/98_99/98_102；每个 doping 目录内另有 2 份 DMRG 优化日志（低 D 500/1000/1500 + 高 D 2000→5000，均正常结束，N=400）
 - 其他 t_J 值（t_J_5/10/15/20）目前只有空目录；注意 J=0.2 对应 t/J=20 是在 notebook 里写死的
 
 - `doping`：空穴率（d1_100 即 δ = 1/100）
@@ -89,14 +89,14 @@ Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_super_corr/super_corr_{i}_{j}/
 - 超导关联：bond 方向 A/B/C × 通道 a/b/c/d 共 12 个文件，文件名 `scsAa_fix_refbond_49_50.json` 等；目录名 `super_corr_{refbond1}_{refbond2}` 指明 reference bond
 - 每个数据目录下的 `slurm-*.log` 是**测量作业日志**（"Running measurement using existing MPS"），不含 `Bond dimension`/`sweep`/`E0` 行——`DMRGLogParser` 用于解析集群 DMRG 优化日志，与这些文件无关
 - **DMRG 优化日志（能量数据）**：N200 的 4 个 doping 目录内各 2 份 `slurm-*-Zk_tJ.log`（共 8 份，1500 与 2000→5000 两档调度，均正常结束）；N400 的 5 个 doping 目录内同样各 2 份（低 D 500/1000/1500 + 高 D 2000→5000，均正常结束）
-- **Data_Energy（热力学外推数据）**：层级 `Data_Energy/t_J_3/{doping}/N{n}/slurm-*.log`；6 个 doping（d0、d1_10、d1_20、d1_40、d1_80、d3_40）× 5 个 N（80/160/240/320/400）共 30 份优化日志（D 调度 500,1000,1500，全部正常结束，格式与 N200/N400 日志同构，可用 `extract_last_e0` 解析）——每 doping 5 个 N，**满足热力学极限外推条件（≥3 个 N）**；目录内仅有 *.log 文件，被全局 git.ignore 的 `*.log` 规则覆盖（Git 不可见，不入版本控制）
+- **Data/Data_Energy（热力学外推数据）**：层级 `Data/Data_Energy/t_J_3/{doping}/N{n}/slurm-*.log`；6 个 doping（d0、d1_10、d1_20、d1_40、d1_80、d3_40）× 5 个 N（80/160/240/320/400）共 30 份优化日志（D 调度 500,1000,1500，全部正常结束，格式与 N200/N400 日志同构，可用 `extract_last_e0` 解析）——每 doping 5 个 N，**满足热力学极限外推条件（≥3 个 N）**；目录内仅有 *.log 文件，被全局 git.ignore 的 `*.log` 规则覆盖（Git 不可见，不入版本控制）
 - 已知数据质量事实：N400 超导数据的 SU(2) 对称性误差实测 0.008~0.144（远超 ~1e-4 经验阈值），合成关联值的物理解释需谨慎；N400 电荷/自旋关联均只有源点 97/98 两组
 
 JSON 格式统一为 `[[索引], [value, 0]]` 的嵌套列表字符串结构（如 `[[[0], [0.9998, 0]], ...]`）。
 
 ## 测量源码位置（仓库外，只读参照）
 
-- `Data_Energy`、`Data_N200`、`Data_N400` 三个数据目录的计算源码均来自 **`C:\Users\ZhangKun\Desktop\DMRGtJModel`**（桌面兄弟目录，不在本仓库内）：测量程序如 `src/measure1.cpp`（自旋/密度/单粒子测量）、`src/measureSC.cpp` 与 `src/measureSC_fix_ref_extension.cpp`（超导关联）、`src/dmrg.cpp`、`src/honeycomb_lattice.h` 等
+- `Data/Data_Energy`、`Data/Data_N200`、`Data/Data_N400` 三个数据目录的计算源码均来自 **`C:\Users\ZhangKun\Desktop\DMRGtJModel`**（桌面兄弟目录，不在本仓库内）：测量程序如 `src/measure1.cpp`（自旋/密度/单粒子测量）、`src/measureSC.cpp` 与 `src/measureSC_fix_ref_extension.cpp`（超导关联）、`src/dmrg.cpp`、`src/honeycomb_lattice.h` 等
 - 该程序的库函数引用来自 **`C:\Users\ZhangKun\Desktop\UltraDMRG`**（如 `MeasureTwoSiteOpGroup`/`DumpMeasuRes` 在 `include/qlmps/...` 下）；另有一份更完整的副本在 `D:\Microsoft VS Code project\DMRG\`（含 `qlmps/model_relevant/operators/fermion/tJ_operators.h` 算符定义——桌面版 UltraDMRG 可能缺部分文件，D 盘版更全）
 - **权限约定**：访问、阅读、查看上述两个文件夹**无需请求用户**；只有增、删、改等改变程序内容的操作才需要先请求
 - 测量语义已核实（B1.1）：t-J 算子 `bupc/bupa/bdnc/bdna` = c↑†/c↑/c↓†/c↓，弦因子 `f`=(-1)^N 仅插中间点，单粒子测量为 j>源点 的单项采样；`CMakeLists.txt` 有 `-DUSE_REAL=1`（实值版），数据文件 `[re, im]` 格式对应复值序列化路径（数据虚部恒 0 与实值基态一致）
@@ -105,8 +105,8 @@ JSON 格式统一为 `[[索引], [value, 0]]` 的嵌套列表字符串结构（�
 
 独立脚本 `Cross_Doping_Summary.py`（测试 `tests/test_cross_doping_summary.py`，68 项断言）：
 
-- **输入范围**：默认 `Data_N200/t_J_3` × bond_dim=1500、N=200；**当前实际有数据 4 个 doping**（d1_10/d1_20/d1_100/d2_25；d1_25、d3_20、d3_25 已因数据问题删除）——正式运行用 `--dopings d1_10,d1_20,d1_100,d2_25`（脚本 `DEFAULT_DOPINGS` 保留 7 组默认值，对缺失 doping 会显式记录失败行而非静默跳过）。每 doping 逐条运行 23 项分析——SC 衰减（参考键目录发现式枚举 × A/B/C 键）、SC 配对结构因子（同 refbond × A/B/C 受限估计，含逐通道 channel_sf）、自旋 SF（sz_sz 源点 0 + spin_dot 源点 49/50，各带峰值分析）、电荷 SF（nf + nf49nf + nf50nf 连通形式）。N=400 或 bond_dim=5000 须单独运行（`--N 400` / `--bond-dim 5000`），绝不与 N=200 混组
-- **运行方式**：`cd "DMRG data visualization" && python Cross_Doping_Summary.py --outdir cross_doping_summary_output`（Calculation 环境）；CLI 含 `--root/--t-j/--dopings/--N/--bond-dim/--refbonds/--n-qx/--n-qy/--outdir`
+- **输入范围**：默认 `Data/Data_N200/t_J_3` × bond_dim=1500、N=200；**当前实际有数据 4 个 doping**（d1_10/d1_20/d1_100/d2_25；d1_25、d3_20、d3_25 已因数据问题删除）——正式运行用 `--dopings d1_10,d1_20,d1_100,d2_25`（脚本 `DEFAULT_DOPINGS` 保留 7 组默认值，对缺失 doping 会显式记录失败行而非静默跳过）。每 doping 逐条运行 23 项分析——SC 衰减（参考键目录发现式枚举 × A/B/C 键）、SC 配对结构因子（同 refbond × A/B/C 受限估计，含逐通道 channel_sf）、自旋 SF（sz_sz 源点 0 + spin_dot 源点 49/50，各带峰值分析）、电荷 SF（nf + nf49nf + nf50nf 连通形式）。N=400 或 bond_dim=5000 须单独运行（`--N 400` / `--bond-dim 5000`），绝不与 N=200 混组
+- **运行方式**：`cd "DMRG data visualization" && python Cross_Doping_Summary.py`（Calculation 环境，默认输出到 output/cross_doping_summary/）；CLI 含 `--root/--t-j/--dopings/--N/--bond-dim/--refbonds/--n-qx/--n-qy/--outdir`
 - **输出文件**：`cross_doping_summary.csv`（一行一条分析含失败行，固定列序）+ `cross_doping_summary.json`（config/rows/comparability_groups/phase_report/semantics）。输出目录已被 .gitignore 忽略——属可重复生成的派生数据（固定随机种子 42、整体覆盖写不追加、严格 JSON），不入版本控制
 - **可比性契约**（四档，机械条件检查，无物理判据；硬性限制优先于宽松分支）：
   - `direct`：身份（N/bond_dim/参考键或源点/键方向或定义）全等且附加检查通过——SF 估计行 P2 q_grid 逐对 consistent（仅摘要级）+ 电荷 P2 source_set 集合相等；峰值行行内 q 摘要一致且对应 estimate 的 P2 审计一致；仅表示分析条件一致，不表示 DMRG 收敛精度相同

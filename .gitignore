@@ -1,6 +1,5 @@
 # 数据文件
 Data*/
-model and visual/
 
 # 测试文件
 # 测试产物与 Python 缓存（正式测试代码与基线纳入版本控制）
@@ -23,8 +22,5 @@ credentials.json
 .aws/
 .ssh/
 
-# P4.3 汇总输出（可重复生成的派生数据）
-DMRG data visualization/cross_doping_summary_output/
-DMRG data visualization/cross_doping_summary_output_4doping/
-DMRG data visualization/phase_analysis_report_output/
-DMRG data visualization/convergence_report_output/
+# 分析输出（可重复生成的派生数据）
+DMRG data visualization/output/

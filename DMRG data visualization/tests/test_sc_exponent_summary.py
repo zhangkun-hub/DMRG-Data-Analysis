@@ -399,7 +399,7 @@ check('G', '重复执行：输出字节一致（整体覆盖，不追加）',
 # H. 真实数据 smoke（d1_100 / N200 / refbond 49_50；SC-only 全链路）
 # ==========================================================================
 print('===== H. 真实数据 smoke =====')
-REAL_ROOT = os.path.join(ROOT, 'Data_N200')
+REAL_ROOT = os.path.join(ROOT, 'Data/Data_N200')
 if os.path.isdir(os.path.join(REAL_ROOT, 't_J_3', 'd1_100')):
     qs200, _ = cds.xc_momentum_grid(200, a=1.0, n_qx=11, n_qy=4)
     outs_real = cds.analyze_doping(
@@ -450,7 +450,7 @@ if os.path.isdir(os.path.join(REAL_ROOT, 't_J_3', 'd1_100')):
           'NaN' not in raw_h and json.loads(raw_h)['rows'])
 else:
     check('H', '真实数据 smoke（数据目录不存在，跳过）', True,
-          '跳过（Data_N200 不存在）')
+          '跳过（Data/Data_N200 不存在）')
 
 # ==========================================================================
 # 汇总

@@ -39,9 +39,9 @@
   未提供经确认的充分性标准；不编造置信度）
 
 运行方式（在 DMRG data visualization/ 目录下）：
-    python Cross_Doping_Summary.py --outdir cross_doping_summary_output
+    python Cross_Doping_Summary.py --outdir output/cross_doping_summary
 
-输出（--outdir 指定目录，默认 <脚本目录>/cross_doping_summary_output/）：
+输出（--outdir 指定目录，默认 <脚本目录>/output/cross_doping_summary/）：
 - cross_doping_summary.csv：一行一条分析（含失败条目），固定列序；
   不适用字段留空（缺失不编造默认值）
 - cross_doping_summary.json：config 快照 + rows + 可比性分组 +
@@ -971,8 +971,8 @@ def main(argv=None) -> int:
         description='跨 doping 受控数值汇总（PhaseDiagnosis-P4.3）：'
                     '逐 doping 运行既有统一入口并输出 CSV/JSON 汇总，'
                     '不判定物理趋势或相态')
-    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data_N200'),
-                        help='数据根目录（默认 <脚本目录>/Data_N200）')
+    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/Data_N200'),
+                        help='数据根目录（默认 <脚本目录>/Data/Data_N200）')
     parser.add_argument('--t-j', dest='t_j', default=DEFAULT_T_J,
                         help='t/J 目录名（默认 t_J_3）')
     parser.add_argument('--dopings', default=','.join(DEFAULT_DOPINGS),
@@ -991,10 +991,10 @@ def main(argv=None) -> int:
                         help='逗号分隔的参考键过滤（如 49_50,50_51）；'
                              '默认全部发现的参考键')
     parser.add_argument('--outdir',
-                        default=os.path.join(SCRIPT_DIR,
-                                             'cross_doping_summary_output'),
+                        default=os.path.join(SCRIPT_DIR, 'output',
+                                             'cross_doping_summary'),
                         help='输出目录（默认 <脚本目录>/'
-                             'cross_doping_summary_output）')
+                             'output/cross_doping_summary）')
     args = parser.parse_args(argv)
 
     dopings = [d.strip() for d in args.dopings.split(',') if d.strip()]

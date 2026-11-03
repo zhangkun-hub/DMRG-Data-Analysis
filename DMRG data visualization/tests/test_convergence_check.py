@@ -132,7 +132,7 @@ check('C', 'verdict 值 ∈ 三档枚举',
 # D. 报告脚本集成（真实数据门控）
 # ======================================================================
 print('===== D. 报告脚本收敛节 =====')
-REAL_ROOT = os.path.join(ROOT, 'Data_N200', 't_J_3')
+REAL_ROOT = os.path.join(ROOT, 'Data/Data_N200', 't_J_3')
 if os.path.isdir(os.path.join(REAL_ROOT, 'd1_100')):
     r = subprocess.run(
         [sys.executable, '-X', 'utf8', 'Phase_Analysis_Report.py',

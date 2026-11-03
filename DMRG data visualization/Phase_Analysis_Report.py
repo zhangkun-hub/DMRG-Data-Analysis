@@ -18,7 +18,7 @@
 运行方式（Calculation 环境，DMRG data visualization/ 目录下）：
     python -X utf8 Phase_Analysis_Report.py --doping d1_100
     python -X utf8 Phase_Analysis_Report.py --doping d1_10 \
-        --energy-root Data_Energy --with-density-profile
+        --energy-root Data/Data_Energy --with-density-profile
 """
 import argparse
 import datetime
@@ -75,7 +75,7 @@ import Cross_Doping_Summary as cds  # noqa: E402
 DEFAULT_T_J = 't_J_3'
 DEFAULT_BOND_DIM = '1500'
 DEFAULT_N = 200
-DEFAULT_OUTDIR = os.path.join(SCRIPT_DIR, 'phase_analysis_report_output')
+DEFAULT_OUTDIR = os.path.join(SCRIPT_DIR, 'output', 'phase_analysis_report')
 
 # ==========================================================================
 # 判据检查表（静态对照 docs/Phase_Diagnosis_Physical_Criteria_Matrix.md；
@@ -166,7 +166,7 @@ CRITERIA_CHECKLIST = [
      'capability_boundary',
      'required_evidence': '激发态能量或粒子数扇区能量差',
      'evidence_observables': [OBSERVABLE_ENERGY],
-     'data_availability': 'Data_Energy 30 份日志均为单扇区基态（无激发态'
+     'data_availability': 'Data/Data_Energy 30 份日志均为单扇区基态（无激发态'
                           '/扇区分辨信息）',
      'report_inclusion': 'opt_in', 'status': '不可测量',
      'note': '禁止从基态总能随 doping/N 变化构造能隙；not_measurable ≠ '
@@ -217,7 +217,7 @@ def run_core_section(doping, root, t_j, bond_dim, N, a, q_list, refbonds):
 
 
 def run_energy_section(doping, energy_root, t_j, j_value):
-    """Data_Energy 各 N 的基态日志 → EnergyRecord → E∞ 外推。"""
+    """Data/Data_Energy 各 N 的基态日志 → EnergyRecord → E∞ 外推。"""
     outcomes = []
     base = os.path.join(energy_root, t_j, doping)
     if not os.path.isdir(base):
@@ -1106,7 +1106,7 @@ def write_report(result, outdir) -> dict:
     return {'report.md': md_path, 'report.json': json_path}
 
 
-DOPING_HINT = ('可用 doping（Data_N200/t_J_3 实际有数据）: '
+DOPING_HINT = ('可用 doping（Data/Data_N200/t_J_3 实际有数据）: '
                'd1_10 / d1_20 / d1_100 / d2_25；'
                'N=400 时用 d1_10/d1_20/d1_40/d1_80/d2_25 并加 --N 400')
 
@@ -1126,7 +1126,7 @@ def main(argv=None) -> int:
         description='一键受控证据报告（单 doping 单参数组；不判相，'
                     '详见脚本 docstring）')
     parser.add_argument('--root', default=os.path.join(SCRIPT_DIR,
-                                                       'Data_N200'))
+                                                       'Data/Data_N200'))
     parser.add_argument('--t-j', default=DEFAULT_T_J)
     parser.add_argument('--doping', default=None,
                         help='单个 doping（如 d1_100）；不提供时交互式'
@@ -1139,7 +1139,7 @@ def main(argv=None) -> int:
     parser.add_argument('--n-qy', type=int, default=4)
     parser.add_argument('--a', type=float, default=1.0)
     parser.add_argument('--energy-root', default=None,
-                        help='提供时运行能量外推（如 Data_Energy）')
+                        help='提供时运行能量外推（如 Data/Data_Energy）')
     parser.add_argument('--j-value', type=float, default=3.0,
                         help='t-J 模型的 J 值（EnergyRecord 封装用）')
     parser.add_argument('--with-pairing-symmetry', action='store_true',

@@ -437,7 +437,7 @@ check('L', 'a=d、b=c 时合成值 = a−b（逐元素）',
 # ==========================================================================
 # M. 真实 N200 d1_100 数据受限估计（49_50/A）
 # ==========================================================================
-real_dir = os.path.join(ROOT, 'Data_N200', 't_J_3', 'd1_100',
+real_dir = os.path.join(ROOT, 'Data/Data_N200', 't_J_3', 'd1_100',
                         '1500_measure_super_corr', 'super_corr_49_50')
 if os.path.isdir(real_dir):
     qs_real, _ = xc_momentum_grid(200, a=1.0, n_qx=41, n_qy=4)

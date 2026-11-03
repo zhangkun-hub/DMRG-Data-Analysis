@@ -58,7 +58,7 @@ def check(cat, name, cond, detail=''):
 # ==========================================================================
 def load_sc(ref, bond, doping='d1_10', N=400):
     """读取 N400 超导关联 4 通道并合成 <Δ†Δ>；返回 (记录列表, (err_ad, err_bc))"""
-    base = f'{ROOT}/Data_N400/t_J_3/{doping}/1500_measure_super_corr/super_corr_{ref}'
+    base = f'{ROOT}/Data/Data_N400/t_J_3/{doping}/1500_measure_super_corr/super_corr_{ref}'
     recs4 = {}
     for ch in 'abcd':
         recs4[ch] = SuperCorrRecord.extract_data(
@@ -73,7 +73,7 @@ def load_sc(ref, bond, doping='d1_10', N=400):
 
 def load_spin(measure, ver, N=400):
     """读取 N400 自旋关联三分量并合成 <S_i·S_j>"""
-    base = f'{ROOT}/Data_N400/t_J_3/d1_10/1500_measure_phys_qty/{measure}'
+    base = f'{ROOT}/Data/Data_N400/t_J_3/d1_10/1500_measure_phys_qty/{measure}'
     seq = range(1, N + 100, 4) if ver == '97' else range(2, N + 100, 4)
     sz = CorrelationRecord.extract_data(
         open(f'{base}/sz{ver}sz.json', encoding='utf-8').read(), seq, N, 1.0)

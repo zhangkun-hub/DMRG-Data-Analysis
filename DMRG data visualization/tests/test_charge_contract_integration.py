@@ -48,7 +48,7 @@ def check(cat, name, cond, detail=''):
 def load_charge(ver, N=200):
     """全 field 解析 nf{ver}nf.json（field 连续，用 range(0,N,1) 保留全部条目；
     与 sz 系列 step-4 sequence 不同——后者会丢弃 3/4 数据）"""
-    base = f'{ROOT}/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/measure_{ver}'
+    base = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/measure_{ver}'
     return CorrelationRecord.extract_data(
         open(f'{base}/nf{ver}nf.json', encoding='utf-8').read(),
         range(0, N, 1), N, 1.0)

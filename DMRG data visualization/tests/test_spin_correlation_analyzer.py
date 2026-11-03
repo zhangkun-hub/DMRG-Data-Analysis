@@ -179,7 +179,7 @@ print('===== C. 真实数据（N200 自旋关联） =====')
 
 
 def load_real_spin(measure, ver):
-    base = f'{ROOT}/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
+    base = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
     seq = range(1, 300, 4) if ver == '49' else range(2, 300, 4)
     sz = CorrelationRecord.extract_data(
         open(f'{base}/sz{ver}sz.json', encoding='utf-8').read(), seq, 200, 1.0)

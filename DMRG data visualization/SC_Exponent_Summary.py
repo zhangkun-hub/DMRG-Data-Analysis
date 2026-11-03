@@ -23,14 +23,12 @@ StabilityReport），与跨 doping 汇总 CSV 中的 params_json 数值同源。
 
 运行方式（在 DMRG data visualization/ 目录下）：
     python SC_Exponent_Summary.py --dopings d1_10,d1_20,d1_100,d2_25
-        --outdir sc_exponent_summary_output
+        --outdir output/sc_exponent_summary
 
 输出（--outdir 指定目录；整体覆盖写，不清理目录内其他文件）：
 - sc_exponent_summary.csv：一行一条 SC 衰减分析（含失败条目），固定列序
 - sc_exponent_summary.json：config 快照 + rows + 分组 + 语义说明
-注意：本脚本默认输出目录未被 .gitignore 覆盖（与 Cross_Doping_Summary
-的输出目录不同），正式运行建议 --outdir tests/artifacts/<name> 或
-其他已忽略位置，避免未跟踪产物混入工作区。
+默认输出目录在 <脚本目录>/output/ 下，已被 .gitignore 覆盖。
 """
 
 import argparse
@@ -373,8 +371,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description='SC 指数跨数据汇总（D1）：逐 doping 运行既有 SC 衰减'
                     '分析并提取指数证据，不重新拟合，不判定物理相态')
-    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data_N200'),
-                        help='数据根目录（默认 <脚本目录>/Data_N200）')
+    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/Data_N200'),
+                        help='数据根目录（默认 <脚本目录>/Data/Data_N200）')
     parser.add_argument('--t-j', dest='t_j', default=cds.DEFAULT_T_J,
                         help='t/J 目录名（默认 t_J_3）')
     parser.add_argument('--dopings', default=','.join(cds.DEFAULT_DOPINGS),
@@ -395,11 +393,10 @@ def main(argv=None) -> int:
                         help='逗号分隔的参考键过滤（如 49_50,50_51）；'
                              '默认全部发现的参考键')
     parser.add_argument('--outdir',
-                        default=os.path.join(SCRIPT_DIR,
-                                             'sc_exponent_summary_output'),
+                        default=os.path.join(SCRIPT_DIR, 'output',
+                                             'sc_exponent_summary'),
                         help='输出目录（默认 <脚本目录>/'
-                             'sc_exponent_summary_output，未被 .gitignore '
-                             '覆盖，正式运行建议指定已忽略位置）')
+                             'output/sc_exponent_summary）')
     args = parser.parse_args(argv)
 
     dopings = [d.strip() for d in args.dopings.split(',') if d.strip()]

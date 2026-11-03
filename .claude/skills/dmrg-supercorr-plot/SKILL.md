@@ -1,6 +1,6 @@
 ---
 name: dmrg-supercorr-plot
-description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的超导关联数据：解析 Data_N200/Data_N400 下 measure_super_corr 的 12 个 scs{X}{ch}_fix_refbond_{i}_{j}.json 文件、用 SuperCorrRecord.extract_data 封装、做四通道 a/b/c/d 的 SU(2) 对称性检验（a↔d、b↔c）、按 0.5(a-b-c+d) 合成 <Δ†Δ>、用 SuperCorrProcessor 画 A/B/C 三个键方向图及两组数据绝对误差对比。当用户提到超导关联、superconducting correlation、Δ†Δ、SU(2) 对称性检验、scs 文件、reference bond、A/B/C 键方向，或要在本 DMRG 仓库处理超导关联数据时使用——只要涉及本仓库超导关联的提取、对称性检验、合成或作图就应触发，即使用户没提"DMRG"。
+description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的超导关联数据：解析 Data/Data_N200/Data/Data_N400 下 measure_super_corr 的 12 个 scs{X}{ch}_fix_refbond_{i}_{j}.json 文件、用 SuperCorrRecord.extract_data 封装、做四通道 a/b/c/d 的 SU(2) 对称性检验（a↔d、b↔c）、按 0.5(a-b-c+d) 合成 <Δ†Δ>、用 SuperCorrProcessor 画 A/B/C 三个键方向图及两组数据绝对误差对比。当用户提到超导关联、superconducting correlation、Δ†Δ、SU(2) 对称性检验、scs 文件、reference bond、A/B/C 键方向，或要在本 DMRG 仓库处理超导关联数据时使用——只要涉及本仓库超导关联的提取、对称性检验、合成或作图就应触发，即使用户没提"DMRG"。
 ---
 
 # DMRG 超导关联数据处理与作图
@@ -24,7 +24,7 @@ measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
 ```
 
 - `{i}_{j}`：reference bond 的两个格点。实际存在的 refbond 目录：N200 = `49_50`、`50_51`、`50_54`；N400 = `97_98`、`98_99`、`98_102`
-- 实际有数据的组合：`Data_N200/t_J_3` 4 种 doping（d1_10/d1_20/d1_100/d2_25；d1_25/d3_20/d3_25 已删除）、1500 与 5000 全有；`Data_N400/t_J_3` 5 种 doping（d1_10/d1_20/d1_40/d1_80/d2_25）、1500 与 5000 全有（**仓库没有 Data_N96**）
+- 实际有数据的组合：`Data/Data_N200/t_J_3` 4 种 doping（d1_10/d1_20/d1_100/d2_25；d1_25/d3_20/d3_25 已删除）、1500 与 5000 全有；`Data/Data_N400/t_J_3` 5 种 doping（d1_10/d1_20/d1_40/d1_80/d2_25）、1500 与 5000 全有（**仓库没有 Data_N96**）
 - `X`：键方向 A / B / C；`ch`：通道 a / b / c / d，共 3×4=12 个文件
 - 通道物理含义：a = `<c_i↑† c_j↓† c_k↑ c_l↓>`，b = `<c_i↓† c_j↑† c_k↑ c_l↓>`，c = `<c_i↑† c_j↓† c_k↓ c_l↑>`，d = `<c_i↓† c_j↑† c_k↓ c_l↑>`
 
@@ -39,7 +39,7 @@ measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
 from pathlib import Path
 from Physical_Quantity.data_records.Physical_Data_Record import SuperCorrRecord
 
-base = Path(f'Data_N200/t_J_3/d1_100/1500_measure_super_corr/super_corr_49_50')
+base = Path(f'Data/Data_N200/t_J_3/d1_100/1500_measure_super_corr/super_corr_49_50')
 records = {}
 for bond in 'ABC':
     for channel in 'abcd':
@@ -85,7 +85,7 @@ SuperCorrProcessor.Super_Corr_Visualization_three(super_corr_dict)   # 三键方
 ```
 
 - 单键方向用 `Super_Corr_Visualization(record_list, label)`；1×3 子图固定为线性 / y-log / log-log
-- **label 格式不能改**：颜色是从 label 里解析的（`label.split("(")[1].split(")")[0].split()[0]`），必须保持 `"X key (颜色 bond)"` 结构
+- **label 格式不能改**：颜色与键方向名是从 label 里解析的（颜色 `label.split("(")[1].split(")")[0].split()[0]`、键名 `label.split()[0]`），必须保持 `"X key (颜色 bond)"` 结构；图中图例显示已由绘图函数统一转换为 `target X`（如 `target A`），标题为 `(reference bond X: (i, j))`，调用方传原始 label 即可
 - 两组数据对比：`Super_Corr_Visualization_difference({'UltraDMRG': dict1, 'Itensor': dict2})`——注意是**嵌套字典**（外层两组数据，内层三键方向），取外层前两组
 
 ## 6. 已知坑

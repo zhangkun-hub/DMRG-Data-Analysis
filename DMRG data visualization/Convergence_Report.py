@@ -32,7 +32,7 @@ import Phase_Analysis_Report as par  # noqa: E402
 DEFAULT_T_J = 't_J_3'
 DEFAULT_DIMS = '1500,5000'
 DEFAULT_N = 200
-DEFAULT_OUTDIR = os.path.join(SCRIPT_DIR, 'convergence_report_output')
+DEFAULT_OUTDIR = os.path.join(SCRIPT_DIR, 'output', 'convergence_report')
 
 DISCIPLINE = (
     '> 阈值为默认值（defaults_not_authorized，未获物理授权）。'
@@ -189,7 +189,7 @@ def main(argv=None) -> int:
         description='DMRG 收敛诊断独立入口（bond dimension 稳定性；'
                     '不判相，详见脚本 docstring）')
     parser.add_argument('--root', default=os.path.join(SCRIPT_DIR,
-                                                       'Data_N200'))
+                                                       'Data/Data_N200'))
     parser.add_argument('--t-j', default=None,
                         help='t/J 目录后缀（如 t_J_3）；不提供时交互式'
                              '提示输入 t/J 值（默认 3）')

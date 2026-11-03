@@ -206,7 +206,7 @@ def make_energy_log(N, d, es_true):
     return '\n'.join(lines) + '\n'
 
 
-# 5 个 N 的合成日志 → 完整链路（模拟 Data_Energy 结构，不依赖外部数据）
+# 5 个 N 的合成日志 → 完整链路（模拟 Data/Data_Energy 结构，不依赖外部数据）
 J = 0.2
 es_true_by_N = {n: 0.3 + 2.0 / n for n in (80, 160, 240, 320, 400)}
 recs_e2e = []
