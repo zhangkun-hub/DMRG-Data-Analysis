@@ -145,11 +145,10 @@ class DMRGLogParser:
     # =========================
     # 可视化接口
     # =========================
-    def plot_E0(self):
-        """能量E0随着D增大与相同D下sweep增大所呈现变化规律"""
-        df = self.get_dataframe()
-        
-        # ========= 1. 构造连续x轴并记录每个BondDimension区域的信息 =========
+    def _with_x(self, df):
+        """构造连续 x 轴并记录每个 BondDimension 区域的信息，返回带 'x'
+        列的 DataFrame（plot_E0 与 plot_absolute_energy_differences 共用，
+        两者独立调用时不互相依赖）。"""
         x_vals = []    # 存储为每个数据点分配的连续x坐标
         self.D_regions = {} # 字典，记录每个BondDimension区域的信息
         x_counter = 0  # 计数器，用于分配连续的x坐标
@@ -169,7 +168,13 @@ class DMRGLogParser:
             }
             x_counter += n # 更新计数器
 
+        df = df.copy()
         df["x"] = x_vals  # 将构造的连续x坐标添加到DataFrame中
+        return df
+
+    def plot_E0(self):
+        """能量E0随着D增大与相同D下sweep增大所呈现变化规律"""
+        df = self._with_x(self.get_dataframe())
 
         # ========= 2. 绘图 =========
         fig, ax = plt.subplots(figsize=(12, 6))
@@ -226,7 +231,7 @@ class DMRGLogParser:
         
     def plot_absolute_energy_differences(self):
         """绝对能量差|ΔE|随着D增大与相同D下sweep增大所呈现的收敛性（半对数坐标系）"""
-        df = self.get_dataframe()
+        df = self._with_x(self.get_dataframe())
 
         # ========= 1. 构造 |ΔE| 的数据表 df_dE =========
         # 构造 |ΔE| 数据表 df_dE

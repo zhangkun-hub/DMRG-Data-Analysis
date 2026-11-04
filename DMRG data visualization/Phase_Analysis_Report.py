@@ -65,7 +65,7 @@ from Physical_Quantity.physical_analysis.Convergence_Check import (  # noqa: E40
 from Physical_Quantity.physical_analysis.Correlation_Process import (  # noqa: E402
     CorrelationProcessor)
 from Physical_Quantity.physical_analysis.Super_Correlation_Process import (  # noqa: E402
-    SuperCorrProcessor)
+    SuperCorrProcessor, _refbond_direction)
 from Physical_Quantity.data_records.DMRG_Log_Parser import (  # noqa: E402
     DMRGLogParser)
 from Physical_Quantity.data_records.Physical_Data_Record import (  # noqa: E402
@@ -535,7 +535,8 @@ def run_convergence_section(config, dims):
     # ---- 证据图（每图失败不阻断） ----
     if not config.get('no_plots') and len(dims) >= 2:
         d1, d2 = dims[0], dims[1]
-        # 能量收敛图（合并两档日志 → DMRGLogParser）
+        # 能量收敛图（合并两档日志 → DMRGLogParser：2 行子图，上为 E0、
+        # 下为 |ΔE| 半对数，同存于 convergence_energy.png）
         try:
             parser = DMRGLogParser()
             texts = []
@@ -545,7 +546,7 @@ def run_convergence_section(config, dims):
                     texts.append(t)
             if texts:
                 parser.parse_from_string('\n'.join(texts))
-                parser.plot_E0()
+                parser.plot_DMRG_energy_convergence_analysis()
                 path = os.path.join(config['outdir'], 'plots',
                                     'convergence_energy.png')
                 os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -576,13 +577,19 @@ def run_convergence_section(config, dims):
                                         'convergence_density_diff.png'))
         except Exception:  # noqa: BLE001
             plt.close('all')
-        # 自旋两档差值（复用 Cross_Doping_Summary 装载约定与现成绘图）
+        # 自旋两档差值（A/B 子格分两行，组名即列标题 D = dim）
         try:
             sp = {}
             for dim in (d1, d2):
                 phys = os.path.join(root, t_j, doping,
                                     f'{dim}_measure_phys_qty')
-                sp[f'D{dim}'] = cds.load_spin_dot_records(phys, N, a)
+                recs = cds.load_spin_dot_records(phys, N, a)
+                sp[f'D = {dim}'] = {
+                    'A sublattice': [r for r in recs
+                                     if r.source_point % 4 == 1],
+                    'B sublattice': [r for r in recs
+                                     if r.source_point % 4 == 2],
+                }
             CorrelationProcessor.Spin_Corr_Visualization_difference(sp)
             path = os.path.join(config['outdir'], 'plots',
                                 'convergence_spin_diff.png')
@@ -593,7 +600,8 @@ def run_convergence_section(config, dims):
                                         'convergence_spin_diff.png'))
         except Exception:  # noqa: BLE001
             plt.close('all')
-        # 超导两档差值（首个 refbond 三键，复用现成绘图）
+        # 超导两档差值（行 = 3 个 refbond 键方向，列 = 两档 + 差值，
+        # 每格内 target A/B/C 三键同图）
         try:
             sc = {}
             for dim in (d1, d2):
@@ -603,16 +611,22 @@ def run_convergence_section(config, dims):
                            if re.match(r'super_corr_\d+_\d+$', d)]
                 if not refdirs:
                     break
-                m = re.match(r'super_corr_(\d+)_(\d+)$', refdirs[0])
-                refbond = (int(m.group(1)), int(m.group(2)))
                 labels = {'A': 'A key (blue bond)', 'B': 'B key (green bond)',
                           'C': 'C key (orange bond)'}
-                sc[f'D{dim}'] = {
-                    label: cds.load_super_corr_records(
-                        os.path.join(root_dir, refdirs[0]), refbond, k, N, a)
-                    for k, label in labels.items()}
+                per_ref = {}
+                for rd in refdirs:
+                    m = re.match(r'super_corr_(\d+)_(\d+)$', rd)
+                    refbond = (int(m.group(1)), int(m.group(2)))
+                    ref_key = _refbond_direction(*refbond)
+                    ref_tag = f'reference {ref_key}: {refbond}'
+                    per_ref[ref_tag] = {
+                        label: cds.load_super_corr_records(
+                            os.path.join(root_dir, rd), refbond, k, N, a)
+                        for k, label in labels.items()}
+                sc[f'D = {dim}'] = per_ref
             if len(sc) == 2:
-                SuperCorrProcessor.Super_Corr_Visualization_difference(sc)
+                SuperCorrProcessor.Super_Corr_Visualization_difference_refbond(
+                    sc)
                 path = os.path.join(config['outdir'], 'plots',
                                     'convergence_supercorr_diff.png')
                 os.makedirs(os.path.dirname(path), exist_ok=True)
