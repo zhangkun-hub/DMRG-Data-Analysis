@@ -183,7 +183,7 @@ class CorrelationRecord(Record):
         
         
 #-----------------------------------------------------------------------------------
-# 超导超导关联函数<i·j·k·l>的数据记录器
+# 超导关联函数<i·j·k·l>的数据记录器
 #-----------------------------------------------------------------------------------  
 class SuperCorrRecord(Record):
     def __init__(self, ref_bond: tuple, target_bond: tuple, distance: float, sup_corr: float):

@@ -1,6 +1,6 @@
 ---
 name: dmrg-spin-corr-plot
-description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据：解析 Data/Data_N200/Data/Data_N400 下 sz{ver}sz / sp{ver}sm / sm{ver}sp 三分量 JSON、用 CorrelationRecord.extract_data 按 A/B 子格序列封装、由 SzSz + 1/2(SuSd + SdSu) 合成 <S_i·S_j>、用 CorrelationProcessor 画 1×3 子图（线性/y-log/log-log 判断指数或幂律衰减）及两组数据绝对误差对比。当用户提到自旋关联、spin correlation、SzSz、SuSd、SdSu、指数衰减、幂律衰减，或要在本 DMRG 仓库处理自旋关联数据时使用——只要涉及本仓库自旋关联的提取、合成或作图就应触发，即使用户没提"DMRG"。
+description: 处理 honeycomb 晶格 t-J 模型 DMRG 计算的自旋关联数据：解析 Data/Data_N200/Data/Data_N400 下 sz{ver}sz / sp{ver}sm / sm{ver}sp 三分量 JSON、用 CorrelationRecord.extract_data 按 A/B 子格序列封装、由 SzSz + 1/2(SuSd + SdSu) 合成 <S_i·S_j>、用 CorrelationProcessor 画 n×3 子图（n 组数据按行，列 = 线性/y-log/log-log 判断指数或幂律衰减，支持 A/B 子格 2×3 同图）及两组数据绝对误差对比。当用户提到自旋关联、spin correlation、SzSz、SuSd、SdSu、指数衰减、幂律衰减，或要在本 DMRG 仓库处理自旋关联数据时使用——只要涉及本仓库自旋关联的提取、合成或作图就应触发，即使用户没提"DMRG"。
 ---
 
 # DMRG 自旋关联数据处理与作图
@@ -58,12 +58,15 @@ from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationP
 SiSj = CorrelationProcessor.Combined_spin_correlation(SzSz, SuSd, SdSu)
 # 即 <S_i·S_j> = <SzSz> + 1/2 (<SuSd> + <SdSu>)
 
-CorrelationProcessor.Spin_Corr_Visualization(SiSj)
+CorrelationProcessor.Spin_Corr_Visualization({'A sublattice': SiSj})
 ```
 
 - 合成前会校验三分量列表长度、源点、场点一致，不一致抛 ValueError（说明数据版本/序列不配套）
-- 作图固定 1×3 子图：线性（原始值）/ y-log（|值|，判断指数衰减）/ log-log（|值|，判断幂律衰减）；负值取对数前必须取绝对值
-- 两组数据对比用 `Spin_Corr_Visualization_difference({'UltraDMRG': r1, 'Itensor': r2})`，取字典前两组，要求长度与源点一致
+- `Spin_Corr_Visualization(records_dict)`：传入 n 组数据画 n 行 × 3 列（列 = 线性 / y-log / log-log，判断指数/幂律衰减）；组名建议带子格语义（如 `'A sublattice'`、`'B sublattice'`），行标题自动补源点：`A sublattice (ref-site:49)`——A/B 子格同图对比直接传 `{'A sublattice': rA, 'B sublattice': rB}`（2×3）；负值取对数前必须取绝对值
+- 两组数据对比用 `Spin_Corr_Visualization_difference(...)`，两种输入：
+  - 旧格式 `{'UltraDMRG': r1, 'Itensor': r2}` → 1×3（组1 / 组2 / 绝对误差）
+  - 嵌套格式 `{'UltraDMRG': {'A sublattice': rA1, 'B sublattice': rB1}, 'Itensor': {...}}` → 2×3（行 = 子格，列 = 组1 / 组2 / 绝对误差）
+  - 取字典前两组，要求长度与源点一致
 
 ## 5. 衰减类型分析与结构因子（SpinCorrDecayAnalyzer / 统一入口）
 

@@ -85,8 +85,9 @@ SuperCorrProcessor.Super_Corr_Visualization_three(super_corr_dict)   # 三键方
 ```
 
 - 单键方向用 `Super_Corr_Visualization(record_list, label)`；1×3 子图固定为线性 / y-log / log-log
-- **label 格式不能改**：颜色与键方向名是从 label 里解析的（颜色 `label.split("(")[1].split(")")[0].split()[0]`、键名 `label.split()[0]`），必须保持 `"X key (颜色 bond)"` 结构；图中图例显示已由绘图函数统一转换为 `target X`（如 `target A`），标题为 `(reference bond X: (i, j))`，调用方传原始 label 即可
-- 两组数据对比：`Super_Corr_Visualization_difference({'UltraDMRG': dict1, 'Itensor': dict2})`——注意是**嵌套字典**（外层两组数据，内层三键方向），取外层前两组
+- **label 格式不能改**：颜色与键方向名是从 label 里解析的（颜色 `label.split("(")[1].split(")")[0].split()[0]`、键名 `label.split()[0]`），必须保持 `"X key (颜色 bond)"` 结构；图中图例显示已由绘图函数统一转换为 `target X`（如 `target A`），标题为 `(reference X: (i, j))`，调用方传原始 label 即可
+- 两组数据对比：`Super_Corr_Visualization_difference({'UltraDMRG': dict1, 'Itensor': dict2})`——注意是**嵌套字典**（外层两组数据，内层键方向），取外层前两组；子图为键方向数 × 3 列（行 = `target A/B/C`，列 = 组1 / 组2 / 绝对误差，三键即 3×3）
+- 收敛诊断布局：`Super_Corr_Visualization_difference_refbond({'D = 1500': {ref_tag: {label: recs}}, 'D = 5000': {...}})`——行 = reference bond（ref_tag 用 `_refbond_direction(i, j)` 构造，如 `'reference A: (49, 50)'`），列 = 组1 / 组2 / 绝对误差，每格内 target A/B/C 三键同图（图例区分）；两档组名建议 `'D = {dim}'` 格式（等号两端空格）
 
 ## 6. 已知坑
 

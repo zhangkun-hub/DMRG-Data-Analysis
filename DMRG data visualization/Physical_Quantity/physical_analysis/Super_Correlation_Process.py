@@ -3,6 +3,23 @@ import matplotlib.pyplot as plt
 from ..data_records.Physical_Data_Record import SuperCorrRecord
 
 
+def _refbond_direction(i: int, j: int, ly: int = 4) -> str:
+    """XC 圆柱构型最近邻键方向分类（对应 DMRGtJModel
+    honeycomb_lattice.h 的 HoneycombXCCylinder::ClassifyNearestNeighbor，
+    Ly=4）：同列（x 相同）竖直键按 (y_min + x) % 2 分 A/B，同行水平键为 C。
+
+    验证：N200 数据 refbond 49_50→A、50_51→B、50_54→C。
+    """
+    if i > j:
+        i, j = j, i
+    x0, y0 = divmod(i, ly)
+    x1, y1 = divmod(j, ly)
+    if x0 == x1:
+        y_min = y0 if (y0 + ly - y1) % ly == 1 else y1
+        return 'A' if (y_min + x0) % 2 == 0 else 'B'
+    return 'C'
+
+
 class SuperCorrProcessor:
     #---------------------------------------------------------------------
     #----------------------- 超导关联函数的对称性检测 ----------------------
@@ -139,7 +156,7 @@ class SuperCorrProcessor:
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
 
         ## 4. 添加总标题和颜色
-        fig.suptitle(f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond {bond_key}: {ref_bond})',
+        fig.suptitle(f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference {bond_key}: {ref_bond})',
                      fontsize=20, fontweight='bold', y=1.0)
         color = label.split("(")[1].split(")")[0].split()[0]
         
@@ -211,7 +228,7 @@ class SuperCorrProcessor:
         ## 3. 创建子图
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
         fig.suptitle(
-            f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond {ref_key}: {ref_bond})',
+            f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference {ref_key}: {ref_bond})',
             fontsize=20, fontweight='bold', y=1.0
         )
 
@@ -283,6 +300,9 @@ class SuperCorrProcessor:
         """
         将输入的超导关联函数字典中的前两组数据进行可视化，并绘制两组数据之间的绝对误差。
 
+        子图布局：行 = 键方向（内层字典的键，如 A/B/C 三键 → 3 行），
+        列 = 组1 / 组2 / 绝对误差。行标签 'target A' 等标在第一列 y 轴。
+
         Input:
         :super_corr_dict: dict[str, dict[str, list[SuperCorrRecord]]]
             外层字典的结构：
@@ -316,24 +336,29 @@ class SuperCorrProcessor:
         ref_bond = records_dict_1[first_key_1][0].ref_bond
         ref_key = first_key_1.split()[0]
 
-        ### 给三种键方向准备相应的颜色与形状进行区分
-        colors = ['blue', 'green', 'orange']
-        markers = ['o', 's', 'D']
+        ### 行 = 键方向（内层字典的键），列 = 组1 / 组2 / 绝对误差
+        labels = list(records_dict_1.keys())
+        if set(labels) != set(records_dict_2.keys()):
+            raise ValueError("两个超导关联函数字典的键方向集合不一致")
+        n_rows = len(labels)
+        colors = ['blue', 'green', 'orange', 'purple', 'brown', 'pink']
+        markers = ['o', 's', 'D', '^', 'v', '*']
 
-        ### 创建子图
-        fig, axs = plt.subplots(1, 3, figsize=(20, 6))
+        ### 创建子图（n 行 × 3 列）
+        fig, axs = plt.subplots(n_rows, 3, figsize=(20, 6 * n_rows))
+        axs = axs.reshape(n_rows, 3)
         fig.suptitle(
-            f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference bond {ref_key}: {ref_bond})',
+            f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference {ref_key}: {ref_bond})',
             fontsize=20, fontweight='bold', y=1.0
         )
 
-        
-        ### 遍历每一组数据并作图
-        for idx, (label, rec_list) in enumerate(records_dict_1.items()):
+        ### 逐键方向作图（一行一个键方向）
+        for idx, label in enumerate(labels):
+            rec_list = records_dict_1[label]
             ### 检查两个超导关联函数对象列表的长度是否一致
             if len(rec_list) != len(records_dict_2[label]):
                 raise ValueError(f"输入的两个超导关联函数字典在键({label})对应的数据列表的长度不一致")
-            
+
             ## 输入x轴与y轴数据
             x_data = [r.distance for r in rec_list]
             y_data_1 = [r.sup_corr for r in rec_list]
@@ -343,41 +368,139 @@ class SuperCorrProcessor:
             ## 输入颜色与数据形状
             c = colors[idx % len(colors)]
             m = markers[idx % len(markers)]
-            legend_label = f'target {label.split()[0]}'
+            row_tag = f'target {label.split()[0]}'
 
             # record_dict_1数据的可视化
-            axs[0].scatter(x_data, y_data_1, color=c, marker=m, s=60, label=legend_label, zorder=3)
-            axs[0].plot(x_data, y_data_1, color=c, alpha=0.5, linewidth=2)
+            axs[idx, 0].scatter(x_data, y_data_1, color=c, marker=m, s=60,
+                                zorder=3)
+            axs[idx, 0].plot(x_data, y_data_1, color=c, alpha=0.5, linewidth=2)
+            axs[idx, 0].set_title(title_1, fontsize=16)
+            axs[idx, 0].set_xlabel('distance r', fontsize=14)
+            axs[idx, 0].set_ylabel(
+                f'{row_tag}\n$\\langle \\Delta^\\dagger \\Delta \\rangle$',
+                fontsize=14)
 
             # record_dict_2数据的可视化
-            axs[1].scatter(x_data, y_data_2, color=c, marker=m, s=60, label=legend_label, zorder=3)
-            axs[1].plot(x_data, y_data_2, color=c, alpha=0.5, linewidth=2)
+            axs[idx, 1].scatter(x_data, y_data_2, color=c, marker=m, s=60,
+                                zorder=3)
+            axs[idx, 1].plot(x_data, y_data_2, color=c, alpha=0.5, linewidth=2)
+            axs[idx, 1].set_title(title_2, fontsize=16)
+            axs[idx, 1].set_xlabel('distance r', fontsize=14)
+            axs[idx, 1].set_ylabel(
+                '$\\langle \\Delta^\\dagger \\Delta \\rangle$', fontsize=14)
 
             # record_dict_1与record_dict_2之差的数据可视化
-            axs[2].scatter(x_data, y_data_3, color=c, marker=m, s=60, label=legend_label, zorder=3)
-            axs[2].plot(x_data, y_data_3, color=c, alpha=0.5, linewidth=2)
+            axs[idx, 2].scatter(x_data, y_data_3, color=c, marker=m, s=60,
+                                zorder=3)
+            axs[idx, 2].plot(x_data, y_data_3, color=c, alpha=0.5, linewidth=2)
+            axs[idx, 2].set_title('Absolute Error of Superconducting '
+                                  'Correlation', fontsize=16)
+            axs[idx, 2].set_xlabel('distance r', fontsize=14)
+            axs[idx, 2].set_ylabel('Absolute Error', fontsize=14)
 
-            
-        ### 设置各子图属性
-        titles = [
-            title_1,
-            title_2,
-            'Absolute Error of Superconducting Correlation'
-        ]
-        ylabels = [
-            '$\\langle \\Delta^\\dagger \\Delta \\rangle$',
-            '$\\langle \\Delta^\\dagger \\Delta \\rangle$',
-            'Absolute Error'
-        ]
-
-        for i, ax in enumerate(axs):
-            ax.set_title(titles[i], fontsize=16)
-            ax.set_xlabel('distance r', fontsize=14)
-            ax.set_ylabel(ylabels[i], fontsize=14)
-            ax.axhline(y=0, color='black', linewidth=3.5, linestyle='-', alpha=0.8, zorder=1)
+        ### 设置各子图公共属性
+        for ax in axs.flat:
+            ax.axhline(y=0, color='black', linewidth=3.5, linestyle='-',
+                       alpha=0.8, zorder=1)
             ax.grid(True, alpha=0.3, linestyle='--')
 
-        axs[0].legend(fontsize=14, loc='best')
-        axs[1].legend(fontsize=14, loc='best')
+        plt.tight_layout()
+        plt.show()
+
+    #---------------------------------------------------------------------------------------
+    #------------ 超导关联函数绝对误差可视化（行 = reference bond 键方向） ----------------
+    #---------------------------------------------------------------------------------------
+    @staticmethod
+    def Super_Corr_Visualization_difference_refbond(
+        super_corr_dict: dict[str, dict[str, dict[str, list[SuperCorrRecord]]]]
+    ):
+        """
+        收敛诊断用两组数据绝对误差对比图：行 = reference bond（键方向），
+        列 = 组1 / 组2 / 绝对误差，每个子图内该 refbond 的 target A/B/C
+        三键同图（颜色/标记区分 + 图例 target X）。
+
+        Input:
+        :super_corr_dict: 外层 key -> 组名（如 'D = 1500'，用作列标题），
+            value -> {ref_tag: {label: list[SuperCorrRecord]}}；
+            ref_tag 形如 'reference A: (49, 50)'（调用方用
+            _refbond_direction 构造）。取外层前两组。
+        """
+        if len(super_corr_dict) < 2:
+            raise ValueError(
+                "super_corr_dict 至少需要包含两组超导关联函数数据，"
+                "才能计算绝对误差")
+        titles = list(super_corr_dict.keys())
+        title_1, title_2 = titles[0], titles[1]
+        refs_1 = super_corr_dict[title_1]
+        refs_2 = super_corr_dict[title_2]
+        if set(refs_1) != set(refs_2):
+            raise ValueError("两组数据的 reference bond 集合不一致")
+
+        ref_tags = list(refs_1.keys())
+        n_rows = len(ref_tags)
+        colors = ['blue', 'green', 'orange']
+        markers = ['o', 's', 'D']
+
+        ### 创建子图（n 个 refbond 行 × 3 列）
+        fig, axs = plt.subplots(n_rows, 3, figsize=(20, 6 * n_rows))
+        axs = axs.reshape(n_rows, 3)
+        fig.suptitle(
+            r'Superconducting Correlation Function '
+            r'$\langle \Delta_{ij}^\dagger \Delta_{kl} \rangle$',
+            fontsize=20, fontweight='bold', y=1.0)
+
+        ### 逐 refbond 行作图，行内逐 target 键（同格内多键叠加）
+        for idx, ref_tag in enumerate(ref_tags):
+            d1, d2 = refs_1[ref_tag], refs_2[ref_tag]
+            if set(d1) != set(d2):
+                raise ValueError(
+                    f"reference {ref_tag} 的两组键方向集合不一致")
+            for k, label in enumerate(d1):
+                rec_list = sorted(d1[label], key=lambda r: r.distance)
+                rec_list_2 = sorted(d2[label], key=lambda r: r.distance)
+                if len(rec_list) != len(rec_list_2):
+                    raise ValueError(
+                        f"reference {ref_tag} 键({label})的两组数据列表"
+                        "长度不一致")
+                x_data = [r.distance for r in rec_list]
+                y1 = [r.sup_corr for r in rec_list]
+                y2 = [r.sup_corr for r in rec_list_2]
+                y3 = [abs(a - b) for a, b in zip(y1, y2)]
+                c = colors[k % len(colors)]
+                m = markers[k % len(markers)]
+                legend_tag = f'target {label.split()[0]}'
+
+                # 组1数据
+                axs[idx, 0].scatter(x_data, y1, color=c, marker=m, s=60,
+                                    label=legend_tag, zorder=3)
+                axs[idx, 0].plot(x_data, y1, color=c, alpha=0.5, linewidth=2)
+                # 组2数据
+                axs[idx, 1].scatter(x_data, y2, color=c, marker=m, s=60,
+                                    label=legend_tag, zorder=3)
+                axs[idx, 1].plot(x_data, y2, color=c, alpha=0.5, linewidth=2)
+                # 绝对误差
+                axs[idx, 2].scatter(x_data, y3, color=c, marker=m, s=60,
+                                    label=legend_tag, zorder=3)
+                axs[idx, 2].plot(x_data, y3, color=c, alpha=0.5, linewidth=2)
+
+            axs[idx, 0].set_title(title_1, fontsize=16)
+            axs[idx, 1].set_title(title_2, fontsize=16)
+            axs[idx, 2].set_title('Absolute Error of Superconducting '
+                                  'Correlation', fontsize=16)
+            axs[idx, 0].set_ylabel(
+                f'{ref_tag}\n$\\langle \\Delta^\\dagger \\Delta \\rangle$',
+                fontsize=14)
+            axs[idx, 1].set_ylabel('$\\langle \\Delta^\\dagger \\Delta '
+                                   '\\rangle$', fontsize=14)
+            axs[idx, 2].set_ylabel('Absolute Error', fontsize=14)
+            axs[idx, 0].legend(fontsize=12, loc='best')
+
+        ### 设置各子图公共属性
+        for ax in axs.flat:
+            ax.set_xlabel('distance r', fontsize=14)
+            ax.axhline(y=0, color='black', linewidth=3.5, linestyle='-',
+                       alpha=0.8, zorder=1)
+            ax.grid(True, alpha=0.3, linestyle='--')
+
         plt.tight_layout()
         plt.show()
