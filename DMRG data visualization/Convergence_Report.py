@@ -37,7 +37,9 @@ DEFAULT_OUTDIR = os.path.join(SCRIPT_DIR, 'output', 'convergence_report')
 DISCIPLINE = (
     '> 阈值为默认值（defaults_not_authorized，未获物理授权）。'
     'converged ≠ 物理结论可信；needs_higher_D ≠ 数据作废。'
-    '本报告只判断数值稳定性（bond dimension 收敛），不回答能否判相。')
+    '本报告只判断数值稳定性（bond dimension 收敛），不回答能否判相。'
+    'SC 衰减参数误差兜底 bootstrap 用轻量次数 30（默认 200），'
+    '误差估计更粗；分类结论不依赖 bootstrap，不受影响。')
 
 
 def _fraction_to_doping(value):

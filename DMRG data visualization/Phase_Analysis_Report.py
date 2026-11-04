@@ -70,6 +70,8 @@ from Physical_Quantity.data_records.DMRG_Log_Parser import (  # noqa: E402
     DMRGLogParser)
 from Physical_Quantity.data_records.Physical_Data_Record import (  # noqa: E402
     CorrelationRecord, SuperCorrRecord, SingleParticleRecord)
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import (  # noqa: E402
+    AnalyzerConfig)
 import Cross_Doping_Summary as cds  # noqa: E402
 
 DEFAULT_T_J = 't_J_3'
@@ -434,13 +436,20 @@ def _su2_max_residual(super_root, dim, N, a):
     return worst if n else None
 
 
-def _sc_params_by_dim(doping, root, t_j, dim, N, a, q_list, refbonds):
-    """该 D 档 SC 衰减的分类组合与 (refbond,key)→(参数,误差)。"""
+def _sc_params_by_dim(doping, root, t_j, dim, N, a, q_list, refbonds,
+                      analyzer_config=None):
+    """该 D 档 SC 衰减的分类组合与 (refbond,key)→(参数,误差)。
+
+    analyzer_config：透传的 AnalyzerConfig（收敛报告用轻量 bootstrap
+    配置提速；None 用分析器默认）。分类结论不依赖 bootstrap（bootstrap
+    仅作 pcov 失效时的误差兜底），轻量配置只让参数误差更粗。
+    """
     try:
         outs = cds.analyze_doping(
             doping, root=root, t_j=t_j, bond_dim=dim, N=N, a=a,
             q_list=q_list, refbonds=refbonds,
-            only_observables={OBSERVABLE_SUPERCONDUCTING_CORRELATION})
+            only_observables={OBSERVABLE_SUPERCONDUCTING_CORRELATION},
+            config=analyzer_config)
     except Exception:  # noqa: BLE001
         return None, None, None, None
     classes, detail, params, errs = [], {}, {}, {}
@@ -484,6 +493,9 @@ def run_convergence_section(config, dims):
     params_by_dim, errs_by_dim = {}, {}
     figures, failures = [], []
     dims = [str(d) for d in dims]
+    # 轻量配置：bootstrap 仅作误差兜底且不参与分类/模型选择，收敛报告
+    # 把 200 次降到 30 次（耗时 ~1/7，误差估计更粗）。分类结论不受影响。
+    fast_config = AnalyzerConfig(bootstrap_n=30)
 
     for dim in dims:
         # E0 / TruncErr（优化日志）
@@ -505,7 +517,8 @@ def run_convergence_section(config, dims):
             su2_by_dim[dim] = su2_res
         # SC 分类/参数
         cl, ps, es, detail = _sc_params_by_dim(
-            doping, root, t_j, dim, N, a, q_list, config['refbonds'])
+            doping, root, t_j, dim, N, a, q_list, config['refbonds'],
+            analyzer_config=fast_config)
         if cl is not None:
             classes_by_dim[dim] = cl
         if detail is not None:
