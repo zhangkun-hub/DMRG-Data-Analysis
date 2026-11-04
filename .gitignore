@@ -1,5 +1,6 @@
-# 数据文件
-Data*/
+# 数据文件（仅 DMRG data visualization/ 下的数据目录；
+# 若写裸 Data*/ 会误伤 Physical_Quantity/data_records 包目录）
+DMRG data visualization/Data*/
 
 # 测试文件
 # 测试产物与 Python 缓存（正式测试代码与基线纳入版本控制）
