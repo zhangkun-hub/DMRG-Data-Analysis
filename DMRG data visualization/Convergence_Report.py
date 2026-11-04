@@ -42,48 +42,10 @@ DISCIPLINE = (
     '误差估计更粗；分类结论不依赖 bootstrap，不受影响。')
 
 
-def _fraction_to_doping(value):
-    """d 小数（如 0.1）→ 目录名（如 d1_10）；目录名输入直通。"""
-    v = str(value).strip()
-    if re.match(r'^d\d+_\d+$', v):
-        return v
-    from fractions import Fraction
-    try:
-        f = Fraction(v).limit_denominator(10000)
-    except (ValueError, ZeroDivisionError):
-        return None
-    if f.numerator <= 0:
-        return None
-    return f'd{f.numerator}_{f.denominator}'
-
-
-def _prompt_config(n_explicit, t_j_explicit, doping_explicit):
-    """缺省参数的交互式获取：N（默认 200）、t/J（默认 3）、d（默认 0.1）。
-
-    非交互环境（stdin 无输入，如管道/子进程）下回退默认值，不报错。
-    """
-    def _ask(prompt, default):
-        try:
-            raw = input(prompt).strip()
-        except EOFError:
-            return default
-        return raw if raw else default
-
-    n = n_explicit
-    if n is None:
-        n = int(_ask('请输入格点数 N（回车使用默认 200）: ', '200'))
-    t_j = t_j_explicit
-    if t_j is None:
-        t_j_val = float(_ask('请输入 t/J（回车使用默认 3）: ', '3'))
-        t_j = f't_J_{t_j_val:g}'
-    doping = doping_explicit
-    if doping is None:
-        raw = _ask('请输入空穴率 d（如 0.1；回车使用默认 0.1）: ', '0.1')
-        doping = _fraction_to_doping(raw)
-        if doping is None:
-            raise ValueError(f'无法解析空穴率输入: {raw!r}（示例: 0.1、'
-                             '0.05、0.01、d1_10）')
-    return n, t_j, doping
+# 交互提示与空穴率解析复用 Phase_Analysis_Report 的实现（默认 N=200、
+# t/J=3、空穴率 1_10 → d1_10），两脚本行为一致
+_fraction_to_doping = par._fraction_to_doping
+_prompt_config = par._prompt_config
 
 
 def render_markdown(config, conv, outdir) -> str:
@@ -225,8 +187,6 @@ def main(argv=None) -> int:
     print(f"收敛判定：{v['verdict']}——{v['reason']}")
     print(f"输出: {paths['convergence_report.md']}")
     print(f"      {paths['convergence_report.json']}")
-    print('说明: 只判断 bond dimension 收敛（数值稳定性），不判相；'
-          '阈值为默认值（未获物理授权）。')
     return 0
 
 

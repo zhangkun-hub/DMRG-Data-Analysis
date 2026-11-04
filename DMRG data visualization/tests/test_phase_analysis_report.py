@@ -50,13 +50,15 @@ print('===== A. CLI 解析与交互提示 =====')
 from unittest.mock import patch
 
 with patch('builtins.input', return_value=''):
-    check('A', '_prompt_doping 空输入 → 默认 d1_100',
-          par._prompt_doping() == 'd1_100')
+    check('A', '_prompt_config 空输入 → 默认 N=200 / t_J_3 / d1_10',
+          par._prompt_config(None, None, None) == (200, 't_J_3', 'd1_10'))
 with patch('builtins.input', return_value=' d1_10 '):
-    check('A', '_prompt_doping 输入带空白 → 去空白取 d1_10',
-          par._prompt_doping() == 'd1_10')
-check('A', '_prompt_doping 显式传参 → 直通',
-      par._prompt_doping('d2_25') == 'd2_25')
+    check('A', '_prompt_config 输入带空白 → 去空白取 d1_10',
+          par._prompt_config(200, 't_J_3', None)[2] == 'd1_10')
+check('A', '_prompt_config 显式传参 → 直通',
+      par._prompt_config(400, 't_J_3', 'd2_25') == (400, 't_J_3', 'd2_25'))
+check('A', "_fraction_to_doping('1_10') → d1_10",
+      par._fraction_to_doping('1_10') == 'd1_10')
 try:
     par.main(['--doping', 'd1_100', '--N', 'abc'])
     check('A', '--N 非整数 → SystemExit(2)', False, '未退出')
@@ -188,7 +190,8 @@ REAL_ROOT = os.path.join(ROOT, 'Data/Data_N200', 't_J_3')
 if os.path.isdir(os.path.join(REAL_ROOT, 'd1_100')):
     r = subprocess.run(
         [sys.executable, '-X', 'utf8', 'Phase_Analysis_Report.py',
-         '--doping', 'd1_100', '--no-plots',
+         '--doping', 'd1_100', '--N', '200', '--t-j', 't_J_3',
+         '--no-plots',
          '--outdir', os.path.join('tests', 'artifacts', 'par_real')],
         cwd=ROOT, capture_output=True, text=True,
         encoding='utf-8', errors='replace')

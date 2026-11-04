@@ -27,6 +27,16 @@ import math
 import os
 import re
 import sys
+import warnings
+
+# 批量出图（Agg 后端）下已知无害的绘图警告：plt.show() 无窗口可弹、
+# 能量图的顶部次坐标轴与 tight_layout 不兼容——图均已通过 savefig 保存，
+# 过滤掉以免刷屏；其余警告照常显示。
+warnings.filterwarnings('ignore',
+                        message='FigureCanvasAgg is non-interactive.*')
+warnings.filterwarnings('ignore',
+                        message='This figure includes Axes that are not '
+                                'compatible with tight_layout.*')
 
 # 绘图纪律：必须在 import 包模块（热导入 matplotlib）之前设定
 os.environ.setdefault('MPLBACKEND', 'Agg')
@@ -192,7 +202,9 @@ DISCIPLINE_STATEMENT = (
     '（sc_lro_v1 冻结），候选 verdict 仅来自已注册规则：观测级规则不产生'
     '支持/反证，能力边界恒 not_measurable——insufficient ≠ 反证、'
     'quality_failed ≠ 否定、not_measurable ≠ 物理不存在。相态判定需要'
-    '负责人批准的物理判据与达标证据。')
+    '负责人批准的物理判据与达标证据。SC 衰减参数误差兜底 bootstrap 用'
+    '轻量次数 30（默认 200，耗时约 1/7）：误差估计更粗；分类结论不依赖'
+    'bootstrap，不受影响。')
 
 
 # ==========================================================================
@@ -204,15 +216,22 @@ def _make_outcome(context, report=None, failure=None):
 
 
 def run_core_section(doping, root, t_j, bond_dim, N, a, q_list, refbonds):
-    """核心四类（SC 衰减/SC 配对 SF/自旋 SF/电荷 SF）复用 analyze_doping。"""
+    """核心四类（SC 衰减/SC 配对 SF/自旋 SF/电荷 SF）复用 analyze_doping。
+
+    SC 衰减用轻量 bootstrap（n=30，默认 200）：bootstrap 仅作 pcov 失效时
+    的误差兜底、不参与分类与模型选择，轻量化只让参数误差更粗（与收敛
+    报告的轻量配置一致），耗时约 1/7。
+    """
     try:
+        fast_config = AnalyzerConfig(bootstrap_n=30)
         outcomes = cds.analyze_doping(
             doping, root=root, t_j=t_j, bond_dim=bond_dim, N=N, a=a,
             q_list=q_list, refbonds=refbonds,
             only_observables={OBSERVABLE_SUPERCONDUCTING_CORRELATION,
                               OBSERVABLE_SC_PAIR_STRUCTURE_FACTOR,
                               OBSERVABLE_SPIN_STRUCTURE_FACTOR,
-                              OBSERVABLE_CHARGE_STRUCTURE_FACTOR})
+                              OBSERVABLE_CHARGE_STRUCTURE_FACTOR},
+            config=fast_config)
         return outcomes, None
     except Exception as ex:  # noqa: BLE001 数据收集节级隔离，记录不阻断
         return [], {'type': type(ex).__name__, 'message': str(ex)}
@@ -1133,18 +1152,53 @@ def write_report(result, outdir) -> dict:
     return {'report.md': md_path, 'report.json': json_path}
 
 
-DOPING_HINT = ('可用 doping（Data/Data_N200/t_J_3 实际有数据）: '
-               'd1_10 / d1_20 / d1_100 / d2_25；'
-               'N=400 时用 d1_10/d1_20/d1_40/d1_80/d2_25 并加 --N 400')
+def _fraction_to_doping(value):
+    """空穴率输入 → 目录名：'1_10' → 'd1_10'；'d1_10' 直通；'0.1' 分数解析。"""
+    v = str(value).strip()
+    if re.match(r'^d\d+_\d+$', v):
+        return v
+    m = re.match(r'^(\d+)_(\d+)$', v)
+    if m:
+        return f'd{m.group(1)}_{m.group(2)}'
+    from fractions import Fraction
+    try:
+        f = Fraction(v).limit_denominator(10000)
+    except (ValueError, ZeroDivisionError):
+        return None
+    if f.numerator <= 0:
+        return None
+    return f'd{f.numerator}_{f.denominator}'
 
 
-def _prompt_doping(explicit=None):
-    """--doping 未提供时的交互式获取（空输入 → 默认 d1_100）。"""
-    if explicit:
-        return explicit
-    print(DOPING_HINT)
-    raw = input('请输入 doping（回车使用默认 d1_100）: ').strip()
-    return raw or 'd1_100'
+def _prompt_config(n_explicit, t_j_explicit, doping_explicit):
+    """缺省参数的交互式获取：N（默认 200）、t/J（默认 3）、
+    空穴率（默认 1_10，即 δ=0.1 → d1_10）。
+
+    非交互环境（stdin 无输入，如管道/子进程）下回退默认值，不报错。
+    """
+    def _ask(prompt, default):
+        try:
+            raw = input(prompt).strip()
+        except EOFError:
+            return default
+        return raw if raw else default
+
+    n = n_explicit
+    if n is None:
+        n = int(_ask('请输入格点数 N（回车使用默认 200）: ', '200'))
+    t_j = t_j_explicit
+    if t_j is None:
+        t_j_val = float(_ask('请输入 t/J（回车使用默认 3）: ', '3'))
+        t_j = f't_J_{t_j_val:g}'
+    doping = doping_explicit
+    if doping is None:
+        raw = _ask('请输入空穴率（如 1_10、d1_10 或 0.10；'
+                   '回车使用默认 1_10）: ', '1_10')
+        doping = _fraction_to_doping(raw)
+        if doping is None:
+            raise ValueError(f'无法解析空穴率输入: {raw!r}（示例: 1_10、'
+                             '0.1、0.05、d1_10）')
+    return n, t_j, doping
 
 
 def main(argv=None) -> int:
@@ -1154,11 +1208,14 @@ def main(argv=None) -> int:
                     '详见脚本 docstring）')
     parser.add_argument('--root', default=os.path.join(SCRIPT_DIR,
                                                        'Data/Data_N200'))
-    parser.add_argument('--t-j', default=DEFAULT_T_J)
+    parser.add_argument('--t-j', default=None,
+                        help='t/J 目录后缀（如 t_J_3）；不提供时交互式'
+                             '提示输入 t/J 值（默认 3）')
     parser.add_argument('--doping', default=None,
-                        help='单个 doping（如 d1_100）；不提供时交互式'
-                             '提示输入；不自动混 doping')
-    parser.add_argument('--N', type=int, default=DEFAULT_N)
+                        help='单个 doping（如 d1_10 或空穴率 1_10 / 0.1）；'
+                             '不提供时交互式提示输入（默认 1_10）')
+    parser.add_argument('--N', type=int, default=None,
+                        help='格点数（默认 200）；不提供时交互式提示输入')
     parser.add_argument('--bond-dim', default=DEFAULT_BOND_DIM)
     parser.add_argument('--refbonds', default=None,
                         help='逗号分隔过滤（如 49_50,50_51）；默认全部发现')
@@ -1192,10 +1249,10 @@ def main(argv=None) -> int:
                 if args.refbonds else None)
     conv_dims = ([s.strip() for s in args.convergence_dims.split(',')
                   if s.strip()] if args.convergence_dims else None)
-    doping = _prompt_doping(args.doping)
+    n, t_j, doping = _prompt_config(args.N, args.t_j, args.doping)
     config = {
-        'root': args.root, 't_j': args.t_j, 'doping': doping,
-        'N': args.N, 'bond_dim': args.bond_dim, 'refbonds': refbonds,
+        'root': args.root, 't_j': t_j, 'doping': doping,
+        'N': n, 'bond_dim': args.bond_dim, 'refbonds': refbonds,
         'n_qx': args.n_qx, 'n_qy': args.n_qy, 'a': args.a,
         'energy_root': args.energy_root, 'j_value': args.j_value,
         'with_pairing_symmetry': args.with_pairing_symmetry,
