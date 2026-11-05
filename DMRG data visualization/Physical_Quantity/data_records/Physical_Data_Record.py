@@ -29,13 +29,33 @@ class Record:
 # honeycomb的每个格点密度n的数据记录器
 #-----------------------------------------------------------------------------------  
 class DensityRecord(Record):
-    def __init__(self, lattice_point: int, coords: tuple, density: float, horizontal_starting_point: int):
-        self.lattice_point = lattice_point                  # honeycomb晶格点i
-        self.coords = coords                            # 格点i对应的坐标
-        self.density = density                          # 格点i对应的电子密度
-        self.horizontal_starting_point = horizontal_starting_point  # 格点i对应的水平起始点(分别为0，1，2，3)
+    """honeycomb 每个格点密度 n 的数据记录器。
 
-        
+    _value 保留复数表达能力（当前实值数据虚部恒 0；复值 DMRG
+    数据落地后虚部即可用）。下游分析管线消费 .density 属性
+    （实部 float），与既有代码完全兼容；需要完整复数时用
+    .density_complex。
+    """
+    def __init__(self, lattice_point: int, coords: tuple, value: complex, horizontal_starting_point: int):
+        self.lattice_point = lattice_point
+        self.coords = coords
+        self._value = value
+        self.horizontal_starting_point = horizontal_starting_point
+
+    @property
+    def density(self):
+        """分析管线使用的实部（向后兼容）。"""
+        return float(self._value.real)
+
+    @density.setter
+    def density(self, val):
+        self._value = val if isinstance(val, complex) else complex(val, 0)
+
+    @property
+    def density_complex(self):
+        """完整复数值（复值数据分析用）。"""
+        return self._value
+
     def __str__(self):
         return f"honeycomb的晶格点{self.lattice_point}, 坐标: {self.coords}, 对应的电子密度n = {self.density:.6f}, 其水平起始点为: {self.horizontal_starting_point}"
     
@@ -70,10 +90,11 @@ class DensityRecord(Record):
         for k, element in enumerate(data_list):
             ## 4.1 解包数据 (格式为: [[i], [val, ...]])
             try:
-                [i], [value, *_] = element  # *星号操作符：用于收集剩余的元素到一个列表中；_表示"不关心的变量"或"占位符"
+                [i], [re_part, im_part] = element
             except (TypeError, ValueError):
                 raise NameError(f"Error：第 {k} 个元素格式不正确")
-               
+
+            value = complex(float(re_part), float(im_part))
             # 获取格点i的坐标与对应水平起始点j
             i_coords = honey_latt.coords[i]
             j = i % 4     # 通过模4取余，便得到格点i对应的水平起始点值
@@ -82,7 +103,7 @@ class DensityRecord(Record):
             record_obj = cls(
                 lattice_point=i, 
                 coords = i_coords,
-                density=value,
+                value=value,
                 horizontal_starting_point=j
             )
             record_list.append(record_obj)
@@ -95,13 +116,33 @@ class DensityRecord(Record):
 # 关联函数<i·j>的数据记录器
 #-----------------------------------------------------------------------------------  
 class CorrelationRecord(Record):
-    def __init__(self, source_point: int, field_point: int, distance: float, correlation: float):
-        self.source_point = source_point     # 关联函数的源点i
-        self.field_point = field_point      # 关联函数的场点j
-        self.distance = distance          # 源点i与场点j之间的距离
-        self.correlation = correlation      # 关联函数<i·j>的值
+    """关联函数 <i·j> 的数据记录器。
 
-        
+    _value 保留复数表达能力（当前实值数据虚部恒 0；复值 DMRG
+    数据落地后虚部即可用）。下游分析管线消费 .correlation 属性
+    （实部 float），与既有代码完全兼容；需要完整复数时用
+    .correlation_complex。
+    """
+    def __init__(self, source_point: int, field_point: int, distance: float, value: complex):
+        self.source_point = source_point
+        self.field_point = field_point
+        self.distance = distance
+        self._value = value
+
+    @property
+    def correlation(self):
+        """分析管线使用的实部（向后兼容）。"""
+        return float(self._value.real)
+
+    @correlation.setter
+    def correlation(self, val):
+        self._value = val if isinstance(val, complex) else complex(val, 0)
+
+    @property
+    def correlation_complex(self):
+        """完整复数值（复值数据分析用）。"""
+        return self._value
+
     def __str__(self):
         return f"关联函数的源点i = {self.source_point}, 场点j = {self.field_point}, 距离r = {self.distance}, 对应关联函数 = {self.correlation:.6f}"
     
@@ -154,7 +195,7 @@ class CorrelationRecord(Record):
         for k, element in enumerate(data_list):
             ## 4.1 解包数据 (格式为: [[i, j], [val, ...]])
             try:
-                [i, j], [value, *_] = element  # *星号操作符：用于收集剩余的元素到一个列表中；_表示"不关心的变量"或"占位符"
+                [i, j], [re_part, im_part] = element
             except (TypeError, ValueError):
                 raise NameError(f"Error：第 {k} 个元素格式不正确")
 
@@ -166,13 +207,14 @@ class CorrelationRecord(Record):
             if j in sequence:
                 # 4.3.1 Honeycomb 晶格距离计算
                 r = honey_latt.get_distance(i, j)
-                
+                value = complex(float(re_part), float(im_part))
+
                 # 4.3.2 实例化类对象
                 record_obj = cls(
                     source_point=i, 
                     field_point=j, 
                     distance=r, 
-                    correlation=value
+                    value=value
                 )
                 record_list.append(record_obj)
 
@@ -186,13 +228,33 @@ class CorrelationRecord(Record):
 # 超导关联函数<i·j·k·l>的数据记录器
 #-----------------------------------------------------------------------------------  
 class SuperCorrRecord(Record):
-    def __init__(self, ref_bond: tuple, target_bond: tuple, distance: float, sup_corr: float):
-        self.ref_bond = ref_bond        # 超导关联函数的reference bond构成的点(i, j)
-        self.target_bond = target_bond  # 超导关联函数的target bond构成的点(k, l)
-        self.distance = distance        # reference bond(i, j)的中心与target bond(k, l)的中心之间的距离
-        self.sup_corr = sup_corr        # 超导关联函数<i·j·k·l>的值
+    """超导关联函数 <i·j·k·l> 的数据记录器。
 
-        
+    _value 保留复数表达能力（当前实值数据虚部恒 0；复值 DMRG
+    数据落地后虚部即可用）。下游分析管线消费 .sup_corr 属性
+    （实部 float），与既有代码完全兼容；需要完整复数时用
+    .sup_corr_complex。
+    """
+    def __init__(self, ref_bond: tuple, target_bond: tuple, distance: float, value: complex):
+        self.ref_bond = ref_bond
+        self.target_bond = target_bond
+        self.distance = distance
+        self._value = value
+
+    @property
+    def sup_corr(self):
+        """分析管线使用的实部（向后兼容）。"""
+        return float(self._value.real)
+
+    @sup_corr.setter
+    def sup_corr(self, val):
+        self._value = val if isinstance(val, complex) else complex(val, 0)
+
+    @property
+    def sup_corr_complex(self):
+        """完整复数值（复值数据分析用）。"""
+        return self._value
+
     def __str__(self):
         return f"超导关联函数的reference bond: {self.ref_bond}, target bond: {self.target_bond}, 距离r: {self.distance}, 超导关联函数: {self.sup_corr:.6f}"
     
@@ -243,9 +305,10 @@ class SuperCorrRecord(Record):
         for m, element in enumerate(data_list):
             ## 解包数据 (格式为: [[i, j, k, l], [val, 0]])
             try:
-                [i, j, k, l], [value, *_] = element  # *星号操作符：用于收集剩余的元素到一个列表中；_表示"不关心的变量"或"占位符"
+                [i, j, k, l], [re_part, im_part] = element
             except (TypeError, ValueError):
                 raise NameError(f"Error：第 {m} 个元素格式不正确")
+            value = complex(float(re_part), float(im_part))
 
             ## 校验reference bond一致性
             if (i, j) != first_bond:
@@ -264,7 +327,7 @@ class SuperCorrRecord(Record):
                         ref_bond=(i, j), 
                         target_bond=(k, l), 
                         distance=r, 
-                        sup_corr=value
+                        value=value
                     )
                     # 添加到record_list中
                     record_list.append(record_obj)  

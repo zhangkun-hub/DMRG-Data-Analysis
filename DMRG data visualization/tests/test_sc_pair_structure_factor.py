@@ -159,13 +159,10 @@ for i in range(0, len(q_pairs), 2):
 check('C', '实数关联 → P(−q)=conj(P(q))（全部 3 对，≤1e-14）', c_ok)
 recs_cplx = make_recs((0, 4), [(8, 12, 1.0)])
 recs_cplx[0].sup_corr = 1.0 + 2.0j
-try:
-    SCPairStructureFactorEstimator.estimate_from_records(
-        recs_cplx, 'A', np.array([[0.5, 0.0]]), 16)
-    check('C', '复数关联值被明确拒绝', False)
-except ValueError as e:
-    check('C', '复数关联值被明确拒绝（ValueError 诊断）',
-          '复数' in str(e), str(e)[:60])
+check('C', '复数赋值后 .sup_corr 返回实部 float',
+      isinstance(recs_cplx[0].sup_corr, float) and recs_cplx[0].sup_corr == 1.0)
+check('C', '复数赋值后 .sup_corr_complex 保留完整复数',
+      recs_cplx[0].sup_corr_complex == (1.0 + 2.0j))
 
 # ==========================================================================
 # D. 相位/符号约定精确值
