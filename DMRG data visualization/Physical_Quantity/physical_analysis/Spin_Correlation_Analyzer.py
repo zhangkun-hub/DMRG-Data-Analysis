@@ -81,11 +81,12 @@ class SpinCorrDecayAnalyzer(CorrelationDecayAnalyzer):
         if N is not None:
             geometry = HoneycombXCGeometry(N, a)
 
-        # 逐点提取：距离 / 值 / 格点族
+        # 逐点提取：距离 / 值（复数保留）/ 格点族
         points = []
         for rec in record_list:
             d = float(rec.distance)
-            v = float(rec.correlation)
+            v_c = getattr(rec, 'correlation_complex', None)
+            v = v_c if v_c is not None else complex(rec.correlation)
             fam = (SpinCorrDecayAnalyzer._spin_family(
                 rec.source_point, rec.field_point, geometry)
                 if geometry is not None else -1)
@@ -113,24 +114,29 @@ class SpinCorrDecayAnalyzer(CorrelationDecayAnalyzer):
         group_family = np.empty(n_g, dtype=int)
         group_flags = []
 
+        # 复值语义（实值数据虚部恒 0 时逐位退化为原行为）：
+        # - C（signed 通道）= 实部投影均值——符号/振荡诊断与实值结果交叉验证
+        # - C_abs（包络通道）= 复均值取模——衰减分类/拟合的物理口径
+        # - C_min/C_max/C_std/group_raw = 实部统计（复值下为实部投影散布）
         for gi, (_, items) in enumerate(groups):
             ds = np.array([it[0] for it in items])
-            vs = np.array([it[1] for it in items])
+            vs = np.array([it[1] for it in items])     # 复数
+            re = vs.real
             fs = np.array([it[2] for it in items])
             r[gi] = float(np.mean(ds))
-            C[gi] = float(np.mean(vs))
-            C_abs[gi] = abs(C[gi])
-            C_min[gi] = float(np.min(vs))
-            C_max[gi] = float(np.max(vs))
-            C_std[gi] = float(np.std(vs, ddof=1)) if len(vs) > 1 else 0.0
+            C[gi] = float(np.mean(re))
+            C_abs[gi] = float(abs(np.mean(vs)))
+            C_min[gi] = float(np.min(re))
+            C_max[gi] = float(np.max(re))
+            C_std[gi] = float(np.std(re, ddof=1)) if len(re) > 1 else 0.0
             n_per[gi] = len(vs)
-            group_raw.append(vs.copy())
+            group_raw.append(re.copy())
             # 组内几何族：全部可判定时取一致值；否则用众数；-1 表示不可判定
             known = fs[fs >= 0]
             group_family[gi] = int(np.bincount(known, minlength=2).argmax()) if len(known) else -1
             # 组内符号抵消候选标记（是否记 warning 待噪声底算完后在 prepare 中决定）
             flags = []
-            if np.min(vs) < 0 < np.max(vs):
+            if np.min(re) < 0 < np.max(re):
                 flags.append('sign_mixed')
             group_flags.append(flags)
 
