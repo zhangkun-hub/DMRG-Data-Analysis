@@ -107,9 +107,9 @@ check('B', 'metadata 含不判相纪律说明与未授权阈值标注',
 # C/D. 集成与统一入口（真实数据门控）
 # ======================================================================
 print('===== C/D. 集成与入口 =====')
-REAL_SUPER = os.path.join(ROOT, 'Data/Data_N200', 't_J_3', 'd1_10',
+REAL_SUPER = os.path.join(ROOT, 'Data/real/Data_N200', 't_J_3', 'd1_10',
                           '1500_measure_super_corr', 'super_corr_49_50')
-REAL_G = os.path.join(ROOT, 'Data/Data_N200', 't_J_3', 'd1_10',
+REAL_G = os.path.join(ROOT, 'Data/real/Data_N200', 't_J_3', 'd1_10',
                       '1500_measure_phys_qty', 'measure_49',
                       'single_particle_corr2.json')
 if os.path.isdir(REAL_SUPER) and os.path.isfile(REAL_G):

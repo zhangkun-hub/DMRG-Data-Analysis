@@ -50,7 +50,7 @@ def recs(r, C):
 
 
 def load_n200(doping, ref, bond, N=200):
-    base = f'{ROOT}/Data/Data_N200/t_J_3/{doping}/1500_measure_super_corr/super_corr_{ref}'
+    base = f'{ROOT}/Data/real/Data_N200/t_J_3/{doping}/1500_measure_super_corr/super_corr_{ref}'
     recs4 = {}
     for ch in 'abcd':
         recs4[ch] = SuperCorrRecord.extract_data(
@@ -106,7 +106,7 @@ REAL_CASES = [
     ('d1_100_50_51_A', 'd1_100', '50_51', 'A', AnalyzerConfig(envelope_mode='both')),       # 无振荡弱 hump
     ('d1_100_50_51_C', 'd1_100', '50_51', 'C', AnalyzerConfig(envelope_mode='both')),       # 无振荡更弱 hump
     ('d1_100_50_54_C', 'd1_100', '50_54', 'C', AnalyzerConfig(envelope_mode='both')),       # 11 点 hump 卡线场景
-    ('d1_20_49_50_A', 'd1_20', '49_50', 'A', AnalyzerConfig(envelope_mode='both')),         # 中振荡 + both 退化
+    ('d1_20_49_50_A', 'd1_20', '49_50', 'A', AnalyzerConfig(envelope_mode='both')),         # 中振荡 + both 退化（2026-11 新协议数据，基线已重新生成）
     ('d2_25_50_51_B', 'd2_25', '50_51', 'B', AnalyzerConfig(envelope_mode='all_points')),   # 另一 doping 强振荡
 ]
 results_real = {}

@@ -62,17 +62,24 @@ import Phase_Analysis_Report as par  # noqa: E402  交互提示与空穴率解�
 
 # ==========================================================================
 # 参数块（N/T_J/DOPING/DELTA 是默认值，可被 CLI 参数或交互式提示覆盖，
-# 见 main；DIM 固定）
+# 见 main）
 # ==========================================================================
 N = 200
 T_J = 't_J_3'
-DOPING = 'd3_25'          # 默认：当前 Data/real|complex 的 δ=0.12（3/25）
+DOPING = 'd3_25'          # 默认：δ=0.12（3/25）
 DELTA = 0.12
 DIM = '1500'
-# 数据根基于脚本所在目录（任意 cwd 下运行均可找到）
-REAL_ROOT = os.path.join(SCRIPT_DIR, 'Data', 'real')
-COMPLEX_ROOT = os.path.join(SCRIPT_DIR, 'Data', 'complex')
 OUTDIR = os.path.join(SCRIPT_DIR, 'output', 'complex_real_comparison')
+
+
+def _data_root(kind):
+    """Data/{real|complex}/Data_N200/t_J_3/{doping}（doping 层为
+    measure 目录与优化日志的公共父目录）。"""
+    return os.path.join(SCRIPT_DIR, 'Data', kind, 'Data_N200', T_J, DOPING)
+
+
+REAL_ROOT = _data_root('real')       # 模块级默认；main 内按 CLI/交互覆盖
+COMPLEX_ROOT = _data_root('complex')
 
 # 检查阈值（默认值，未获物理授权——报告内标注）
 THRESH_E0_REL = 1e-6      # 能量差相对阈值：|E0_c - E0_r| / |E0_r| 超过即 flag
@@ -516,6 +523,7 @@ def _doping_to_delta(doping):
 
 
 def main(argv=None) -> int:
+    global N, T_J, DOPING, DELTA, DIM, REAL_ROOT, COMPLEX_ROOT
     sys.stdout.reconfigure(encoding='utf-8')
     import argparse
     parser = argparse.ArgumentParser(
@@ -529,11 +537,16 @@ def main(argv=None) -> int:
     parser.add_argument('--doping', default=None,
                         help='空穴率（如 3_25 或 0.12）；不提供时交互式'
                              '提示输入（默认 3_25）')
+    parser.add_argument('--dim', default=DIM,
+                        help='bond dimension 档（默认 1500；'
+                             '复值数据有 1500/5000 两档）')
     args = parser.parse_args(argv)
 
-    global N, T_J, DOPING, DELTA
     N, T_J, DOPING = _prompt_config(args.N, args.t_j, args.doping)
     DELTA = _doping_to_delta(DOPING)
+    DIM = str(args.dim)
+    REAL_ROOT = _data_root('real')
+    COMPLEX_ROOT = _data_root('complex')
 
     print(f'=== 复值 vs 实值对比（N={N}, t/J={T_J}, {DOPING}, D={DIM}）===')
     for root, tag in ((REAL_ROOT, 'real'), (COMPLEX_ROOT, 'complex')):

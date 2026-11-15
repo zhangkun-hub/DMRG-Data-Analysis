@@ -60,7 +60,7 @@ def check(cat, name, cond, detail=''):
 
 def load_spin_records(measure, ver, N=200):
     """最小 loader（与既有测试同款路径约定）"""
-    base = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
+    base = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
     seq = range(1, N + 100, 4) if ver == '49' else range(2, N + 100, 4)
     sz = CorrelationRecord.extract_data(
         open(f'{base}/sz{ver}sz.json', encoding='utf-8').read(), seq, N, 1.0)
@@ -123,7 +123,7 @@ check('A', 'missing_pairs 为空（无缺失）不追加缺失警告',
 # B. N200 真实 sz_sz（文件入口）+ spin_dot（records 入口）
 # ==========================================================================
 print('===== B. N200 真实数据集成 =====')
-sz_path = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/measure_49/sz.json'
+sz_path = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/measure_49/sz.json'
 qs200, _ = xc_momentum_grid(200, a=1.0, n_qx=21, n_qy=4)
 
 rep_sz = structure_factor_report(
@@ -233,7 +233,7 @@ check('D', 'JSON：无 NaN/Infinity 字面量、默认无 payload、可解析读
 try:
     structure_factor_report(
         SpinStructureFactorEstimator.estimate_sz_sz_from_file,
-        f'{ROOT}/Data/Data_N200/does_not_exist.json', qs200, 200)
+        f'{ROOT}/Data/real/Data_N200/does_not_exist.json', qs200, 200)
     check('D', '空/不存在文件路径异常原样传播', False, '未抛异常')
 except FileNotFoundError:
     check('D', '空/不存在文件路径异常原样传播', True)

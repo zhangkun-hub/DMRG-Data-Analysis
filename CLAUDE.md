@@ -39,7 +39,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`physical_analysis/Super_Correlation_Process.py`** — `SuperCorrProcessor`：超导关联四通道 a/b/c/d 的 SU(2) 对称性检验（a↔d、b↔c 相对误差，经验阈值 ~1e-4）、按 `<Δ†Δ> = 0.5(a - b - c + d)` 合成、A/B/C 三个键方向可视化及绝对误差对比。标题 `(reference X: (i, j))`（X = 键方向），图例 `target X`；`Super_Corr_Visualization_difference` 按键方向分行（行 = target A/B/C，列 = 组1/组2/绝对误差，三键即 3×3）；`Super_Corr_Visualization_difference_refbond`（收敛诊断用：行 = reference bond 键方向、列 = 组1/组2/误差、每格内 target A/B/C 同图）；模块级 `_refbond_direction(i, j)` 键方向分类（对应测量源码 HoneycombXCCylinder::ClassifyNearestNeighbor，49_50→A、50_51→B、50_54→C）。
 - **`physical_analysis/Energy_Process.py`** — `EnergyRecord`（N、E_min、E_avg、单格点能量 Es、Es/J）与 `EnergyProcessor`：`extrapolate()` 按 `Es(N) = E∞ + a/N^power` 做热力学极限外推（先线性拟合，残差超 threshold×std 判为异常点剔除后重新拟合）；`fit_doping_dependence()` 拟合 E∞ 随空穴率 δ 的线性关系。
 - **`data_records/DMRG_Log_Parser.py`** — `DMRGLogParser`：解析 DMRG 优化日志中的 Bond dimension、sweep、E0（集群上的优化日志，不是本仓库 Data 目录下的测量日志），按 (D, sweep) 分组自动求平均，输出 DataFrame（BondDimension / Sweep / E0_mean / E0_std / N_samples），并绘制能量收敛图与 |ΔE| 半对数收敛图。主脚本 `DMRG_Log_Analyzer.py` 通过 `sys.stdin` 读入日志文本并用自定义正则（限定 `Site (40, 41)`）解析。
-- **`physical_analysis/Correlation_Decay_Analyzer.py`** — 通用关联衰减分析核心（叶子模块，不依赖本包其他代码）。`CorrelationDecayAnalyzer`：噪声底 → hump 检测 → r_min 全网格扫描（verdict 4 级：stable/moderate/unstable/insufficient）→ 包络 log 空间拟合（含峰值法/全点模式）→ 族分解 → 振荡诊断（8 项证据聚合）→ 9 候选模型 AICc/BIC 比较 → 决策树分类 8 类（constant / power_law / exponential / oscillatory_power_law / oscillatory_exponential / non_monotonic / complex_decay / INCONCLUSIVE）。`DecayAnalysisResult` 含 config 快照与 analysis_version，可 to_dict/to_json；`analyze_generic` 是各适配层共用的管线主体。
+- **`physical_analysis/Correlation_Decay_Analyzer.py`** — 通用关联衰减分析核心（叶子模块，不依赖本包其他代码）。`CorrelationDecayAnalyzer`：噪声底 → hump 检测 → r_min 全网格扫描（verdict 4 级：stable/moderate/unstable/insufficient）→ 包络 log 空间拟合（含峰值法/全点模式）→ 族分解 → 振荡诊断（8 项证据聚合）→ 9 候选模型 AICc/BIC 比较 → 决策树分类 8 类（constant / power_law / exponential / oscillatory_power_law / oscillatory_exponential / non_monotonic / complex_decay / INCONCLUSIVE）。`DecayAnalysisResult` 含 config 快照与 analysis_version，可 to_dict/to_json；`analyze_generic` 是各适配层共用的管线主体。**复值语义（2026-11-08）**：适配层 group_by_distance 保留复数——包络通道 C_abs = |复均值|（衰减分类/拟合的物理口径），signed 通道 C = 实部均值（符号/振荡诊断与实值结果交叉验证），散布统计与 group_raw 用实部；实值数据（虚部恒 0）下逐位退化为原行为（np.mean 复数实部路径与 float 路径逐位一致）。
 - **`physical_analysis/Super_Correlation_Analyzer.py`** — `SuperCorrDecayAnalyzer(CorrelationDecayAnalyzer)`：超导专用薄适配层（输入 list[SuperCorrRecord]、bond 中点两族、超导文案）。算法全部继承通用核心。
 - **`physical_analysis/Spin_Correlation_Analyzer.py`** — `SpinCorrDecayAnalyzer(CorrelationDecayAnalyzer)`：自旋专用薄适配层（输入 list[CorrelationRecord]、格点子格族、`analyze(recs, config, N, a)` 签名）。
 - **`physical_analysis/Charge_Correlation_Analyzer.py`** — `ChargeCorrDecayAnalyzer(CorrelationDecayAnalyzer)`：电荷关联薄适配层（复用 Spin 适配层的分组/预处理与子格几何规则，仅文案不同；输入密度-密度关联记录）。
@@ -72,27 +72,33 @@ Notebook 位于 `DMRG data visualization/` 根目录，是实际使用入口（�
 
 # 数据目录约定
 
-UltraDMRG 集群计算结果存放在 `DMRG data visualization/Data/Data_N200/`、`Data/Data_N400/` 与 `Data/Data_Energy/`（**没有 Data_N96**，旧文档引用已过时），层级：
+UltraDMRG 集群计算结果存放在 `DMRG data visualization/Data/` 下，按计算类型分两棵树（**没有 Data_N96**，旧文档引用已过时）：
 
 ```
-Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_phys_qty/measure_{version}/*.json
-Data_N{200|400}/{t_J}/{doping}/{bond_dim}_measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
+Data/
+  real/                      # 实值计算（USE_REAL=1，Néel 初始态；分析链默认数据根）
+    Data_Energy/t_J_3/{doping}/N{n}/slurm-*.log        # 热力学外推日志
+    Data_N200/t_J_3/{doping}/{D}_measure_phys_qty/measure_{version}/*.json
+    Data_N200/t_J_3/{doping}/{D}_measure_super_corr/super_corr_{i}_{j}/scs{X}{ch}_fix_refbond_{i}_{j}.json
+    Data_N400/...（同构）
+  complex/                   # 复值计算（USE_REAL=0，|a⟩+ε_c|b⟩ 种子初始态，
+    Data_N200/t_J_3/{doping}/{D}_measure_*             #  ε_c=0.05·e^{iπ/4}）
 ```
 
 实际有数据的组合（其余目录为空骨架）：
-- **Data/Data_N200/t_J_3**：doping 4 种（d1_10、d1_20、d1_100、d2_25）；**d1_25、d3_20、d3_25 已因数据问题删除**，不属于当前可用数据，不得假定存在或恢复；bond_dim 1500 与 5000 四组全有；measure 版本 49/50；超导 refbond 49_50/50_51/50_54
-- **Data/Data_N400/t_J_3**：doping 5 种（d1_10、d1_20、d1_40、d1_80、d2_25）；bond_dim 1500 与 5000 全有；measure 版本 97/98；超导 refbond 97_98/98_99/98_102；每个 doping 目录内另有 2 份 DMRG 优化日志（低 D 500/1000/1500 + 高 D 2000→5000，均正常结束，N=400）
+- **Data/real/Data_N200/t_J_3**：doping 5 种（d1_10、d1_20、d1_100、d2_25、d3_25——d3_25 目前是**空目录**，旧对比批数据未搬入）；d1_25、d3_20 已因数据问题删除，不得假定存在或恢复；bond_dim 1500 与 5000 全有；measure 版本 49/50；超导 refbond 49_50/50_51/50_54；优化日志 `slurm-*-Zk_tJ.log`（1500 与 2000→5000 两档调度）
+- **Data/real/Data_N400/t_J_3**：doping 5 种（d1_10、d1_20、d1_40、d1_80、d2_25）；measure 版本 97/98；超导 refbond 97_98/98_99/98_102
+- **Data/real/Data_Energy**：6 个 doping（d0、d1_10、d1_20、d1_40、d1_80、d3_40）× 5 个 N（80/160/240/320/400）共 30 份优化日志——每 doping 5 个 N，**满足热力学极限外推条件（≥3 个 N）**
+- **Data/complex/Data_N200/t_J_3**：doping 4 种（d1_10、d1_20、d2_25、d3_25；无 d1_100）× bond_dim 1500/5000 全有；优化日志 `slurm-*-dmrg_complex.log`（doping 目录级，1500/5000 各一份）
 - 其他 t_J 值（t_J_5/10/15/20）目前只有空目录；注意 J=0.2 对应 t/J=20 是在 notebook 里写死的
 
 - `doping`：空穴率（d1_100 即 δ = 1/100）
 - 物理量 JSON 文件：`nf`（单点电子密度）、`sz{ver}sz` / `sp{ver}sm` / `sm{ver}sp`（自旋关联三分量）、`nf{ver}nf`（密度-密度关联，**field 连续**，须用 `range(0, N, 1)` 序列解析而非自旋的 step-4 序列）、`single_particle_corr{1..4}`、`sz.json`（**局域 ⟨S^z_i⟩ 单点测量**，N 个格点 `[[i],[值,0]]` 格式，旧版源点 0 语境，与 nf.json 同构）
 - 超导关联：bond 方向 A/B/C × 通道 a/b/c/d 共 12 个文件，文件名 `scsAa_fix_refbond_49_50.json` 等；目录名 `super_corr_{refbond1}_{refbond2}` 指明 reference bond
-- 每个数据目录下的 `slurm-*.log` 是**测量作业日志**（"Running measurement using existing MPS"），不含 `Bond dimension`/`sweep`/`E0` 行——`DMRGLogParser` 用于解析集群 DMRG 优化日志，与这些文件无关
-- **DMRG 优化日志（能量数据）**：N200 的 4 个 doping 目录内各 2 份 `slurm-*-Zk_tJ.log`（共 8 份，1500 与 2000→5000 两档调度，均正常结束）；N400 的 5 个 doping 目录内同样各 2 份（低 D 500/1000/1500 + 高 D 2000→5000，均正常结束）
-- **Data/Data_Energy（热力学外推数据）**：层级 `Data/Data_Energy/t_J_3/{doping}/N{n}/slurm-*.log`；6 个 doping（d0、d1_10、d1_20、d1_40、d1_80、d3_40）× 5 个 N（80/160/240/320/400）共 30 份优化日志（D 调度 500,1000,1500，全部正常结束，格式与 N200/N400 日志同构，可用 `extract_last_e0` 解析）——每 doping 5 个 N，**满足热力学极限外推条件（≥3 个 N）**；目录内仅有 *.log 文件，被全局 git.ignore 的 `*.log` 规则覆盖（Git 不可见，不入版本控制）
-- 已知数据质量事实：N400 超导数据的 SU(2) 对称性误差实测 0.008~0.144（远超 ~1e-4 经验阈值），合成关联值的物理解释需谨慎；N400 电荷/自旋关联均只有源点 97/98 两组
+- `slurm-*.log` 两种：测量作业日志（"Running measurement using existing MPS"，不含 `Bond dimension`/`sweep`/`E0` 行）与 DMRG 优化日志（含 E0/TruncErr 行，`DMRGLogParser` 解析对象）——按文件名与内容区分
+- 已知数据质量事实：N400 超导 SU(2) 对称性误差实测 0.008~0.144（远超 ~1e-4 经验阈值），引用需谨慎；N400 电荷/自旋关联均只有源点 97/98 两组；**d2_25 实值 E0 比复值高约 0.78（2.9%）——实值计算疑似亚稳态（见复值对比结论），引用实值 d2_25 能量前需复核**
 
-JSON 格式统一为 `[[索引], [value, 0]]` 的嵌套列表字符串结构（如 `[[[0], [0.9998, 0]], ...]`）。
+JSON 格式统一为 `[[索引], [value, 0]]` 的嵌套列表字符串结构（如 `[[[0], [0.9998, 0]], ...]`）；复值数据的 `[re, im]` 虚部非零（种子方案），记录类已支持复数解析（`*_complex` 属性）。
 
 ## 测量源码位置（仓库外，只读参照）
 

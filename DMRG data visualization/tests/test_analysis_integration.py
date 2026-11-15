@@ -55,7 +55,7 @@ def check(cat, name, cond, detail=''):
 
 def load_sc_n200(doping, ref, bond, N=200):
     """最小 loader（与既有测试同款路径约定）"""
-    base = f'{ROOT}/Data/Data_N200/t_J_3/{doping}/1500_measure_super_corr/super_corr_{ref}'
+    base = f'{ROOT}/Data/real/Data_N200/t_J_3/{doping}/1500_measure_super_corr/super_corr_{ref}'
     recs4 = {}
     for ch in 'abcd':
         recs4[ch] = SuperCorrRecord.extract_data(
@@ -67,7 +67,7 @@ def load_sc_n200(doping, ref, bond, N=200):
 
 def load_spin_n200(measure, ver, N=200):
     """最小 loader（与既有测试同款路径约定）"""
-    base = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
+    base = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
     seq = range(1, N + 100, 4) if ver == '49' else range(2, N + 100, 4)
     sz = CorrelationRecord.extract_data(
         open(f'{base}/sz{ver}sz.json', encoding='utf-8').read(), seq, N, 1.0)

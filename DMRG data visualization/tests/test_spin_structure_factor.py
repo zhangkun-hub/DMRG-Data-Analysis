@@ -173,7 +173,7 @@ check('G', '缺坐标对 → skipped_no_coords 报告且不计入',
 # 10. N200 真实数据受限估计
 # ==========================================================================
 print('===== H. N200 真实数据受限估计 =====')
-sz_path = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/measure_49/sz.json'
+sz_path = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/measure_49/sz.json'
 qs200, meta200 = xc_momentum_grid(200, a=1.0, n_qx=21, n_qy=4)
 res = SpinStructureFactorEstimator.estimate_sz_sz_from_file(sz_path, qs200, 200)
 check('H', 'sz_sz 定义正确且数值有限',
@@ -200,7 +200,7 @@ from Physical_Quantity.physical_analysis.Correlation_Process import CorrelationP
 all_recs = []
 for measure, ver, seq in [('measure_49', '49', range(1, 300, 4)),
                           ('measure_50', '50', range(2, 300, 4))]:
-    base = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
+    base = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
     sz = CorrelationRecord.extract_data(
         open(f'{base}/sz{ver}sz.json', encoding='utf-8').read(), seq, 200, 1.0)
     su = CorrelationRecord.extract_data(

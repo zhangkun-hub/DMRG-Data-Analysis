@@ -43,7 +43,7 @@ def check(cat, name, cond, detail=''):
 # 1. 数据规模与实际文件
 # ==========================================================================
 print('===== A. 数据文件与规模 =====')
-sz_path = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/measure_49/sz.json'
+sz_path = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/measure_49/sz.json'
 import ast
 sz_raw = ast.literal_eval(open(sz_path, encoding='utf-8').read())
 check('A', 'sz.json（源点 0）：200 条、含对角项', len(sz_raw) == 200 and 0 in [el[0][0] for el in sz_raw],
@@ -51,7 +51,7 @@ check('A', 'sz.json（源点 0）：200 条、含对角项', len(sz_raw) == 200 
 all_recs = []
 for measure, ver, seq in [('measure_49', '49', range(1, 300, 4)),
                           ('measure_50', '50', range(2, 300, 4))]:
-    base = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
+    base = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty/{measure}'
     sz = CorrelationRecord.extract_data(
         open(f'{base}/sz{ver}sz.json', encoding='utf-8').read(), seq, 200, 1.0)
     su = CorrelationRecord.extract_data(

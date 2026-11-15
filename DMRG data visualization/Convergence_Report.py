@@ -153,7 +153,7 @@ def main(argv=None) -> int:
         description='DMRG 收敛诊断独立入口（bond dimension 稳定性；'
                     '不判相，详见脚本 docstring）')
     parser.add_argument('--root', default=os.path.join(SCRIPT_DIR,
-                                                       'Data/Data_N200'))
+                                                       'Data/real/Data_N200'))
     parser.add_argument('--t-j', default=None,
                         help='t/J 目录后缀（如 t_J_3）；不提供时交互式'
                              '提示输入 t/J 值（默认 3）')

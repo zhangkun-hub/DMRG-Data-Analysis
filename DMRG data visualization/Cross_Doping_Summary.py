@@ -971,8 +971,8 @@ def main(argv=None) -> int:
         description='跨 doping 受控数值汇总（PhaseDiagnosis-P4.3）：'
                     '逐 doping 运行既有统一入口并输出 CSV/JSON 汇总，'
                     '不判定物理趋势或相态')
-    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/Data_N200'),
-                        help='数据根目录（默认 <脚本目录>/Data/Data_N200）')
+    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/real/Data_N200'),
+                        help='数据根目录（默认 <脚本目录>/Data/real/Data_N200）')
     parser.add_argument('--t-j', dest='t_j', default=DEFAULT_T_J,
                         help='t/J 目录名（默认 t_J_3）')
     parser.add_argument('--dopings', default=','.join(DEFAULT_DOPINGS),

@@ -20,7 +20,7 @@
 | SpinStructureFactorPeakAnalyzer | SF 输出 | 峰值位置/高度/FWHM（8 邻域严格局部极大） | derived_observation |
 | ChargeStructureFactorEstimator | nf + nfnf | **连通** S(q)（DEF_CHARGE_DENSITY_CONNECTED，对角幂等补全） | observation + capability |
 | SCPairStructureFactorEstimator | scs 12 文件 | 受限 P_X(q)（单参考键×单方向）+ channel_sf | observation + capability |
-| EnergyProcessor | Data/Data_Energy 30 日志 | E∞（全点）+ MAD 诊断 | observation + quality_diagnostic |
+| EnergyProcessor | Data/real/Data_Energy 30 日志 | E∞（全点）+ MAD 诊断 | observation + quality_diagnostic |
 | PairingSymmetryAnalyzer | scs 12 文件 | 三通道（magnitude/sign/phase）+ 层观测 + 逐对积 | observation + capability（phase）+ quality |
 
 ### 1.2 四层能力划分

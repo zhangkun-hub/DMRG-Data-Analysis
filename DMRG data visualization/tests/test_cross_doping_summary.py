@@ -800,7 +800,7 @@ check('E', 'CLI main() 返回 0 且生成输出文件',
 # F. 真实数据 smoke（数据目录存在时运行；d1_100 + 参考键 49_50）
 # ==========================================================================
 print('===== F. 真实数据 smoke =====')
-REAL_ROOT = os.path.join(ROOT, 'Data/Data_N200')
+REAL_ROOT = os.path.join(ROOT, 'Data/real/Data_N200')
 if os.path.isdir(os.path.join(REAL_ROOT, 't_J_3', 'd1_100')):
     qs200, _ = cds.xc_momentum_grid(200, a=1.0, n_qx=11, n_qy=4)
     outs_real = cds.analyze_doping(
@@ -872,7 +872,7 @@ if os.path.isdir(os.path.join(REAL_ROOT, 't_J_3', 'd1_100')):
                                         for r in r_peak_real))
 else:
     check('F', '真实数据 smoke（数据目录不存在，跳过）', True,
-          '跳过（Data/Data_N200 不存在）')
+          '跳过（Data/real/Data_N200 不存在）')
 
 # ==========================================================================
 # 汇总

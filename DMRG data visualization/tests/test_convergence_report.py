@@ -89,7 +89,7 @@ check('A', 'main 缺参：交互配置注入 + --dims 解析 + exit 0',
 # B. 真实数据门控
 # ======================================================================
 print('===== B. 真实数据 =====')
-REAL_ROOT = os.path.join(ROOT, 'Data/Data_N200', 't_J_3')
+REAL_ROOT = os.path.join(ROOT, 'Data/real/Data_N200', 't_J_3')
 if os.path.isdir(os.path.join(REAL_ROOT, 'd1_10')):
     outdir = os.path.join('tests', 'artifacts', 'conv_report_test')
     r = subprocess.run(

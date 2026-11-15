@@ -82,7 +82,7 @@ check('A', 'metadata 含观测语义说明（不判 SDW/AFM 声明）',
 # B. 集成（真实数据门控）
 # ======================================================================
 print('===== B. sz_profile_report 真实数据 =====')
-REAL = os.path.join(ROOT, 'Data/Data_N200', 't_J_3', 'd1_10',
+REAL = os.path.join(ROOT, 'Data/real/Data_N200', 't_J_3', 'd1_10',
                     '1500_measure_phys_qty', 'measure_49', 'sz.json')
 if os.path.isfile(REAL):
     rep = sz_profile_report(REAL, N=200, a=1.0)

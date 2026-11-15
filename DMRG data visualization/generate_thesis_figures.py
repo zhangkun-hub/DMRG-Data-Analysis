@@ -28,7 +28,7 @@ def save_current(name):
 
 N = 200
 DOPING = "d1_100"
-DATA_ROOT = Path("Data/Data_N200/t_J_3")
+DATA_ROOT = Path("Data/real/Data_N200/t_J_3")
 MEASURE_DIR = DATA_ROOT / DOPING / "1500_measure_phys_qty" / "measure_49"
 SC_DIR = DATA_ROOT / DOPING / "1500_measure_super_corr" / "super_corr_49_50"
 
@@ -161,7 +161,7 @@ def fig6_energy_extrapolation():
     for doping, delta in ENERGY_DOPINGS.items():
         records = []
         for n in (80, 160, 240, 320, 400):
-            log_dir = Path(f"Data/Data_Energy/t_J_3/{doping}/N{n}")
+            log_dir = Path(f"Data/real/Data_Energy/t_J_3/{doping}/N{n}")
             logs = sorted(log_dir.glob("slurm-*.log"))
             if not logs:
                 print(f"  WARNING: no log for {doping}/N{n}, skipping")
@@ -253,7 +253,7 @@ def fig9_convergence():
     conv_dir = OUTDIR / "convergence"
     cmd = [
         sys.executable, "-X", "utf8", "Phase_Analysis_Report.py",
-        "--root", "Data/Data_N200", "--t-j", "t_J_3",
+        "--root", "Data/real/Data_N200", "--t-j", "t_J_3",
         "--doping", "d1_100", "--N", "200", "--bond-dim", "1500",
         "--convergence-dims", "1500,5000",
         "--outdir", str(conv_dir),

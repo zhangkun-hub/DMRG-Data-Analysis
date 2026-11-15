@@ -232,7 +232,7 @@ except ValueError:
 # ==========================================================================
 print('===== F. 真实 N200 受限估计（d1_100 / measure_49+50） =====')
 qs200, _ = xc_momentum_grid(200, a=1.0, n_qx=11, n_qy=4)
-base = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty'
+base = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty'
 res_real = ChargeStructureFactorEstimator.estimate_from_files(
     f'{base}/measure_49/nf.json',
     [f'{base}/measure_49/nf49nf.json', f'{base}/measure_50/nf50nf.json'],
@@ -352,9 +352,9 @@ except ValueError:
     check('G', '空 measure_specs → ValueError', True)
 
 # 9. 真实数据批量（只读复用 N200 两组 doping；不硬编码为唯一依赖）
-if os.path.exists(f'{ROOT}/Data/Data_N200/t_J_3/d1_10/1500_measure_phys_qty/measure_49/nf.json'):
-    base10 = f'{ROOT}/Data/Data_N200/t_J_3/d1_10/1500_measure_phys_qty'
-    base100 = f'{ROOT}/Data/Data_N200/t_J_3/d1_100/1500_measure_phys_qty'
+if os.path.exists(f'{ROOT}/Data/real/Data_N200/t_J_3/d1_10/1500_measure_phys_qty/measure_49/nf.json'):
+    base10 = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_10/1500_measure_phys_qty'
+    base100 = f'{ROOT}/Data/real/Data_N200/t_J_3/d1_100/1500_measure_phys_qty'
     batch_real = ChargeStructureFactorEstimator.estimate_batch(
         [{'name': 'd1_10', 'nf_path': f'{base10}/measure_49/nf.json',
           'corr_paths': [f'{base10}/measure_49/nf49nf.json']},
