@@ -97,6 +97,26 @@ def available_bond_dims(doping_dir):
             dims.add(m.group(1))
     return sorted(dims, key=int)
 
+
+def available_dopings(root, t_j, bond_dim=None):
+    """root/t_j 下含测量数据的 doping 目录列表（排序）；
+    给定 bond_dim 时只返回有该档数据的 doping。"""
+    base = os.path.join(root, t_j)
+    if not os.path.isdir(base):
+        return []
+    out = []
+    for d in sorted(os.listdir(base)):
+        dd = os.path.join(base, d)
+        if not os.path.isdir(dd):
+            continue
+        dims = available_bond_dims(dd)
+        if not dims:
+            continue
+        if bond_dim is not None and bond_dim not in dims:
+            continue
+        out.append(d)
+    return out
+
 DEFAULT_N = 200
 
 SC_KEYS = ('A', 'B', 'C')

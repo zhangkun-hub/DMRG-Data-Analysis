@@ -45,6 +45,8 @@ import Cross_Doping_Summary as cds
 from Physical_Quantity.evidence_integration.Analysis_Contract import (
     _convert, OBSERVABLE_SUPERCONDUCTING_CORRELATION)
 from Physical_Quantity.physical_analysis.Spin_Structure_Factor import xc_momentum_grid
+from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import (
+    AnalyzerConfig)
 
 # ---- 指数状态四分类（映射规则见 classify_state docstring 与 semantics） ----
 STATE_EXPONENT_OK = 'exponent_ok'
@@ -244,13 +246,19 @@ def build_groups(exponent_rows):
 # ==========================================================================
 def run_summary(root, t_j, dopings, bond_dim, N, a, q_list, refbonds):
     """逐 doping 运行 SC 衰减分析（only_observables 筛选，其余分析不
-    执行）→ cds.summarize 可比性分组 → 指数行构建 → 身份分组。"""
+    执行）→ cds.summarize 可比性分组 → 指数行构建 → 身份分组。
+
+    SC 衰减用轻量 bootstrap（n=30，默认 200）：bootstrap 仅作 pcov
+    失效时的误差兜底、不参与分类与模型选择，耗时约 1/7（与
+    Phase_Analysis_Report 收敛段同款配置）。"""
+    fast_config = AnalyzerConfig(bootstrap_n=30)
     outcomes = []
     for doping in dopings:
         outcomes.extend(cds.analyze_doping(
             doping, root=root, t_j=t_j, bond_dim=bond_dim, N=N, a=a,
             q_list=q_list, refbonds=refbonds,
-            only_observables={OBSERVABLE_SUPERCONDUCTING_CORRELATION}))
+            only_observables={OBSERVABLE_SUPERCONDUCTING_CORRELATION},
+            config=fast_config))
     summary = cds.summarize(outcomes, q_list)
     rows = summary['rows']
     if len(rows) != len(outcomes):
@@ -373,16 +381,18 @@ def main(argv=None) -> int:
                     '分析并提取指数证据，不重新拟合，不判定物理相态')
     parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/complex/Data_N200'),
                         help='数据根目录（默认 <脚本目录>/Data/complex/Data_N200）')
-    parser.add_argument('--t-j', dest='t_j', default=cds.DEFAULT_T_J,
-                        help='t/J 目录名（默认 t_J_3）')
-    parser.add_argument('--dopings', default=','.join(cds.DEFAULT_DOPINGS),
-                        help='逗号分隔的 doping 列表（默认与跨 doping 汇总'
-                             '一致；实际有数据的 4 个请显式指定）')
+    parser.add_argument('--t-j', dest='t_j', default=None,
+                        help='t/J 目录名（如 t_J_3）；不提供时交互式提示'
+                             '输入 t/J 值（默认 3）')
+    parser.add_argument('--dopings', default=None,
+                        help='逗号分隔的 doping 列表；不提供时自动发现数据'
+                             '目录下可用的 doping 并交互式选择（回车取全部）')
     parser.add_argument('--bond-dim', dest='bond_dim',
                         default=None,
-                        help='bond dimension（默认 1500）')
-    parser.add_argument('--N', type=int, default=cds.DEFAULT_N,
-                        help='系统格点数（默认 200；N=400 请单独运行）')
+                        help='bond dimension（如 1500 或 5000）；不提供时'
+                             '交互式提示输入（默认 5000）')
+    parser.add_argument('--N', type=int, default=None,
+                        help='系统格点数（默认 200）；不提供时交互式提示输入')
     parser.add_argument('--n-qx', type=int, default=21,
                         help='动量网格 qx 点数（默认 21；SC 衰减不使用该'
                              '网格，仅为复用 analyze_doping 签名）')
@@ -399,25 +409,49 @@ def main(argv=None) -> int:
                              'output/sc_exponent_summary）')
     args = parser.parse_args(argv)
 
-    if args.bond_dim is None:
+    def _ask(prompt, default):
         try:
-            raw = input('请输入 bond dimension（回车使用默认 5000）: ').strip()
+            raw = input(prompt).strip()
         except EOFError:
-            raw = ''
-        bond_dim = raw or '5000'
+            return default
+        return raw or default
+
+    # 交互顺序：N → t/J → bond dimension →（按已确定参数发现并打印
+    # 可用 doping）→ doping 列表
+    if args.N is None:
+        args.N = int(_ask('请输入格点数 N（回车使用默认 200）: ', '200'))
+    if args.t_j is None:
+        t_j_val = float(_ask('请输入 t/J（回车使用默认 3）: ', '3'))
+        args.t_j = f't_J_{t_j_val:g}'
+    if args.bond_dim is None:
+        bond_dim = _ask('请输入 bond dimension（回车使用默认 5000）: ',
+                        '5000')
     else:
         bond_dim = args.bond_dim
-    _avail = set()
-    for doping in args.dopings.split(','):
-        _avail.update(cds.available_bond_dims(
-            os.path.join(args.root, args.t_j, doping.strip())))
-    if _avail and bond_dim not in _avail:
-        print(f'错误：数据目录 {args.root}/{args.t_j} 的 doping 集合中没有 '
-              f'D={bond_dim} 的数据；可用的 bond dimension 档位: '
-              f'{", ".join(sorted(_avail, key=int))}')
-        return 1
 
-    dopings = [d.strip() for d in args.dopings.split(',') if d.strip()]
+    # 按已确定的 N/t_J/bond 档发现可用 doping（含 bond 档检验）
+    available_dop = cds.available_dopings(args.root, args.t_j, bond_dim)
+    if available_dop:
+        print(f'数据目录中可用（D={bond_dim}）的 doping: '
+              + ', '.join(available_dop))
+    if args.dopings is None:
+        default_dop = ','.join(available_dop) if available_dop else ''
+        if not default_dop:
+            print(f'错误：数据目录 {args.root}/{args.t_j} 下没有任何含 '
+                  f'D={bond_dim} 测量数据的 doping 目录')
+            return 1
+        raw = _ask('请输入 doping 列表（逗号分隔，回车使用全部可用）: ',
+                   default_dop)
+        dopings = [d.strip() for d in raw.split(',') if d.strip()]
+    else:
+        dopings = [d.strip() for d in args.dopings.split(',') if d.strip()]
+    if available_dop:
+        unknown = [d for d in dopings if d not in available_dop]
+        if unknown:
+            print(f'错误：doping {",".join(unknown)} 在数据目录中没有 '
+                  f'D={bond_dim} 的数据；可用 doping: '
+                  f'{", ".join(available_dop)}')
+            return 1
     refbonds = None
     if args.refbonds:
         refbonds = {rb.strip() for rb in args.refbonds.split(',')
