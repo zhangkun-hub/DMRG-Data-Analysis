@@ -222,119 +222,6 @@ class CorrelationRecord(Record):
         
         
         
-        
-        
-#-----------------------------------------------------------------------------------
-# 超导关联函数<i·j·k·l>的数据记录器
-#-----------------------------------------------------------------------------------  
-class SuperCorrRecord(Record):
-    """超导关联函数 <i·j·k·l> 的数据记录器。
-
-    _value 保留复数表达能力（当前实值数据虚部恒 0；复值 DMRG
-    数据落地后虚部即可用）。下游分析管线消费 .sup_corr 属性
-    （实部 float），与既有代码完全兼容；需要完整复数时用
-    .sup_corr_complex。
-    """
-    def __init__(self, ref_bond: tuple, target_bond: tuple, distance: float, value: complex):
-        self.ref_bond = ref_bond
-        self.target_bond = target_bond
-        self.distance = distance
-        self._value = value
-
-    @property
-    def sup_corr(self):
-        """分析管线使用的实部（向后兼容）。"""
-        return float(self._value.real)
-
-    @sup_corr.setter
-    def sup_corr(self, val):
-        self._value = val if isinstance(val, complex) else complex(val, 0)
-
-    @property
-    def sup_corr_complex(self):
-        """完整复数值（复值数据分析用）。"""
-        return self._value
-
-    def __str__(self):
-        return f"超导关联函数的reference bond: {self.ref_bond}, target bond: {self.target_bond}, 距离r: {self.distance}, 超导关联函数: {self.sup_corr:.6f}"
-    
-    
-    
-    # 数据提取的类方法(类方法作用：只需调用SuperCorrRecord.extract_data(...)即可获得完整的SuperCorrRecord对象)
-    @classmethod
-    def extract_data(cls, data: str, N: int, a: float = 1.0) -> list['SuperCorrRecord']:
-        """
-        将输入的字符串数据解析并封装为SuperCorrRecord对象列表。
-        
-        :param data: 计算的超导关联函数的数据(是列表构成的字符串，每个元素的格式为: [[i, j, k, l], [val, 0]])。
-        :param N: 系统格点数(要求：N/8可以整除)。
-        :param a: honeycomb晶格的晶格常数（默认为a = 1.0）。
-                    
-        :return record_list: 列表，存储超导关联函数<i·j·k·l>所封装好的SuperCorrRecord对象。
-        """
-        ### 1.提取数据
-        try:
-            data_list = ast.literal_eval(data)
-        except (ValueError, SyntaxError) as e:
-            raise ValueError(f"输入数据格式错误，无法解析: {e}")
-
-        if not data_list:
-            raise ValueError(f"输入的数据{data}内容为空")
-
-        ### 2.获取预期的reference bond并校验
-        ## 2.1 获取reference bond(这里用first_bond暂时储存)
-        try:
-            first_bond = tuple(data_list[0][0][0:2])
-        except (IndexError, TypeError):
-            raise ValueError("数据结构不符合预期格式 [[i, j, k, l], [val, 0]]")
-        
-        ## 2.2 校验：reference bond是否左边1/4边界处
-        left_bound_p = int(N / 8 / 4) * 8
-        left_boundary = [left_bound_p, left_bound_p + 1, left_bound_p + 2, left_bound_p + 3]
-        if first_bond[0] not in left_boundary:
-            raise ValueError(f"初始reference bond {first_bond[0]} 不在左边1/4边界处")
-
-        ### 3.创建存储坐标列表与honeycomb晶格结构的对象honey_latt
-        record_list = []
-        honey_latt = HoneycombXCGeometry(N, a)
-        
-        ### 4.遍历数据，将满足条件的数据提取并封装成SuperCorrRecord对象
-        ## 提取tar-bond的条件1：将与ref-bond尽可能保持水平的tar-bond进行提取
-        allowed_cond = {(0,0), (4,4), (4,7), (5,0), (7,4), (0,5)}
-
-        for m, element in enumerate(data_list):
-            ## 解包数据 (格式为: [[i, j, k, l], [val, 0]])
-            try:
-                [i, j, k, l], [re_part, im_part] = element
-            except (TypeError, ValueError):
-                raise NameError(f"Error：第 {m} 个元素格式不正确")
-            value = complex(float(re_part), float(im_part))
-
-            ## 校验reference bond一致性
-            if (i, j) != first_bond:
-                raise ValueError(f"数据不一致：第 {m} 个元素的源点为 {(i, j)}，预期为 {first_bond}")
-
-            ## 提取tar-bond的条件2：要求target bond不超过右边界
-            right_bound_p = int(N * 3/4) - 1
-            if l <= right_bound_p:
-                d1 = (k - i) % 8
-                d2 = (l - j) % 8
-                if (d1, d2) in allowed_cond:
-                    # 超导关联函数的距离计算
-                    r = honey_latt.sup_corr_distance(i, j, k, l)                  
-                    # 实例化类对象
-                    record_obj = cls(
-                        ref_bond=(i, j), 
-                        target_bond=(k, l), 
-                        distance=r, 
-                        value=value
-                    )
-                    # 添加到record_list中
-                    record_list.append(record_obj)  
-
-        return record_list  
-        
-
 
 #-----------------------------------------------------------------------------------
 # 单粒子关联函数<i·j>的数据记录器（B2：GreenFunction 输入）
@@ -442,3 +329,124 @@ class SingleParticleRecord(Record):
             record_list.append(record_obj)
 
         return record_list
+
+
+
+        
+#-----------------------------------------------------------------------------------
+# 超导关联函数<i·j·k·l>的数据记录器
+#-----------------------------------------------------------------------------------  
+class SuperCorrRecord(Record):
+    """超导关联函数 <i·j·k·l> 的数据记录器。
+
+    _value 保留复数表达能力（当前实值数据虚部恒 0；复值 DMRG
+    数据落地后虚部即可用）。下游分析管线消费 .sup_corr 属性
+    （实部 float），与既有代码完全兼容；需要完整复数时用
+    .sup_corr_complex。
+    """
+    def __init__(self, ref_bond: tuple, target_bond: tuple, distance: float, value: complex):
+        self.ref_bond = ref_bond
+        self.target_bond = target_bond
+        self.distance = distance
+        self._value = value
+
+    @property
+    def sup_corr(self):
+        """分析管线使用的实部（向后兼容）。"""
+        return float(self._value.real)
+
+    @sup_corr.setter
+    def sup_corr(self, val):
+        self._value = val if isinstance(val, complex) else complex(val, 0)
+
+    @property
+    def sup_corr_complex(self):
+        """完整复数值（复值数据分析用）。"""
+        return self._value
+
+    def __str__(self):
+        return f"超导关联函数的reference bond: {self.ref_bond}, target bond: {self.target_bond}, 距离r: {self.distance}, 超导关联函数: {self.sup_corr:.6f}"
+    
+    
+    
+    # 数据提取的类方法(类方法作用：只需调用SuperCorrRecord.extract_data(...)即可获得完整的SuperCorrRecord对象)
+    @classmethod
+    def extract_data(cls, data: str, N: int, a: float = 1.0) -> list['SuperCorrRecord']:
+        """
+        将输入的字符串数据解析并封装为SuperCorrRecord对象列表。
+        
+        :param data: 计算的超导关联函数的数据(是列表构成的字符串，每个元素的格式为: [[i, j, k, l], [val, 0]])。
+        :param N: 系统格点数(要求：N/8可以整除)。
+        :param a: honeycomb晶格的晶格常数（默认为a = 1.0）。
+                    
+        :return record_list: 列表，存储超导关联函数<i·j·k·l>所封装好的SuperCorrRecord对象。
+        """
+        ### 1.提取数据
+        try:
+            data_list = ast.literal_eval(data)
+        except (ValueError, SyntaxError) as e:
+            raise ValueError(f"输入数据格式错误，无法解析: {e}")
+
+        if not data_list:
+            raise ValueError(f"输入的数据{data}内容为空")
+
+        ### 2.获取预期的reference bond并校验
+        ## 2.1 获取reference bond(这里用first_bond暂时储存)
+        try:
+            first_bond = tuple(data_list[0][0][0:2])
+        except (IndexError, TypeError):
+            raise ValueError("数据结构不符合预期格式 [[i, j, k, l], [val, 0]]")
+        
+        ## 2.2 校验：reference bond是否左边1/4边界处
+        left_bound_p = int(N / 8 / 4) * 8
+        left_boundary = [left_bound_p, left_bound_p + 1, left_bound_p + 2, left_bound_p + 3]
+        if first_bond[0] not in left_boundary:
+            raise ValueError(f"初始reference bond {first_bond[0]} 不在左边1/4边界处")
+
+        ### 3.创建存储坐标列表与honeycomb晶格结构的对象honey_latt
+        record_list = []
+        honey_latt = HoneycombXCGeometry(N, a)
+        
+        ### 4.遍历数据，将满足条件的数据提取并封装成SuperCorrRecord对象
+        ## 提取tar-bond的条件1：配对关联的纵向通道筛选
+        # 只保留与 ref-bond 同向（平行）且键中点连线沿圆柱长度方向
+        # （x 轴）的 target bond——即 (Δk, Δl) mod 8 ∈ allowed_cond。
+        # 这是窄圆柱（Ly=4）上配对关联的主导传播通道（纵向配对振幅）；
+        # 横向错位（不同子格列）与斜向 target 键不进入该通道（受限设计，
+        # 文件内仍含这些条目，解析层按通道定义过滤）。
+        allowed_cond = {(0,0), (4,4), (4,7), (5,0), (7,4), (0,5)}
+
+        for m, element in enumerate(data_list):
+            ## 解包数据 (格式为: [[i, j, k, l], [val, 0]])
+            try:
+                [i, j, k, l], [re_part, im_part] = element
+            except (TypeError, ValueError):
+                raise NameError(f"Error：第 {m} 个元素格式不正确")
+            value = complex(float(re_part), float(im_part))
+
+            ## 校验reference bond一致性
+            if (i, j) != first_bond:
+                raise ValueError(f"数据不一致：第 {m} 个元素的源点为 {(i, j)}，预期为 {first_bond}")
+
+            ## 提取tar-bond的条件2：要求target bond不超过右边界
+            right_bound_p = int(N * 3/4) - 1
+            if l <= right_bound_p:
+                d1 = (k - i) % 8
+                d2 = (l - j) % 8
+                if (d1, d2) in allowed_cond:
+                    # 超导关联函数的距离计算
+                    r = honey_latt.sup_corr_distance(i, j, k, l)                  
+                    # 实例化类对象
+                    record_obj = cls(
+                        ref_bond=(i, j), 
+                        target_bond=(k, l), 
+                        distance=r, 
+                        value=value
+                    )
+                    # 添加到record_list中
+                    record_list.append(record_obj)  
+
+        return record_list  
+        
+
+

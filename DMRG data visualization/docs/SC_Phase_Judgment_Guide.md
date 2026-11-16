@@ -130,11 +130,11 @@
 
 | 论文需要的结果 | 用什么得到 |
 |---|---|
-| 配对关联衰减图/分类/指数 | `Superconductivity_Correlation.ipynb` 或 `Phase_Analysis_Report.py` |
+| 配对关联衰减图/分类/指数 | `exploration/Superconductivity_Correlation.ipynb` 或 `Phase_Analysis_Report.py` |
 | K_sc(δ) 演化表 | `SC_Exponent_Summary.py`（exponent_value/exponent_error 列） |
 | 各 doping 全物理量对比表 | `Cross_Doping_Summary.py`（CSV） |
 | 自旋/电荷结构因子峰 | `Phase_Analysis_Report.py` 或统一入口 `run_analysis` |
-| 能量外推 E∞(δ) | `Energy.ipynb` 或 `run_analysis(OBSERVABLE_ENERGY, 'extrapolate')` |
+| 能量外推 E∞(δ) | `exploration/Energy.ipynb` 或 `run_analysis(OBSERVABLE_ENERGY, 'extrapolate')` |
 | 数据收敛声明 | `Convergence_Report.py`（报告含判定+证据图，可直接放附录） |
 | 配对对称性（s/d 符号结构） | `run_analysis(OBSERVABLE_SC_PAIRING_SYMMETRY, 'analyze')` |
 | d+id 相位证据（复值数据落地后） | 复值数据 + `*_complex` 属性（解析已就绪） |

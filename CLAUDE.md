@@ -25,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 依赖：`numpy`、`pandas`、`matplotlib`，装在 Anaconda 虚拟环境 **Calculation** 中（无 requirements.txt）。运行前先 `conda activate Calculation` 再启动 Jupyter 或运行脚本；该环境下 numpy 2.2.6 / pandas 2.3.3 / matplotlib 3.10.7（较新，注意部分旧 API 已移除）
 - **测试**：`tests/` 下 35 套脚本（含 N200/N400 回归基线、合成数据、边界用例与规则引擎专项测试）。在 `DMRG data visualization/` 下运行：`python -X utf8 tests/test_*.py`（Calculation 环境，exit 0 = 全过）。回归基线在 `tests/baselines/`（n200 post_refactor / spin v1 / n400 v1），**不得重新生成或覆盖**；`tests/artifacts/` 是运行产物（被 .gitignore 忽略）
 - notebook 内用 `from Physical_Quantity.子包名.xxx import ...` 导入，**必须在 `DMRG data visualization/` 目录下启动 Jupyter**，否则导入失败
-- 直接运行脚本：`cd "DMRG data visualization" && python "DMRG_Log_Analyzer.py"`（文件名含零宽字符，见下方"已知坑"）
+- 直接运行脚本：`cd "DMRG data visualization" && python exploration/DMRG_Log_Analyzer.py`（stdin 读入日志文本）
 - `physical_analysis/Energy_Process.py` 等模块自带 `if __name__ == "__main__"` 的模拟数据演示，可直接 `python Physical_Quantity/physical_analysis/Energy_Process.py` 运行验证
 
 # 架构
@@ -58,7 +58,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`Cross_Doping_Summary.py`**（根目录独立脚本，P4.3）— 跨 doping 受控数值汇总：`analyze_doping()` 逐 doping 经 run_analysis 运行 SC 衰减/SC 配对 SF/自旋 SF+峰值/电荷 SF（`only_observables=None` 可选筛选，筛选发生在分析调用之前，未知 observable 抛 ValueError）；`build_rows()` 固定列序行构建（含 source_identity_kind / peak_estimate_entry_index）；`assign_comparability()` 可比性四档分组（硬性限制优先，P2 审计只读引用）；`summarize()` 串联 P1/P2/P3；`write_outputs()` CSV+JSON 覆盖写。细节见"跨 doping 汇总"一节。
 - **`SC_Exponent_Summary.py`**（根目录独立脚本，D1）— SC 指数跨数据汇总：经 `analyze_doping(only_observables={superconducting_correlation})` 复用 refbond 发现/失败机制跑 SC 衰减，**不重新拟合**——指数直接取自 `report.payload`（envelope_fit 的 K/xi ± 误差、StabilityReport 的 rel_mad_K/model_consistency/spearman_rho、候选幂律族模型的 K+AICc 证据）。指数状态四分类（exponent_ok/unstable/data_insufficient/input_missing，moderate≠失败）；K 与 xi 严格分列分组建；分组按身份全等（N/bond_dim/refbond/方向/指数类型），组间不合并趋势；comparability_bucket 复用 Cross_Doping_Summary 机械规则。输出 CSV+严格 JSON，不判定物理相态/d+id。默认输出到 `output/sc_exponent_summary/`，已被 .gitignore 覆盖。
 
-Notebook 位于 `DMRG data visualization/` 根目录，是实际使用入口（每个 cell 顶部有"需要修改的部分"参数块）：`Density.ipynb`、`Energy.ipynb`、`Spin_Correlation.ipynb`、`Superconductivity_Correlation.ipynb`（1500 后缀版对比不同 bond dimension）。`Superconductivity_Correlation.ipynb` 在可视化 cell 之后接有 `SuperCorrDecayAnalyzer` 衰减分析 cell（A/C 键方向循环，title=label）。Itensor 数据没有文件，通过 `getpass.getpass()` 粘贴输入。
+Notebook 与日志分析脚本位于 `DMRG data visualization/exploration/`，是数据探索/作图类入口（每个 cell 顶部有"需要修改的部分"参数块）：`Density.ipynb`、`Energy.ipynb`、`Spin_Correlation.ipynb`、`Superconductivity_Correlation.ipynb`（1500 后缀版对比不同 bond dimension）、`DMRG_Log_Analyzer.py`（stdin 读日志文本）。`Superconductivity_Correlation.ipynb` 在可视化 cell 之后接有 `SuperCorrDecayAnalyzer` 衰减分析 cell（A/C 键方向循环，title=label）。Itensor 数据没有文件，通过 `getpass.getpass()` 粘贴输入。**仍须在 `DMRG data visualization/` 目录下启动 Jupyter**（notebook 内 `Data/...` 相对路径与包导入依赖该 cwd，移动 notebook 本身不破坏路径）。
 
 # Skills
 
@@ -127,7 +127,7 @@ JSON 格式统一为 `[[索引], [value, 0]]` 的嵌套列表字符串结构（�
 
 # 已知坑
 
-- **`DMRG_Log_Analyzer.py` 文件名含零宽字符 U+200B**：正常拼写路径会 FileNotFoundError。用 `glob.glob('DMRG_Log_Analyzer*.py')` 或按原名复制粘贴路径定位。建议未来 rename（需先征得用户同意）。
+- （历史坑，已修复 2026-11-16）`DMRG_Log_Analyzer.py` 曾含零宽字符 U+200B，移动入 `exploration/` 时已改名为干净文件名。
 - **Windows 控制台默认 GBK 编码**：脚本/notebook 内大量中文注释与 `†`、`Δ` 等 Unicode 字符，print 时可能 `UnicodeEncodeError`。在 bash 里跑 Python 处理本项目文件时用 `python -X utf8` 并 `sys.stdout.reconfigure(encoding='utf-8')`。
 - **bash 里 `python` 默认指向 Anaconda base 环境**（numpy 1.21.5），不是 Calculation（numpy 2.2.6）。跑测试/脚本必须先 `conda activate Calculation` 或用全路径 `/d/Anaconda/envs/Calculation/python.exe`——跨环境跑会因浮点尾数差异导致 N200 基线逐字段精确比较失败（实测现象，非代码回归）。
 - Notebook 中的参数块是示例值，与数据目录实际参数不一定对应（实际有数据的组合见"数据目录约定"），运行前需核对参数块与数据目录是否匹配。
