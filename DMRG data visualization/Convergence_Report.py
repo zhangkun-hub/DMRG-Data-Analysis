@@ -54,13 +54,13 @@ def _doping_display(doping):
     if not m:
         return doping
     num, den = int(m.group(1)), int(m.group(2))
-    return f'{num}/{den}={num / den:.2f}'
+    return f'{num}/{den} = {num / den:.2f}'
 
 
 def _tj_display(t_j):
     """t_J_3 → 't/J=3'（无法解析时原样返回）。"""
     m = re.match(r'^t_J_(.+)$', t_j)
-    return f't/J={m.group(1)}' if m else t_j
+    return f'{m.group(1)}' if m else t_j
 
 
 VERDICT_EXPLANATION = {
@@ -87,7 +87,7 @@ def render_markdown(config, conv, outdir) -> str:
         '',
         '| 项 | 值 |',
         '|---|---|',
-        f"| doping | {_doping_display(config['doping'])}（目录 {config['doping']}） |",
+        f"| doping | {_doping_display(config['doping'])} |",
         f"| N | {config['N']} |",
         f"| t/J | {_tj_display(config['t_j'])} |",
         f"| D 档 | {', '.join(conv['dims'])} |",
