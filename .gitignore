@@ -24,4 +24,5 @@ credentials.json
 .ssh/
 
 # 分析输出（可重复生成的派生数据）
-DMRG data visualization/output/
+*output/
+
