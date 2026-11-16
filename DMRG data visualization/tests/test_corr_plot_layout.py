@@ -8,7 +8,9 @@
 - B. 自旋误差图：旧格式 {组: list} → 1×3（总标题含子格与 ref-site）；
   嵌套格式 {组: {行: list}} → 2×3；行标签不一致 → ValueError
 - C. 超导图：标题 '(reference A: (49, 50))'（无 'reference bond'）；
-  difference 3 键方向 → 3×3，行标签 target A/B/C；键集合不一致 → ValueError
+  difference 3 键方向 → 3×3，行标签/图例为原样 label
+  （'target A' 格式，旧 'A key (blue bond)' 格式亦兼容）；
+  键集合不一致 → ValueError
 - D. helper：_sublattice_suffix（49→A、50→B、其他→None）
 
 运行方式（在 DMRG data visualization/ 目录下）：
@@ -147,21 +149,42 @@ check('C', "单键标题 '(reference A: (49, 50))' 且无 'reference bond'",
       '(reference A: (49, 50))' in t and 'reference bond' not in t, t)
 close()
 
-d3 = {'A key (blue bond)': super_recs(), 'B key (green bond)': super_recs(),
-      'C key (orange bond)': super_recs()}
+# 标题键方向 = reference bond 自身方向（49_50→A），与 target label 无关
+SuperCorrProcessor.Super_Corr_Visualization(super_recs(), 'target B')
+fig = plt.gcf()
+t = fig._suptitle.get_text()
+check('C', "单键标题取 refbond 方向（target B 图仍 reference A: (49, 50)）",
+      '(reference A: (49, 50))' in t, t)
+close()
+
+d3 = {'target A': super_recs(),
+      'target B': super_recs(),
+      'target C': super_recs()}
 SuperCorrProcessor.Super_Corr_Visualization_three(d3)
 fig = plt.gcf()
 check('C', "three 标题 '(reference A: (49, 50))'",
       '(reference A: (49, 50))' in fig._suptitle.get_text())
 close()
 
+d3b = {'target A': super_recs((50, 51)), 'target B': super_recs((50, 51)),
+       'target C': super_recs((50, 51))}
+SuperCorrProcessor.Super_Corr_Visualization_three(d3b)
+fig = plt.gcf()
+check('C', 'three 标题取 refbond 自身方向（50_51→B）',
+      '(reference B: (50, 51))' in fig._suptitle.get_text(),
+      fig._suptitle.get_text())
+close()
+
 SuperCorrProcessor.Super_Corr_Visualization_difference(
     {'UltraDMRG': d3, 'Itensor': d3})
 fig = plt.gcf()
 check('C', 'difference 3 键方向 → 3 行 3 列', np.array(fig.axes).reshape(3, 3).shape == (3, 3))
+check('C', 'difference 标题取 refbond 自身方向（49_50→A）',
+      '(reference A: (49, 50))' in fig._suptitle.get_text(),
+      fig._suptitle.get_text())
 axc = np.array(fig.axes).reshape(3, 3)
 row_tags = [axc[i, 0].get_ylabel().split('\n')[0] for i in range(3)]
-check('C', '行标签 target A/B/C',
+check('C', '行标签为原始 label（target A/B/C）',
       row_tags == ['target A', 'target B', 'target C'], str(row_tags))
 check('C', '列标题为两组名 + 误差',
       axc[0, 0].get_title() == 'UltraDMRG'
@@ -170,8 +193,8 @@ check('C', '列标题为两组名 + 误差',
 close()
 
 SuperCorrProcessor.Super_Corr_Visualization_difference(
-    {'UltraDMRG': {'A key (blue bond)': super_recs()},
-     'Itensor': {'A key (blue bond)': super_recs()}})
+    {'UltraDMRG': {'target A': super_recs()},
+     'Itensor': {'target A': super_recs()}})
 fig = plt.gcf()
 check('C', 'difference 单键方向 → 1 行 3 列', np.array(fig.axes).reshape(1, 3).shape == (1, 3))
 close()
@@ -179,7 +202,7 @@ close()
 try:
     SuperCorrProcessor.Super_Corr_Visualization_difference(
         {'UltraDMRG': d3,
-         'Itensor': {'A key (blue bond)': super_recs()}})
+         'Itensor': {'target A': super_recs()}})
     check('C', '键方向集合不一致 → ValueError', False, '未抛异常')
 except ValueError:
     check('C', '键方向集合不一致 → ValueError', True)
@@ -205,15 +228,15 @@ check('D', '_refbond_direction(50, 49) → A（与顺序无关）',
 # ======================================================================
 print('===== E. 超导 difference_refbond =====')
 refs = {
-    'reference A: (49, 50)': {'A key (blue bond)': super_recs(),
-                              'B key (green bond)': super_recs(),
-                              'C key (orange bond)': super_recs()},
-    'reference B: (50, 51)': {'A key (blue bond)': super_recs((50, 51)),
-                              'B key (green bond)': super_recs((50, 51)),
-                              'C key (orange bond)': super_recs((50, 51))},
-    'reference C: (50, 54)': {'A key (blue bond)': super_recs((50, 54)),
-                              'B key (green bond)': super_recs((50, 54)),
-                              'C key (orange bond)': super_recs((50, 54))},
+    'reference A: (49, 50)': {'target A': super_recs(),
+                              'target B': super_recs(),
+                              'target C': super_recs()},
+    'reference B: (50, 51)': {'target A': super_recs((50, 51)),
+                              'target B': super_recs((50, 51)),
+                              'target C': super_recs((50, 51))},
+    'reference C: (50, 54)': {'target A': super_recs((50, 54)),
+                              'target B': super_recs((50, 54)),
+                              'target C': super_recs((50, 54))},
 }
 SuperCorrProcessor.Super_Corr_Visualization_difference_refbond(
     {'D = 1500': refs, 'D = 5000': refs})
@@ -229,7 +252,7 @@ check('E', "行标签 'reference A: (49, 50)' 等",
       and axe[1, 0].get_ylabel().split('\n')[0] == 'reference B: (50, 51)'
       and axe[2, 0].get_ylabel().split('\n')[0] == 'reference C: (50, 54)')
 leg = [t.get_text() for t in axe[0, 0].get_legend().texts]
-check('E', '第一列图例 target A/B/C',
+check('E', '第一列图例为原始 label（target A/B/C）',
       leg == ['target A', 'target B', 'target C'], str(leg))
 check('E', '每格内 3 键折线（get_lines 含 1 条 axhline 零线，共 4）',
       len(axe[0, 0].get_lines()) == 4 and len(axe[0, 2].get_lines()) == 4)

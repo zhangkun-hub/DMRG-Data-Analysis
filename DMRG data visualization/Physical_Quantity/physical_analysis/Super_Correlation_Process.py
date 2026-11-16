@@ -3,6 +3,15 @@ import matplotlib.pyplot as plt
 from ..data_records.Physical_Data_Record import SuperCorrRecord
 
 
+
+def _bond_key(label):
+    """从 label 提取键方向名（兼容 'A key (blue bond)' 与
+    'target A (blue bond)' 两种书写）。"""
+    for tok in label.split():
+        if tok in ('A', 'B', 'C'):
+            return tok
+    return label.split()[0]
+
 def _refbond_direction(i: int, j: int, ly: int = 4) -> str:
     """XC 圆柱构型最近邻键方向分类（对应 DMRGtJModel
     honeycomb_lattice.h 的 HoneycombXCCylinder::ClassifyNearestNeighbor，
@@ -139,11 +148,13 @@ class SuperCorrProcessor:
         """
         将输入的超导关联函数对象列表元素进行可视化
         :param record_list: 超导关联函数对象列表。
-        :label: 图例，用于表示超导关联函数的哪个键方向(固定格式: "A key (blue bond)")
+        :label: 图例，用于表示超导关联函数的哪个键方向（如 'target A'；
+        兼容 'A key (blue bond)' 旧格式）
         """
         ## 1. 提取出超导关联函数的reference bond(i, j)与键方向
         ref_bond = record_list[0].ref_bond
-        bond_key = label.split()[0]     # 键方向名（如 'A'）；颜色解析仍依赖原始 label 格式
+        target_key = _bond_key(label)          # target 键方向名（图例/颜色用）
+        ref_key = _refbond_direction(*ref_bond) # reference bond 自身键方向（标题用）
 
         ## 2. 将数据存储到x轴和y轴列表中
         x_data = [] # 存储两格点之间的距离数据
@@ -156,12 +167,12 @@ class SuperCorrProcessor:
         fig, axs = plt.subplots(1, 3, figsize=(20, 6))
 
         ## 4. 添加总标题和颜色
-        fig.suptitle(f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference {bond_key}: {ref_bond})',
+        fig.suptitle(f'Superconducting Correlation Function $\\langle \\Delta_{{ij}}^\\dagger \\Delta_{{kl}} \\rangle$ (reference {ref_key}: {ref_bond})',
                      fontsize=20, fontweight='bold', y=1.0)
-        color = label.split("(")[1].split(")")[0].split()[0]
+        color = {'A': 'blue', 'B': 'green', 'C': 'orange'}.get(target_key, 'blue')
         
         ## 5. 线性坐标图（原始）
-        axs[0].scatter(x_data, y_data, color=color, s=60, label=f'target {bond_key}', zorder=3)
+        axs[0].scatter(x_data, y_data, color=color, s=60, label=label, zorder=3)
         axs[0].plot(x_data, y_data, color='red', alpha=0.5, linewidth=2)
         axs[0].set_title(f'Linear Scale', fontsize=16)
         axs[0].set_xlabel('distance r', fontsize=14)
@@ -173,7 +184,7 @@ class SuperCorrProcessor:
         ## 6. 半对数坐标图（y轴对数）- 用于判断指数衰减
         # 注意：如果y_data有负值，对数坐标会有问题，这里取绝对值
         y_abs = np.abs(y_data)
-        axs[1].scatter(x_data, y_abs, color=color, s=60, label=f'target {bond_key}', zorder=3)
+        axs[1].scatter(x_data, y_abs, color=color, s=60, label=label, zorder=3)
         axs[1].plot(x_data, y_abs, color='orange', alpha=0.5, linewidth=2)
         axs[1].set_yscale('log')
         axs[1].set_title(f'Log-Linear Scale (y-log)\nExponential decay check', fontsize=16)
@@ -183,7 +194,7 @@ class SuperCorrProcessor:
         axs[1].legend(fontsize=14, loc='best')
 
         ## 7. 双对数坐标图 - 用于判断幂律衰减
-        axs[2].scatter(x_data, y_abs, color=color, s=60, label=f'target {bond_key}', zorder=3)
+        axs[2].scatter(x_data, y_abs, color=color, s=60, label=label, zorder=3)
         axs[2].plot(x_data, y_abs, color='brown', alpha=0.5, linewidth=2)
         axs[2].set_xscale('log')
         axs[2].set_yscale('log')
@@ -219,7 +230,7 @@ class SuperCorrProcessor:
         ## 1. 获取reference bond（取第一组第一条）与键方向
         first_key = next(iter(records_dict)) # 获取字典的第一个键(字典是无序的，但在Python 3.7+中插入顺序保留，这里取第一个插入的键)
         ref_bond = records_dict[first_key][0].ref_bond
-        ref_key = first_key.split()[0]
+        ref_key = _refbond_direction(*ref_bond)   # reference bond 自身键方向
 
         ## 2. 给三种键方向准备相应的颜色与形状进行区分
         colors = ['blue', 'green', 'orange']
@@ -240,7 +251,7 @@ class SuperCorrProcessor:
 
             c = colors[idx % len(colors)]
             m = markers[idx % len(markers)]
-            legend_label = f'target {label.split()[0]}'
+            legend_label = label
 
             # 4.1 --- 线性图 --- (原始数据图)
             axs[0].scatter(x_data, y_data, color=c, marker=m, s=60, label=legend_label, zorder=3)
@@ -334,7 +345,7 @@ class SuperCorrProcessor:
         ### 获取reference bond（取第一组第一条）与键方向
         first_key_1 = next(iter(records_dict_1)) # 获取字典的第一个键(字典是无序的，但在Python 3.7+中插入顺序保留，这里取第一个插入的键)
         ref_bond = records_dict_1[first_key_1][0].ref_bond
-        ref_key = first_key_1.split()[0]
+        ref_key = _refbond_direction(*ref_bond)   # reference bond 自身键方向
 
         ### 行 = 键方向（内层字典的键），列 = 组1 / 组2 / 绝对误差
         labels = list(records_dict_1.keys())
@@ -368,7 +379,7 @@ class SuperCorrProcessor:
             ## 输入颜色与数据形状
             c = colors[idx % len(colors)]
             m = markers[idx % len(markers)]
-            row_tag = f'target {label.split()[0]}'
+            row_tag = label
 
             # record_dict_1数据的可视化
             axs[idx, 0].scatter(x_data, y_data_1, color=c, marker=m, s=60,
@@ -468,7 +479,7 @@ class SuperCorrProcessor:
                 y3 = [abs(a - b) for a, b in zip(y1, y2)]
                 c = colors[k % len(colors)]
                 m = markers[k % len(markers)]
-                legend_tag = f'target {label.split()[0]}'
+                legend_tag = label
 
                 # 组1数据
                 axs[idx, 0].scatter(x_data, y1, color=c, marker=m, s=60,
