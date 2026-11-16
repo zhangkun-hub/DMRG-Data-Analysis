@@ -371,15 +371,15 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description='SC 指数跨数据汇总（D1）：逐 doping 运行既有 SC 衰减'
                     '分析并提取指数证据，不重新拟合，不判定物理相态')
-    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/real/Data_N200'),
-                        help='数据根目录（默认 <脚本目录>/Data/real/Data_N200）')
+    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/complex/Data_N200'),
+                        help='数据根目录（默认 <脚本目录>/Data/complex/Data_N200）')
     parser.add_argument('--t-j', dest='t_j', default=cds.DEFAULT_T_J,
                         help='t/J 目录名（默认 t_J_3）')
     parser.add_argument('--dopings', default=','.join(cds.DEFAULT_DOPINGS),
                         help='逗号分隔的 doping 列表（默认与跨 doping 汇总'
                              '一致；实际有数据的 4 个请显式指定）')
     parser.add_argument('--bond-dim', dest='bond_dim',
-                        default=cds.DEFAULT_BOND_DIM,
+                        default=None,
                         help='bond dimension（默认 1500）')
     parser.add_argument('--N', type=int, default=cds.DEFAULT_N,
                         help='系统格点数（默认 200；N=400 请单独运行）')
@@ -399,6 +399,24 @@ def main(argv=None) -> int:
                              'output/sc_exponent_summary）')
     args = parser.parse_args(argv)
 
+    if args.bond_dim is None:
+        try:
+            raw = input('请输入 bond dimension（回车使用默认 5000）: ').strip()
+        except EOFError:
+            raw = ''
+        bond_dim = raw or '5000'
+    else:
+        bond_dim = args.bond_dim
+    _avail = set()
+    for doping in args.dopings.split(','):
+        _avail.update(cds.available_bond_dims(
+            os.path.join(args.root, args.t_j, doping.strip())))
+    if _avail and bond_dim not in _avail:
+        print(f'错误：数据目录 {args.root}/{args.t_j} 的 doping 集合中没有 '
+              f'D={bond_dim} 的数据；可用的 bond dimension 档位: '
+              f'{", ".join(sorted(_avail, key=int))}')
+        return 1
+
     dopings = [d.strip() for d in args.dopings.split(',') if d.strip()]
     refbonds = None
     if args.refbonds:
@@ -409,14 +427,14 @@ def main(argv=None) -> int:
 
     config = {
         'root': args.root, 't_j': args.t_j, 'dopings': dopings,
-        'bond_dim': args.bond_dim, 'N': args.N, 'a': args.a,
+        'bond_dim': bond_dim, 'N': args.N, 'a': args.a,
         'n_qx': args.n_qx, 'n_qy': args.n_qy,
         'refbonds_filter': sorted(refbonds) if refbonds else None,
         'analyzer_config': 'default（AnalyzerConfig 默认阈值；与跨 doping '
                            '汇总一致，不重新拟合）',
     }
     exp_rows, groups, summary = run_summary(
-        args.root, args.t_j, dopings, args.bond_dim, args.N, args.a,
+        args.root, args.t_j, dopings, bond_dim, args.N, args.a,
         q_list, refbonds)
     paths = write_outputs(exp_rows, groups, config, args.outdir)
     _print_console(exp_rows, groups, paths, config)

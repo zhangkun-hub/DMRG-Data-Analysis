@@ -788,7 +788,8 @@ check('E', 'mock 集成：重复执行字节一致（不追加旧记录）', sam
 cds.run_analysis = fake_run
 try:
     rc = cds.main(['--root', tmp_root, '--dopings', 'd1,d_miss',
-                   '--N', '200', '--n-qx', '5', '--n-qy', '2',
+                   '--N', '200', '--bond-dim', '1500',
+                   '--n-qx', '5', '--n-qy', '2',
                    '--outdir', os.path.join(outdir_e, 'cli')])
 finally:
     cds.run_analysis = orig_run

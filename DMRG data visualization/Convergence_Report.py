@@ -48,11 +48,38 @@ _fraction_to_doping = par._fraction_to_doping
 _prompt_config = par._prompt_config
 
 
+def _doping_display(doping):
+    """d1_10 → '1/10=0.10'（无法解析时原样返回）。"""
+    m = re.match(r'^d(\d+)_(\d+)$', doping)
+    if not m:
+        return doping
+    num, den = int(m.group(1)), int(m.group(2))
+    return f'{num}/{den}={num / den:.2f}'
+
+
+def _tj_display(t_j):
+    """t_J_3 → 't/J=3'（无法解析时原样返回）。"""
+    m = re.match(r'^t_J_(.+)$', t_j)
+    return f't/J={m.group(1)}' if m else t_j
+
+
+VERDICT_EXPLANATION = {
+    'converged': ('全部可用检查通过：当前 D 档下数值稳定，该组数据可直接'
+                  '用于论文引用，**不需要**更大的 D 计算。'),
+    'needs_higher_D': ('能量或分类随 D 仍有明显变化：当前 D 尚未完全收敛，'
+                       '**建议加算更大的 D**（如继续翻倍）后再引用结果。'),
+    'suspicious': ('分类随 D 变化明显（数值振荡信号）：收敛性存疑，'
+                   '**建议优先排查收敛性**（更大 D 或检查优化过程）；'
+                   '在收敛问题解决前，引用该参数组结果需谨慎并注明。'),
+}
+
+
 def render_markdown(config, conv, outdir) -> str:
     cv = conv['verdict']
     lines = [
-        f"# 收敛诊断报告：{config['doping']}（N={config['N']}，"
-        f"t/J={config['t_j'].replace('t_J_', '')}）",
+        f"# 收敛诊断报告：{config['doping']}"
+        f"（{_doping_display(config['doping'])}，N={config['N']}，"
+        f"{_tj_display(config['t_j'])}）",
         '',
         DISCIPLINE,
         '',
@@ -60,15 +87,19 @@ def render_markdown(config, conv, outdir) -> str:
         '',
         '| 项 | 值 |',
         '|---|---|',
-        f"| doping | {config['doping']} |",
+        f"| doping | {_doping_display(config['doping'])}（目录 {config['doping']}） |",
         f"| N | {config['N']} |",
-        f"| t_J | {config['t_j']} |",
+        f"| t/J | {_tj_display(config['t_j'])} |",
         f"| D 档 | {', '.join(conv['dims'])} |",
         f"| 生成时间 | {config['generated_at']} |",
         '',
         '## 1. 判定结论',
         '',
         f"**{cv['verdict']}**——{cv['reason']}",
+        '',
+        '## 收敛性说明',
+        '',
+        VERDICT_EXPLANATION.get(cv['verdict'], cv['reason']),
         '',
         '## 2. 检查明细',
         '',
@@ -153,7 +184,7 @@ def main(argv=None) -> int:
         description='DMRG 收敛诊断独立入口（bond dimension 稳定性；'
                     '不判相，详见脚本 docstring）')
     parser.add_argument('--root', default=os.path.join(SCRIPT_DIR,
-                                                       'Data/real/Data_N200'))
+                                                       'Data/complex/Data_N200'))
     parser.add_argument('--t-j', default=None,
                         help='t/J 目录后缀（如 t_J_3）；不提供时交互式'
                              '提示输入 t/J 值（默认 3）')
@@ -162,8 +193,9 @@ def main(argv=None) -> int:
                              '不提供时交互式提示输入（默认 d=0.1）')
     parser.add_argument('--N', type=int, default=None,
                         help='格点数（默认 200）；不提供时交互式提示输入')
-    parser.add_argument('--dims', default=DEFAULT_DIMS,
-                        help='逗号分隔的 D 档（默认 1500,5000）')
+    parser.add_argument('--dims', default=None,
+                        help='逗号分隔的 D 档（如 1500,5000）；不提供时'
+                             '交互式提示输入（默认 1500,5000）')
     parser.add_argument('--a', type=float, default=1.0)
     parser.add_argument('--refbonds', default=None)
     parser.add_argument('--n-qx', type=int, default=41)
@@ -173,7 +205,26 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     n, t_j, doping = _prompt_config(args.N, args.t_j, args.doping)
-    dims = [s.strip() for s in args.dims.split(',') if s.strip()]
+    if args.dims is None:
+        try:
+            raw = input('请输入要比较的 D 档（逗号分隔，'
+                        '回车使用默认 1500,5000）: ').strip()
+        except EOFError:
+            raw = ''
+        dims_str = raw or DEFAULT_DIMS
+    else:
+        dims_str = args.dims
+    dims = [s.strip() for s in dims_str.split(',') if s.strip()]
+    # 校验各档在数据目录中存在（无数据可发现时跳过）
+    doping_dir = os.path.join(args.root, t_j, doping)
+    available = par.available_bond_dims(doping_dir)
+    if available:
+        missing = [d for d in dims if d not in available]
+        if missing:
+            print(f'错误：数据目录 {doping_dir} 中没有 '
+                  f'D={",".join(missing)} 的数据；'
+                  f'可比较的 bond dimension 档位: {", ".join(available)}')
+            return 1
     config = {'root': args.root, 't_j': t_j, 'doping': doping,
               'N': n, 'a': args.a,
               'refbonds': ([s.strip() for s in args.refbonds.split(',')

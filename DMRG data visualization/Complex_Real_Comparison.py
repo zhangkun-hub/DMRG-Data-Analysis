@@ -68,7 +68,7 @@ N = 200
 T_J = 't_J_3'
 DOPING = 'd3_25'          # 默认：δ=0.12（3/25）
 DELTA = 0.12
-DIM = '1500'
+DIM = '5000'
 OUTDIR = os.path.join(SCRIPT_DIR, 'output', 'complex_real_comparison')
 
 
@@ -537,16 +537,34 @@ def main(argv=None) -> int:
     parser.add_argument('--doping', default=None,
                         help='空穴率（如 3_25 或 0.12）；不提供时交互式'
                              '提示输入（默认 3_25）')
-    parser.add_argument('--dim', default=DIM,
-                        help='bond dimension 档（默认 1500；'
-                             '复值数据有 1500/5000 两档）')
+    parser.add_argument('--dim', default=None,
+                        help='bond dimension 档（如 1500 或 5000）；不提供'
+                             '时交互式提示输入（默认 5000）')
     args = parser.parse_args(argv)
 
     N, T_J, DOPING = _prompt_config(args.N, args.t_j, args.doping)
     DELTA = _doping_to_delta(DOPING)
-    DIM = str(args.dim)
+    if args.dim is None:
+        try:
+            raw = input('请输入 bond dimension（回车使用默认 5000）: ').strip()
+        except EOFError:
+            raw = ''
+        DIM = raw or '5000'
+    else:
+        DIM = str(args.dim)
     REAL_ROOT = _data_root('real')
     COMPLEX_ROOT = _data_root('complex')
+    # 校验该档在两棵树中存在（无数据可发现时跳过）
+    avail_c = par.available_bond_dims(COMPLEX_ROOT)
+    avail_r = par.available_bond_dims(REAL_ROOT)
+    if avail_c and DIM not in avail_c:
+        print(f'错误：复值数据目录 {COMPLEX_ROOT} 中没有 D={DIM} 的数据；'
+              f'可用档位: {", ".join(avail_c)}')
+        return 1
+    if avail_r and DIM not in avail_r:
+        print(f'错误：实值数据目录 {REAL_ROOT} 中没有 D={DIM} 的数据；'
+              f'可用档位: {", ".join(avail_r)}')
+        return 1
 
     print(f'=== 复值 vs 实值对比（N={N}, t/J={T_J}, {DOPING}, D={DIM}）===')
     for root, tag in ((REAL_ROOT, 'real'), (COMPLEX_ROOT, 'complex')):

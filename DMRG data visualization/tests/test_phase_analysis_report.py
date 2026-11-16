@@ -190,6 +190,7 @@ REAL_ROOT = os.path.join(ROOT, 'Data/real/Data_N200', 't_J_3')
 if os.path.isdir(os.path.join(REAL_ROOT, 'd1_100')):
     r = subprocess.run(
         [sys.executable, '-X', 'utf8', 'Phase_Analysis_Report.py',
+         '--root', os.path.join('Data', 'real', 'Data_N200'),
          '--doping', 'd1_100', '--N', '200', '--t-j', 't_J_3',
          '--no-plots',
          '--outdir', os.path.join('tests', 'artifacts', 'par_real')],

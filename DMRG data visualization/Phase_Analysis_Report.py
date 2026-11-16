@@ -410,16 +410,21 @@ _TE_RE = re.compile(r'TruncErr\s*=\s*([-+]?\d+\.\d+(?:[eE][-+]?\d+)?)')
 
 
 def _find_log_for_dim(doping_dir, dim):
-    """doping 目录下含该 D 档的优化日志（slurm-*-Zk_tJ.log）。
+    """doping 目录下含该 D 档的优化日志（按内容匹配，不按文件名猜：
+    实值日志名 slurm-*-Zk_tJ.log 与复值日志名 slurm-*-dmrg_complex.log
+    都支持）。
 
-    匹配真实日志的阶段头行格式（如 'Bond dimension:\\t 1500/1500'）。
+    匹配真实日志的阶段头行格式（如 'Bond dimension:\\t 1500/1500'），
+    双条件：含 Bond dimension 字样且含 {dim}/{dim} 阶段头。
     """
-    logs = [f for f in os.listdir(doping_dir)
-            if f.endswith('.log') and 'Zk_tJ' in f]
-    for name in logs:
+    if not os.path.isdir(doping_dir):
+        return None, None
+    for name in sorted(os.listdir(doping_dir)):
+        if not name.endswith('.log'):
+            continue
         text = open(os.path.join(doping_dir, name), encoding='utf-8',
                     errors='replace').read()
-        if f'{dim}/{dim}' in text:
+        if 'Bond dimension' in text and f'{dim}/{dim}' in text:
             return os.path.join(doping_dir, name), text
     return None, None
 
@@ -1201,13 +1206,49 @@ def _prompt_config(n_explicit, t_j_explicit, doping_explicit):
     return n, t_j, doping
 
 
+def available_bond_dims(doping_dir):
+    """扫描 doping 目录下的 {d}_measure_* 子目录，返回可用的 D 档列表
+    （按数值升序）；目录不存在或无 measure 目录时返回空列表。"""
+    if not os.path.isdir(doping_dir):
+        return []
+    dims = set()
+    for name in os.listdir(doping_dir):
+        m = re.match(r'^(\d+)_measure_(phys_qty|super_corr)$', name)
+        if m:
+            dims.add(m.group(1))
+    return sorted(dims, key=int)
+
+
+def _prompt_bond(explicit, default='5000'):
+    """bond dimension 交互提示（非交互环境回退默认值）。"""
+    if explicit is not None:
+        return str(explicit)
+    try:
+        raw = input(f'请输入 bond dimension（回车使用默认 {default}）: ').strip()
+    except EOFError:
+        return default
+    return raw or default
+
+
+def check_bond_dim(doping_dir, bond):
+    """校验 bond 档在数据目录中存在；无数据可发现（空/合成目录）时跳过。
+    不存在则 ValueError 并列出可用档位。"""
+    available = available_bond_dims(doping_dir)
+    if not available:
+        return
+    if str(bond) not in available:
+        raise ValueError(
+            f'数据目录 {doping_dir} 中没有 D={bond} 的数据；'
+            f'可用的 bond dimension 档位: {", ".join(available)}')
+
+
 def main(argv=None) -> int:
     sys.stdout.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(
         description='一键受控证据报告（单 doping 单参数组；不判相，'
                     '详见脚本 docstring）')
     parser.add_argument('--root', default=os.path.join(SCRIPT_DIR,
-                                                       'Data/real/Data_N200'))
+                                                       'Data/complex/Data_N200'))
     parser.add_argument('--t-j', default=None,
                         help='t/J 目录后缀（如 t_J_3）；不提供时交互式'
                              '提示输入 t/J 值（默认 3）')
@@ -1216,7 +1257,9 @@ def main(argv=None) -> int:
                              '不提供时交互式提示输入（默认 1_10）')
     parser.add_argument('--N', type=int, default=None,
                         help='格点数（默认 200）；不提供时交互式提示输入')
-    parser.add_argument('--bond-dim', default=DEFAULT_BOND_DIM)
+    parser.add_argument('--bond-dim', default=None,
+                        help='bond dimension（如 1500 或 5000）；不提供时'
+                             '交互式提示输入（默认 5000）')
     parser.add_argument('--refbonds', default=None,
                         help='逗号分隔过滤（如 49_50,50_51）；默认全部发现')
     parser.add_argument('--n-qx', type=int, default=41)
@@ -1250,9 +1293,15 @@ def main(argv=None) -> int:
     conv_dims = ([s.strip() for s in args.convergence_dims.split(',')
                   if s.strip()] if args.convergence_dims else None)
     n, t_j, doping = _prompt_config(args.N, args.t_j, args.doping)
+    bond_dim = _prompt_bond(args.bond_dim)
+    try:
+        check_bond_dim(os.path.join(args.root, t_j, doping), bond_dim)
+    except ValueError as ex:
+        print(f'错误：{ex}')
+        return 1
     config = {
         'root': args.root, 't_j': t_j, 'doping': doping,
-        'N': n, 'bond_dim': args.bond_dim, 'refbonds': refbonds,
+        'N': n, 'bond_dim': bond_dim, 'refbonds': refbonds,
         'n_qx': args.n_qx, 'n_qy': args.n_qy, 'a': args.a,
         'energy_root': args.energy_root, 'j_value': args.j_value,
         'with_pairing_symmetry': args.with_pairing_symmetry,

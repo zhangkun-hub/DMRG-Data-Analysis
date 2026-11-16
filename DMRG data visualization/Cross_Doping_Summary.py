@@ -82,7 +82,21 @@ from Physical_Quantity.physical_analysis.Correlation_Decay_Analyzer import Analy
 
 DEFAULT_DOPINGS = ['d1_10', 'd1_20', 'd1_25', 'd1_100', 'd2_25', 'd3_20', 'd3_25']
 DEFAULT_T_J = 't_J_3'
-DEFAULT_BOND_DIM = '1500'
+DEFAULT_BOND_DIM = '5000'
+
+def available_bond_dims(doping_dir):
+    """扫描 doping 目录下的 {d}_measure_* 子目录，返回可用的 D 档列表
+    （按数值升序）；目录不存在或无 measure 目录时返回空列表。
+    （与 Phase_Analysis_Report 同款；本脚本独立实现避免循环导入）"""
+    if not os.path.isdir(doping_dir):
+        return []
+    dims = set()
+    for name in os.listdir(doping_dir):
+        m = re.match(r'^(\d+)_measure_(phys_qty|super_corr)$', name)
+        if m:
+            dims.add(m.group(1))
+    return sorted(dims, key=int)
+
 DEFAULT_N = 200
 
 SC_KEYS = ('A', 'B', 'C')
@@ -971,14 +985,15 @@ def main(argv=None) -> int:
         description='跨 doping 受控数值汇总（PhaseDiagnosis-P4.3）：'
                     '逐 doping 运行既有统一入口并输出 CSV/JSON 汇总，'
                     '不判定物理趋势或相态')
-    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/real/Data_N200'),
-                        help='数据根目录（默认 <脚本目录>/Data/real/Data_N200）')
+    parser.add_argument('--root', default=os.path.join(SCRIPT_DIR, 'Data/complex/Data_N200'),
+                        help='数据根目录（默认 <脚本目录>/Data/complex/Data_N200）')
     parser.add_argument('--t-j', dest='t_j', default=DEFAULT_T_J,
                         help='t/J 目录名（默认 t_J_3）')
     parser.add_argument('--dopings', default=','.join(DEFAULT_DOPINGS),
                         help='逗号分隔的 doping 列表（默认 7 个共同 doping）')
-    parser.add_argument('--bond-dim', dest='bond_dim', default=DEFAULT_BOND_DIM,
-                        help='bond dimension（默认 1500）')
+    parser.add_argument('--bond-dim', dest='bond_dim', default=None,
+                        help='bond dimension（如 1500 或 5000）；不提供时'
+                             '交互式提示输入（默认 5000）')
     parser.add_argument('--N', type=int, default=DEFAULT_N,
                         help='系统格点数（默认 200；N=400 数据请单独运行，'
                              '不与 N=200 混组）')
@@ -997,7 +1012,25 @@ def main(argv=None) -> int:
                              'output/cross_doping_summary）')
     args = parser.parse_args(argv)
 
+    if args.bond_dim is None:
+        try:
+            raw = input('请输入 bond dimension（回车使用默认 5000）: ').strip()
+        except EOFError:
+            raw = ''
+        bond_dim = raw or '5000'
+    else:
+        bond_dim = args.bond_dim
+    # 校验该档在任一 doping 目录存在（无数据可发现时跳过）
     dopings = [d.strip() for d in args.dopings.split(',') if d.strip()]
+    _avail = set()
+    for doping in dopings:
+        _avail.update(available_bond_dims(
+            os.path.join(args.root, args.t_j, doping)))
+    if _avail and bond_dim not in _avail:
+        print(f'错误：数据目录 {args.root}/{args.t_j} 的 doping 集合中没有 '
+              f'D={bond_dim} 的数据；可用的 bond dimension 档位: '
+              f'{", ".join(sorted(_avail, key=int))}')
+        return 1
     refbonds = None
     if args.refbonds:
         refbonds = {rb.strip() for rb in args.refbonds.split(',')
@@ -1008,12 +1041,12 @@ def main(argv=None) -> int:
     outcomes = []
     for doping in dopings:
         outcomes.extend(analyze_doping(
-            doping, root=args.root, t_j=args.t_j, bond_dim=args.bond_dim,
+            doping, root=args.root, t_j=args.t_j, bond_dim=bond_dim,
             N=args.N, a=args.a, q_list=q_list, refbonds=refbonds))
 
     config = {
         'root': args.root, 't_j': args.t_j, 'dopings': dopings,
-        'bond_dim': args.bond_dim, 'N': args.N, 'a': args.a,
+        'bond_dim': bond_dim, 'N': args.N, 'a': args.a,
         'n_qx': args.n_qx, 'n_qy': args.n_qy, 'q_meta': q_meta,
         'refbonds_filter': sorted(refbonds) if refbonds else None,
         'analyzer_config': 'default（AnalyzerConfig 默认阈值快照见下）',

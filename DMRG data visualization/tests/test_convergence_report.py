@@ -80,9 +80,9 @@ with patch.object(cr, '_prompt_config', return_value=(200, 't_J_3',
         patch.object(cr, 'write_report',
                      return_value={'convergence_report.md': 'x',
                                    'convergence_report.json': 'x'}):
-    rc = cr.main(['--dims', '500,1000'])
+    rc = cr.main(['--dims', '1500,5000'])
 check('A', 'main 缺参：交互配置注入 + --dims 解析 + exit 0',
-      rc == 0 and _seen == {'dims': ['500', '1000'], 'doping': 'd1_10',
+      rc == 0 and _seen == {'dims': ['1500', '5000'], 'doping': 'd1_10',
                             'N': 200}, str(_seen))
 
 # ======================================================================
