@@ -1079,7 +1079,7 @@
    "k_stab_max": 0.3,
    "k_stab_moderate": 0.6,
    "model_consistency_min": 0.6,
-   "bootstrap_n": 200,
+   "bootstrap_n": 30,
    "pcov_max_cond": 1000000000000.0
   }
  },
@@ -2161,7 +2161,7 @@
    "k_stab_max": 0.3,
    "k_stab_moderate": 0.6,
    "model_consistency_min": 0.6,
-   "bootstrap_n": 200,
+   "bootstrap_n": 30,
    "pcov_max_cond": 1000000000000.0
   }
  },

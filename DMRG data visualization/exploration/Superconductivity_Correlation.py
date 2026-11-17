@@ -37,6 +37,7 @@ import contextlib
 import io
 import os
 import sys
+import time
 from concurrent.futures import ProcessPoolExecutor
 
 os.environ.setdefault('MPLBACKEND', 'Agg')
@@ -84,9 +85,11 @@ def save(ref_dir, name):
 def _decay_worker(rec_list, label, bond, key, rb, ref_dir):
     """子进程 worker：单键方向衰减分析 → 摘要 txt + 诊断图 PNG。
 
-    在子进程内完成整条链（分析/摘要/存图），只回传 None 或错误信息
-    字符串——避免跨进程传分析结果对象的序列化问题；主进程仅打印失败。
+    在子进程内完成整条链（分析/摘要/存图），回传 (错误信息, 执行秒数)
+    ——错误信息为 None 表示成功；耗时在 worker 内测量（不含排队等待），
+    供主进程打印任务计时，便于定位慢任务。
     """
+    t0 = time.perf_counter()
     try:
         config = AnalyzerConfig()   # 包络拟合固定全点口径
         result = SuperCorrDecayAnalyzer.analyze(rec_list, config)
@@ -103,9 +106,9 @@ def _decay_worker(rec_list, label, bond, key, rb, ref_dir):
             visualization_mode='standard', title=label,
             save_path=os.path.join(ref_dir, f'fig_decay_{bond}.png'))
         plt.close('all')
-        return None
+        return (None, time.perf_counter() - t0)
     except Exception as exc:   # 失败信息回传主进程打印
-        return f'{type(exc).__name__}: {exc}'
+        return (f'{type(exc).__name__}: {exc}', time.perf_counter() - t0)
 
 
 def discover_refbonds(super_root):
@@ -218,13 +221,25 @@ def main(argv=None) -> int:
             futures = []
             for ref_dir, key, rb, super_corr_dict in jobs:
                 for bond, label in BOND_LABELS.items():
-                    futures.append((label, pool.submit(
+                    futures.append((label, key, rb, pool.submit(
                         _decay_worker, super_corr_dict[label], label,
                         bond, key, rb, ref_dir)))
-            for label, fut in futures:
-                err = fut.result()
+            # 逐任务打印完成信息与 worker 内执行耗时（便于定位慢任务）
+            print(f'衰减分析：{n_tasks} 个任务，{workers} 个并行进程')
+            wall0 = time.perf_counter()
+            slowest, slowest_name = 0.0, ''
+            for i, (label, key, rb, fut) in enumerate(futures, 1):
+                err, dt = fut.result()
                 if err:
-                    print(f'错误：{label} 衰减分析失败: {err}')
+                    print(f'[{i}/{n_tasks}] reference {key}: {rb} {label} '
+                          f'失败 ({dt:.1f}s): {err}')
+                else:
+                    print(f'[{i}/{n_tasks}] reference {key}: {rb} {label} '
+                          f'完成 ({dt:.1f}s)')
+                if dt > slowest:
+                    slowest, slowest_name = dt, f'reference {key}: {rb} {label}'
+            print(f'衰减分析完成：总耗时 {time.perf_counter() - wall0:.1f}s，'
+                  f'最慢任务 {slowest_name} ({slowest:.1f}s)')
 
     return 0
 

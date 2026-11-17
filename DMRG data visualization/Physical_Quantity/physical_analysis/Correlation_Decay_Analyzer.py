@@ -74,7 +74,7 @@ class AnalyzerConfig:
     k_stab_moderate: float = 0.60        # 中等/不稳定分界
     model_consistency_min: float = 0.6   # 模型一致性门槛
     # ---- 不确定度兜底 ----
-    bootstrap_n: int = 200               # 残差 bootstrap 次数(仅 pcov 失效兜底)
+    bootstrap_n: int = 30                # 残差 bootstrap 次数(仅 pcov 失效兜底；30 次对标准误估计已稳定)
     pcov_max_cond: float = 1e12          # pcov 条件数上限
 
 
