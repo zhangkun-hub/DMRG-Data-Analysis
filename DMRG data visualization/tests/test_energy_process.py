@@ -43,7 +43,7 @@ sys.path.insert(0, ROOT)
 from Physical_Quantity.physical_analysis.Energy_Process import EnergyRecord, EnergyProcessor
 
 # 零宽字符文件名：glob 定位后 importlib 加载（与日志分析器测试同款）
-_SCRIPT = glob.glob(os.path.join(ROOT, 'DMRG_Log_Analyzer*.py'))[0]
+_SCRIPT = glob.glob(os.path.join(ROOT, 'exploration', 'DMRG_Log_Analyzer*.py'))[0]
 _spec = importlib.util.spec_from_file_location('dmrg_log_analyzer', _SCRIPT)
 _analyzer = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_analyzer)

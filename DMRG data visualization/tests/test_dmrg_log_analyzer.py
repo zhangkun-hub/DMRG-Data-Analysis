@@ -35,7 +35,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
 # 主脚本文件名含零宽字符 U+200B：用 glob 定位
-_SCRIPT = glob.glob(os.path.join(ROOT, 'DMRG_Log_Analyzer*.py'))[0]
+_SCRIPT = glob.glob(os.path.join(ROOT, 'exploration', 'DMRG_Log_Analyzer*.py'))[0]
 _spec = importlib.util.spec_from_file_location('dmrg_log_analyzer', _SCRIPT)
 analyzer = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(analyzer)
