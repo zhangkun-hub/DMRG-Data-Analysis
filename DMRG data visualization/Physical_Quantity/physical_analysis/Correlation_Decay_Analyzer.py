@@ -49,7 +49,6 @@ class AnalyzerConfig:
     r_max_noise_run: int = 3           # 连续低于阈值的点数要求(防单点尖峰)
     n_rmin_candidates: int = 20        # r_min 候选数上限
     # ---- 噪声底(effective noise floor / conservative noise scale) ----
-    envelope_mode: str = 'all_points'  # 包络模式：'all_points'(全点) | 'extrema'(峰值法) | 'both'(两者都算并对比)
     tail_frac_noise: float = 0.25      # 远距尾部分数
     noise_floor_abs_min: float = 1e-15 # 绝对下限
     prom_factor: float = 3.0           # 极值噪声筛选倍数
@@ -193,7 +192,7 @@ class DecayAnalysisResult:
     n_distances: int = 0
     fit_space: str = ''
     envelope_fit: FitResult = None
-    envelope_fit_alt: FitResult = None   # envelope_mode='both' 时的对比包络（另一种模式）
+    envelope_fit_alt: FitResult = None   # 自动模式恒为 None（字段保留仅为契约键集稳定）
     envelope_extrema_r: np.ndarray = field(default_factory=lambda: np.array([]))   # 峰值法参与拟合的极值点位置
     envelope_extrema_abs: np.ndarray = field(default_factory=lambda: np.array([])) # 对应 |C| 值（可视化高亮用）
     envelope_extrema_excluded: list = field(default_factory=list)   # 峰值法按噪声底筛选剔除的极值点 [(r, C, 原因)]
@@ -483,72 +482,28 @@ class CorrelationDecayAnalyzer:
     @staticmethod
     def _fit_envelope_with_mode(r: np.ndarray, C: np.ndarray, noise_floor: float,
                                 config: AnalyzerConfig) -> tuple:
-        """按 config.envelope_mode 拟合包络，
-        返回 (envelope_fit, alt_fit, warnings, extrema_data)：
-        extrema_data = (ext_r, |ext_C|, excluded)——峰值法参与拟合的极值点
-        （供可视化高亮）与按噪声底筛选剔除的极值点 [(r, C, 原因)]，
-        all_points 模式时 ext_r 为空数组。
-        - 'all_points'：全点 |C(r)| 对数空间拟合（谷底点会系统性拉低包络）
-        - 'extrema'：峰值法——斜率符号法找到的局部极值点做对数空间拟合（不受谷底拉低，但样本少）
-        - 'both'：两种都算，AICc 优者为主包络，另一个作为对比结果返回
+        """固定全点包络拟合，返回 (envelope_fit, alt_fit, warnings, extrema_data)。
+
+        主包络对窗口内全部距离点 |C(r)| 做 log 空间拟合（power/exp 按
+        AICc 选择）。alt_fit 恒为 None、extrema_data 恒为空——峰值法
+        （极值点拟合）机制保留在 detect_extrema 中供振荡诊断使用，但不作
+        主包络：当前数据窗口 11-12 个距离点下噪声筛选后极值仅 4-6 个，
+        实测不足以可靠确定包络形式/参数（合成与真实数据均出现分类误判）。
         """
         r = np.asarray(r, dtype=float)
         C = np.asarray(C, dtype=float)
         warnings = []
         absC = np.abs(C)
-        empty = (np.array([]), np.array([]), [])
         f_p_all = CorrelationDecayAnalyzer.fit_envelope_logspace(r, absC, 'power', config)
         f_e_all = CorrelationDecayAnalyzer.fit_envelope_logspace(r, absC, 'exp', config)
         env_all = (f_p_all if np.isfinite(f_p_all.aicc) and
                    (not np.isfinite(f_e_all.aicc) or f_p_all.aicc <= f_e_all.aicc)
                    else f_e_all)
-        tag_all = f"全点包络（all_points，n={len(r)} 个点）"
+        tag_all = f"全点包络（n={len(r)} 个点）"
         env_all.message = (tag_all if not env_all.message
                            else env_all.message + "；" + tag_all)
-        if config.envelope_mode == 'all_points':
-            return (env_all, None, warnings, empty)
-
-        ext_r, ext_v = CorrelationDecayAnalyzer.detect_extrema(r, C, noise_floor, config)
-        # 原始（未筛选）极值 vs 筛选后极值：记录剔除的极值点及原因
-        # （振荡诊断的"极值数"是未筛选原始计数，与峰值法拟合样本口径不同）
-        raw_r, raw_v = CorrelationDecayAnalyzer.detect_extrema(r, C, 0.0, config)
-        excluded = []
-        for rr, vv in zip(raw_r, raw_v):
-            if not np.any(np.isclose(ext_r, rr)):
-                reason = ('幅度不足' if abs(vv) <= noise_floor * config.prom_factor
-                          else '与相邻异类极值落差不足')
-                excluded.append((float(rr), float(vv), reason))
-        if len(ext_r) < 4:
-            # 退化分级：原始极值充足但被噪声标尺筛掉 = 极值幅度不确定（小动态
-            # 范围数据下噪声底与信号同量级，绝对阈值失效），全点拟合仅作对照；
-            # 原始极值本身不足 = 噪声主导，全点拟合为主结果
-            if len(raw_r) >= 4:
-                warnings.append(
-                    f"envelope_mode='{config.envelope_mode}' 极值幅度与噪声底同量级："
-                    f"原始极值 {len(raw_r)} 个，通过幅度筛选的仅 {len(ext_r)} 个（<4），"
-                    f"峰值法不可用，全点拟合仅作对照")
-            else:
-                warnings.append(f"envelope_mode='{config.envelope_mode}' 但极值点仅 "
-                                f"{len(ext_r)} 个（<4），退化回全点包络")
-            return (env_all, None, warnings, (np.array([]), np.array([]), excluded))
-        ext_abs = np.abs(ext_v)
-        f_p_ext = CorrelationDecayAnalyzer.fit_envelope_logspace(
-            ext_r, ext_abs, 'power', config)
-        f_e_ext = CorrelationDecayAnalyzer.fit_envelope_logspace(
-            ext_r, ext_abs, 'exp', config)
-        env_ext = (f_p_ext if np.isfinite(f_p_ext.aicc) and
-                   (not np.isfinite(f_e_ext.aicc) or f_p_ext.aicc <= f_e_ext.aicc)
-                   else f_e_ext)
-        tag = f"极值点包络（峰值法，n={len(ext_r)} 个极值点）"
-        env_ext.message = tag if not env_ext.message else env_ext.message + "；" + tag
-        if config.envelope_mode == 'extrema':
-            return (env_ext, None, warnings, (ext_r, ext_abs, excluded))
-
-        # both：AICc 优者为主（并列时按规则峰值法胜出）
-        if np.isfinite(env_ext.aicc) and (not np.isfinite(env_all.aicc)
-                                          or env_ext.aicc <= env_all.aicc):
-            return (env_ext, env_all, warnings, (ext_r, ext_abs, excluded))
-        return (env_all, env_ext, warnings, (ext_r, ext_abs, excluded))
+        empty = (np.array([]), np.array([]), [])
+        return (env_all, None, warnings, empty)
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -1325,7 +1280,7 @@ class CorrelationDecayAnalyzer:
                 rows.append({'r_min': r_min, 'n_pts': n, 'skipped': True,
                              'reason': f'n_pts={n} < n_min_w({n_min_w})'})
                 continue
-            # 包络拟合（按 envelope_mode；'both' 时以主包络为准）
+            # 包络拟合（自动模式，以主包络为准）
             env, _, _, _ = CorrelationDecayAnalyzer._fit_envelope_with_mode(
                 r_win, C_win, noise_floor, config)
             param_key = 'K' if 'K' in env.params else 'xi'
@@ -1835,15 +1790,11 @@ class CorrelationDecayAnalyzer:
         if env is not None:
             print("-" * 72)
             # 实际生效模式：优先用 result.envelope_mode_used（analyze 记录），
-            # 兼容旧结果用 message 标记反推；退化 = 配置非 all_points 但无峰值法极值点
+            # 兼容旧结果用 message 标记反推；新结果为固定全点口径
             mode_used = (result.envelope_mode_used
                          or ('extrema' if '极值点' in env.message else 'all_points'))
-            degraded = (result.config.envelope_mode != 'all_points'
-                        and len(result.envelope_extrema_r) == 0)
             mode_name = '峰值法 extrema' if mode_used == 'extrema' else '全点拟合 all_points'
-            degrade_note = '——峰值法因极值点不足退化' if degraded else ''
-            print(f"包络拟合（log 空间，envelope_mode={result.config.envelope_mode}"
-                  f"，实际生效：{mode_name}{degrade_note}）:")
+            print(f"包络拟合（log 空间，{mode_name}）:")
             if (result.stability is not None
                     and result.stability.verdict == 'insufficient'):
                 print("  （峰后衰减段数据不足，上述包络参数为全区间拟合值，仅作对照）")
@@ -1854,27 +1805,6 @@ class CorrelationDecayAnalyzer:
                 disp = 'ξ' if name == 'xi' else name
                 print(f"  {disp} = {_fmt_sci(val)} ± "
                       f"{_fmt_sci(env.param_errors.get(name, float('nan')))}")
-            # envelope_mode='both' 的对比包络
-            alt = result.envelope_fit_alt
-            if alt is not None:
-                kind_alt = '极值点(峰值法)' if '极值点' in alt.message else '全点'
-                kind_env = '极值点(峰值法)' if '极值点' in env.message else '全点'
-                print(f"  包络模式对比: 主包络[{kind_env}] vs 对比包络[{kind_alt}]")
-                print(f"    {kind_alt}: {alt.model}  R2_log = {alt.r2:.6f}  "
-                      f"AICc = {alt.aicc:.3f}  "
-                      f"params = " + ", ".join(
-                          f"{('ξ' if k == 'xi' else k)}={_fmt_sci(v)}"
-                          for k, v in alt.params.items()))
-                # 主包络获胜原因（both 规则：AICc 优者为主，并列时峰值法胜出）
-                if np.isfinite(alt.aicc) and np.isfinite(env.aicc):
-                    daicc = alt.aicc - env.aicc
-                    if daicc > 1e-9:
-                        print(f"    获胜原因: {kind_env} AICc 更优（ΔAICc = 对比 − 主 = {daicc:.3f}）")
-                    else:
-                        print(f"    获胜原因: AICc 并列（ΔAICc = {daicc:.3f}），"
-                              f"按规则峰值法胜出")
-                else:
-                    print(f"    获胜原因: 对比包络 AICc 不可用，主包络为唯一有效结果")
         # 振荡
         osc = result.oscillation
         if osc is not None:
@@ -1885,7 +1815,7 @@ class CorrelationDecayAnalyzer:
             ext_line = f"  过零数 = {osc.n_cross}  极值数 = {osc.n_ext}"
             n_peak = len(result.envelope_extrema_r)
             excl = result.envelope_extrema_excluded
-            if result.config.envelope_mode != 'all_points' and (n_peak > 0 or excl):
+            if n_peak > 0 or excl:
                 if n_peak > 0:
                     ext_line += f"（峰值法参与拟合的极值点 n={n_peak}"
                     if excl:
@@ -2021,7 +1951,7 @@ class CorrelationDecayAnalyzer:
                         'r-', linewidth=2,
                         label=f"exp fit: ξ={f_e.params.get('xi', float('nan')):.3g}, "
                               f"R2_log={f_e.r2:.3f}")
-        # 峰值法参与拟合的极值点高亮（envelope_mode='extrema'/'both' 时非空）
+        # 峰值法参与拟合的极值点高亮（固定全点口径下恒空）
         # 白底品红粗描边空心圆：与蓝色数据点、红色包络线均有强对比，且会覆盖住底下的线
         if len(result.envelope_extrema_r) > 0:
             ax.semilogy(result.envelope_extrema_r, result.envelope_extrema_abs,
@@ -2113,7 +2043,7 @@ class CorrelationDecayAnalyzer:
         else:
             ax.text(0.5, 0.5, 'no valid positive data in window',
                     transform=ax.transAxes, ha='center', va='center', fontsize=13)
-        # 峰值法参与拟合的极值点高亮（envelope_mode='extrema'/'both' 时非空）
+        # 峰值法参与拟合的极值点高亮（固定全点口径下恒空）
         # 白底品红粗描边空心圆：与蓝色数据点、红色包络线均有强对比，且会覆盖住底下的线
         if len(result.envelope_extrema_r) > 0:
             ax.loglog(result.envelope_extrema_r, result.envelope_extrema_abs,
@@ -2472,7 +2402,7 @@ class CorrelationDecayAnalyzer:
         mask_all = _window_mask(prep.r, 0.0, prep.r_max_used)
         hump, hump_peak = cls._envelope_hump(prep.r[mask_all], prep.C_abs[mask_all])
 
-        # r_min 扫描（窗口选择标准始终基于全点包络，最终包络按 envelope_mode 计算）
+        # r_min 扫描（窗口选择标准基于全点包络，最终包络亦为全点拟合）
         stability = cls.scan_r_min(
             prep.r, prep.C, config, noise_floor=prep.final_noise_floor,
             hump_peak=hump_peak if hump else None)
@@ -2490,7 +2420,7 @@ class CorrelationDecayAnalyzer:
         result.r_min, result.r_max = r_min, prep.r_max_used
         result.n_points = len(r_win)
 
-        # 包络拟合（按 envelope_mode：全点 / 峰值法 / 两者对比）
+        # 包络拟合（固定全点口径；峰值法机制保留在振荡诊断的极值检测中）
         envelope_fit, envelope_fit_alt, env_warnings, ext_data = \
             cls._fit_envelope_with_mode(r_win, C_win, prep.final_noise_floor, config)
         result.envelope_fit = envelope_fit
@@ -2502,10 +2432,6 @@ class CorrelationDecayAnalyzer:
         warnings.extend(env_warnings)
         if envelope_fit.message:
             warnings.append(f"包络拟合: {envelope_fit.message}")
-        if (envelope_fit_alt is not None and envelope_fit_alt.valid
-                and envelope_fit_alt.model != envelope_fit.model):
-            warnings.append("两种包络模式的形式不一致（全点 vs 峰值法），"
-                            "包络形式选择存在方法学依赖，结论需谨慎")
 
         # 距离族分解
         family_diag = cls.family_separated_diagnostic(prep, envelope_fit, config)

@@ -1,10 +1,5 @@
 {
  "n400_sc_97_98_A": {
-  "input_records": 25,
-  "symmetry": {
-   "err_ad": 0.14386531068479058,
-   "err_bc": 0.030332352410650104
-  },
   "result": {
    "classification": "oscillatory_exponential",
    "recommended_model": "oscillatory_exponential",
@@ -47,7 +42,7 @@
     ],
     "valid": true,
     "error_source": "lstsq_cov",
-    "message": "全点包络（all_points，n=23 个点）",
+    "message": "全点包络（n=23 个点）",
     "bound_hits": []
    },
    "envelope_fit_alt": null,
@@ -961,7 +956,7 @@
    "physical_form": "C(r) ≈ A·exp(−r/13.1)·cos(0.86·r + 3.02)",
    "warnings": [
     "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 25 个 bond 数据点保留在 group_raw",
-    "包络拟合: 全点包络（all_points，n=23 个点）",
+    "包络拟合: 全点包络（n=23 个点）",
     "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
     "候选模型 power_law_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 2.708e-06]（非负约束启用）",
     "候选模型 exponential_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 2.708e-06]（非负约束启用）",
@@ -983,7 +978,6 @@
     "r_max_noise_cut": 3.0,
     "r_max_noise_run": 3,
     "n_rmin_candidates": 20,
-    "envelope_mode": "all_points",
     "tail_frac_noise": 0.25,
     "noise_floor_abs_min": 1e-15,
     "prom_factor": 3.0,
@@ -1007,14 +1001,14 @@
     "bootstrap_n": 200,
     "pcov_max_cond": 1000000000000.0
    }
+  },
+  "input_records": 25,
+  "symmetry": {
+   "err_ad": 0.14386531068479058,
+   "err_bc": 0.030332352410650104
   }
  },
  "n400_sc_98_99_A": {
-  "input_records": 25,
-  "symmetry": {
-   "err_ad": 0.008423476236577337,
-   "err_bc": 0.1245594112814742
-  },
   "result": {
    "classification": "oscillatory_power_law",
    "recommended_model": "oscillatory_power_law",
@@ -1057,7 +1051,7 @@
     ],
     "valid": true,
     "error_source": "lstsq_cov",
-    "message": "全点包络（all_points，n=25 个点）",
+    "message": "全点包络（n=25 个点）",
     "bound_hits": []
    },
    "envelope_fit_alt": null,
@@ -1973,7 +1967,7 @@
    "warnings": [
     "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 25 个 bond 数据点保留在 group_raw",
     "参数随 r_min 单调漂移（Spearman ρ=0.88），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
-    "包络拟合: 全点包络（all_points，n=25 个点）",
+    "包络拟合: 全点包络（n=25 个点）",
     "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
     "候选模型 power_law_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0004548]（非负约束启用）",
     "候选模型 exponential_C: 参数 C_inf 触及下界 0；C_inf ∈ [0, 0.0004548]（非负约束启用）",
@@ -1995,7 +1989,6 @@
     "r_max_noise_cut": 3.0,
     "r_max_noise_run": 3,
     "n_rmin_candidates": 20,
-    "envelope_mode": "all_points",
     "tail_frac_noise": 0.25,
     "noise_floor_abs_min": 1e-15,
     "prom_factor": 3.0,
@@ -2019,14 +2012,14 @@
     "bootstrap_n": 200,
     "pcov_max_cond": 1000000000000.0
    }
+  },
+  "input_records": 25,
+  "symmetry": {
+   "err_ad": 0.008423476236577337,
+   "err_bc": 0.1245594112814742
   }
  },
  "n400_sc_98_102_A": {
-  "input_records": 25,
-  "symmetry": {
-   "err_ad": 0.028320739396870256,
-   "err_bc": 0.10938364014479966
-  },
   "result": {
    "classification": "complex_decay",
    "recommended_model": "complex_decay",
@@ -2069,7 +2062,7 @@
     ],
     "valid": true,
     "error_source": "lstsq_cov",
-    "message": "全点包络（all_points，n=20 个点）",
+    "message": "全点包络（n=20 个点）",
     "bound_hits": []
    },
    "envelope_fit_alt": null,
@@ -2969,7 +2962,7 @@
    "physical_form": "C(r) ≈ A·exp(−r/13.2)·cos(0.864·r + 0.192)",
    "warnings": [
     "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 25 个 bond 数据点保留在 group_raw",
-    "包络拟合: 全点包络（all_points，n=20 个点）",
+    "包络拟合: 全点包络（n=20 个点）",
     "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
     "候选模型 power_law_C: C_inf ∈ [0, 1.711e-06]（非负约束启用）",
     "候选模型 exponential_C: C_inf ∈ [0, 1.711e-06]（非负约束启用）",
@@ -2991,7 +2984,6 @@
     "r_max_noise_cut": 3.0,
     "r_max_noise_run": 3,
     "n_rmin_candidates": 20,
-    "envelope_mode": "all_points",
     "tail_frac_noise": 0.25,
     "noise_floor_abs_min": 1e-15,
     "prom_factor": 3.0,
@@ -3015,10 +3007,14 @@
     "bootstrap_n": 200,
     "pcov_max_cond": 1000000000000.0
    }
+  },
+  "input_records": 25,
+  "symmetry": {
+   "err_ad": 0.028320739396870256,
+   "err_bc": 0.10938364014479966
   }
  },
  "n400_spin_97": {
-  "input_records": 75,
   "result": {
    "classification": "complex_decay",
    "recommended_model": "complex_decay",
@@ -3061,7 +3057,7 @@
     ],
     "valid": true,
     "error_source": "lstsq_cov",
-    "message": "全点包络（all_points，n=71 个点）",
+    "message": "全点包络（n=71 个点）",
     "bound_hits": []
    },
    "envelope_fit_alt": null,
@@ -4145,7 +4141,7 @@
    "warnings": [
     "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 75 个数据点保留在 group_raw",
     "远端连续 3 个点低于 effective noise floor×3.0，自动截断 r_max → 108",
-    "包络拟合: 全点包络（all_points，n=71 个点）",
+    "包络拟合: 全点包络（n=71 个点）",
     "φ 子窗口最大漂移 2.87 rad，振荡模型在远端不稳定，证据降为 weak；距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
     "候选模型 power_law_C: C_inf ∈ [0, 0.01876]（非负约束启用）",
     "候选模型 exponential_C: C_inf ∈ [0, 0.01876]（非负约束启用）",
@@ -4167,7 +4163,6 @@
     "r_max_noise_cut": 3.0,
     "r_max_noise_run": 3,
     "n_rmin_candidates": 20,
-    "envelope_mode": "all_points",
     "tail_frac_noise": 0.25,
     "noise_floor_abs_min": 1e-15,
     "prom_factor": 3.0,
@@ -4191,10 +4186,10 @@
     "bootstrap_n": 200,
     "pcov_max_cond": 1000000000000.0
    }
-  }
+  },
+  "input_records": 75
  },
  "n400_spin_98": {
-  "input_records": 75,
   "result": {
    "classification": "complex_decay",
    "recommended_model": "complex_decay",
@@ -4237,7 +4232,7 @@
     ],
     "valid": true,
     "error_source": "lstsq_cov",
-    "message": "全点包络（all_points，n=70 个点）",
+    "message": "全点包络（n=70 个点）",
     "bound_hits": []
    },
    "envelope_fit_alt": null,
@@ -5326,7 +5321,7 @@
     "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 75 个数据点保留在 group_raw",
     "远端连续 3 个点低于 effective noise floor×3.0，自动截断 r_max → 106",
     "参数随 r_min 单调漂移（Spearman ρ=-0.87），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
-    "包络拟合: 全点包络（all_points，n=70 个点）",
+    "包络拟合: 全点包络（n=70 个点）",
     "距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
     "候选模型 power_law_C: C_inf ∈ [0, 0.01923]（非负约束启用）",
     "候选模型 exponential_C: C_inf ∈ [0, 0.01923]（非负约束启用）",
@@ -5348,7 +5343,6 @@
     "r_max_noise_cut": 3.0,
     "r_max_noise_run": 3,
     "n_rmin_candidates": 20,
-    "envelope_mode": "all_points",
     "tail_frac_noise": 0.25,
     "noise_floor_abs_min": 1e-15,
     "prom_factor": 3.0,
@@ -5372,17 +5366,18 @@
     "bootstrap_n": 200,
     "pcov_max_cond": 1000000000000.0
    }
-  }
+  },
+  "input_records": 75
  },
  "_meta": {
   "baseline_kind": "n400_v1",
+  "note": "包络固定全点口径（方案A）人工生成（2026-11-18，用户授权重建）。",
   "cases": [
    "n400_sc_97_98_A",
    "n400_sc_98_99_A",
    "n400_sc_98_102_A",
    "n400_spin_97",
    "n400_spin_98"
-  ],
-  "note": "该基线用于 N400 真实数据的回归稳定性验证，不是相态判定依据。SC 数据的 SU(2) 对称性误差约为 0.008-0.144，合成关联值的 SU(2) 物理解释需谨慎。现有 extract_data 解析路径会因边界筛选丢弃大量右侧数据，每个 SC 案例最终仅保留约 24-25 个距离点，不能代表原始数据的完整距离范围。远距离部分关联值接近数值噪声底，拟合窗口和振荡诊断可能对此敏感。当前仅覆盖 d1_10、bond dimension 1500 的 N400 数据，不支持掺杂依赖、bond-dimension 收敛或有限尺寸外推结论。"
+  ]
  }
 }

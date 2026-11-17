@@ -147,12 +147,11 @@ try:
 except ValueError:
     check('B', 'SF 未指定 operation → ValueError（不猜测操作）', True)
 
-cfg = AnalyzerConfig(envelope_mode='extrema', r_min_override=6.0)
+cfg = AnalyzerConfig(r_min_override=6.0)
 rep_cfg = run_analysis(OBSERVABLE_SPIN_CORRELATION, config=cfg,
                        record_list=recs_spin, N=200)
-check('B', '衰减链路 config 透传（envelope_mode 生效）',
-      rep_cfg.metadata['config']['envelope_mode'] == 'extrema'
-      and rep_cfg.metadata['config']['r_min_override'] == 6.0)
+check('B', '衰减链路 config 透传（r_min_override 生效）',
+      rep_cfg.metadata['config']['r_min_override'] == 6.0)
 rep_pow = run_analysis(OBSERVABLE_ENERGY, records=recs_energy,
                        power=2, threshold=1.5)
 check('B', '能量外推 power/threshold 透传',

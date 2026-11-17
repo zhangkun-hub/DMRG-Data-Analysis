@@ -41,7 +41,7 @@
    ],
    "valid": true,
    "error_source": "lstsq_cov",
-   "message": "全点包络（all_points，n=35 个点）",
+   "message": "全点包络（n=35 个点）",
    "bound_hits": []
   },
   "envelope_fit_alt": null,
@@ -1037,7 +1037,7 @@
   "warnings": [
    "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 37 个数据点保留在 group_raw",
    "参数随 r_min 单调漂移（Spearman ρ=-0.94），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
-   "包络拟合: 全点包络（all_points，n=35 个点）",
+   "包络拟合: 全点包络（n=35 个点）",
    "φ 子窗口最大漂移 2.23 rad，振荡模型在远端不稳定，证据降为 weak；距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
    "候选模型 power_law_C: C_inf ∈ [0, 0.05644]（非负约束启用）",
    "候选模型 exponential_C: C_inf ∈ [0, 0.05644]（非负约束启用）",
@@ -1059,7 +1059,6 @@
    "r_max_noise_cut": 3.0,
    "r_max_noise_run": 3,
    "n_rmin_candidates": 20,
-   "envelope_mode": "all_points",
    "tail_frac_noise": 0.25,
    "noise_floor_abs_min": 1e-15,
    "prom_factor": 3.0,
@@ -1126,7 +1125,7 @@
    ],
    "valid": true,
    "error_source": "lstsq_cov",
-   "message": "全点包络（all_points，n=34 个点）",
+   "message": "全点包络（n=34 个点）",
    "bound_hits": []
   },
   "envelope_fit_alt": null,
@@ -2120,7 +2119,7 @@
   "warnings": [
    "主分析使用同距离平均 C(r)（distance_aggregation='mean_by_distance'），原始 37 个数据点保留在 group_raw",
    "参数随 r_min 单调漂移（Spearman ρ=-0.89），verdict 降为 moderate（可能存在未被模型描述的近程贡献/边界效应）",
-   "包络拟合: 全点包络（all_points，n=34 个点）",
+   "包络拟合: 全点包络（n=34 个点）",
    "φ 子窗口最大漂移 2.42 rad，振荡模型在远端不稳定，证据降为 weak；距离族分解数据不足（仅一族或无足够点），结构赝振荡无法评估",
    "候选模型 power_law_C: C_inf ∈ [0, 0.0403]（非负约束启用）",
    "候选模型 exponential_C: C_inf ∈ [0, 0.0403]（非负约束启用）",
@@ -2142,7 +2141,6 @@
    "r_max_noise_cut": 3.0,
    "r_max_noise_run": 3,
    "n_rmin_candidates": 20,
-   "envelope_mode": "all_points",
    "tail_frac_noise": 0.25,
    "noise_floor_abs_min": 1e-15,
    "prom_factor": 3.0,

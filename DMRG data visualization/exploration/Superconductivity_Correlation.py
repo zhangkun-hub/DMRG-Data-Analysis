@@ -88,7 +88,7 @@ def _decay_worker(rec_list, label, bond, key, rb, ref_dir):
     字符串——避免跨进程传分析结果对象的序列化问题；主进程仅打印失败。
     """
     try:
-        config = AnalyzerConfig(envelope_mode='both')
+        config = AnalyzerConfig()   # 包络拟合固定全点口径
         result = SuperCorrDecayAnalyzer.analyze(rec_list, config)
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):

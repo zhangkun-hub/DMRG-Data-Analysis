@@ -99,15 +99,16 @@ def diff_paths(a, b, path=''):
 print('===== A. 真实数据（N200） =====')
 REAL_CASES = [
     # (名字, doping, refbond, bond, config)
-    # 覆盖：4 种 doping × 3 种 refbond × A/B/C 方向 × 振荡强/中/无 × 11/12 点 × all_points/both
-    ('d1_10_49_50_A', 'd1_10', '49_50', 'A', AnalyzerConfig(envelope_mode='all_points')),   # 强振荡
-    ('d1_10_50_54_C', 'd1_10', '50_54', 'C', AnalyzerConfig(envelope_mode='all_points')),   # 11 点强振荡
-    ('d1_100_49_50_A', 'd1_100', '49_50', 'A', AnalyzerConfig(envelope_mode='all_points')), # 无振荡强 hump
-    ('d1_100_50_51_A', 'd1_100', '50_51', 'A', AnalyzerConfig(envelope_mode='both')),       # 无振荡弱 hump
-    ('d1_100_50_51_C', 'd1_100', '50_51', 'C', AnalyzerConfig(envelope_mode='both')),       # 无振荡更弱 hump
-    ('d1_100_50_54_C', 'd1_100', '50_54', 'C', AnalyzerConfig(envelope_mode='both')),       # 11 点 hump 卡线场景
-    ('d1_20_49_50_A', 'd1_20', '49_50', 'A', AnalyzerConfig(envelope_mode='both')),         # 中振荡 + both 退化（2026-11 新协议数据，基线已重新生成）
-    ('d2_25_50_51_B', 'd2_25', '50_51', 'B', AnalyzerConfig(envelope_mode='all_points')),   # 另一 doping 强振荡
+    # 覆盖：4 种 doping × 3 种 refbond × A/B/C 方向 × 振荡强/中/无 × 11/12 点
+    # （包络拟合为固定全点口径，无模式参数）
+    ('d1_10_49_50_A', 'd1_10', '49_50', 'A', AnalyzerConfig()),   # 强振荡
+    ('d1_10_50_54_C', 'd1_10', '50_54', 'C', AnalyzerConfig()),   # 11 点强振荡
+    ('d1_100_49_50_A', 'd1_100', '49_50', 'A', AnalyzerConfig()), # 无振荡强 hump
+    ('d1_100_50_51_A', 'd1_100', '50_51', 'A', AnalyzerConfig()),       # 无振荡弱 hump
+    ('d1_100_50_51_C', 'd1_100', '50_51', 'C', AnalyzerConfig()),       # 无振荡更弱 hump
+    ('d1_100_50_54_C', 'd1_100', '50_54', 'C', AnalyzerConfig()),       # 11 点 hump 卡线场景
+    ('d1_20_49_50_A', 'd1_20', '49_50', 'A', AnalyzerConfig()),         # 中振荡（2026-11 新协议数据）
+    ('d2_25_50_51_B', 'd2_25', '50_51', 'B', AnalyzerConfig()),   # 另一 doping 强振荡
 ]
 results_real = {}
 for name, doping, ref, bond, cfg in REAL_CASES:
