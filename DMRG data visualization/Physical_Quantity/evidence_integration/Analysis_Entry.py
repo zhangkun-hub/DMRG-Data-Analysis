@@ -26,6 +26,7 @@ from .Analysis_Contract import (
     OBSERVABLE_LOCAL_SZ,
     OBSERVABLE_PAIRING_G2_COMPARISON,
     OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT,
+    OBSERVABLE_SC_PAIRING_PHASE,
 )
 from .Analysis_Integration import (
     analyze_with_report, structure_factor_report,
@@ -36,6 +37,7 @@ from .Analysis_Integration import (
     pairing_g2_report,
     charge_peak_analysis_report,
     charge_spin_peak_alignment_report,
+    phase_analysis_report,
 )
 from ..physical_analysis.Super_Correlation_Analyzer import SuperCorrDecayAnalyzer
 from ..physical_analysis.Spin_Correlation_Analyzer import SpinCorrDecayAnalyzer
@@ -79,6 +81,7 @@ _ROUTES = {
     (OBSERVABLE_PAIRING_G2_COMPARISON, 'compare'): pairing_g2_report,
     (OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT, 'align'):
         charge_spin_peak_alignment_report,
+    (OBSERVABLE_SC_PAIRING_PHASE, 'analyze'): phase_analysis_report,
 }
 
 # 只有一种操作的观测量 → 默认操作（保持常用调用简洁）；
@@ -96,6 +99,7 @@ _DEFAULT_OPERATION = {
     OBSERVABLE_LOCAL_SZ: 'profile',
     OBSERVABLE_PAIRING_G2_COMPARISON: 'compare',
     OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT: 'align',
+    OBSERVABLE_SC_PAIRING_PHASE: 'analyze',
 }
 
 # 支持 config 参数的链路（decay → AnalyzerConfig；analyze →

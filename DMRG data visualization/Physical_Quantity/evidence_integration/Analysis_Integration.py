@@ -622,3 +622,27 @@ def sc_pairing_symmetry_analysis_report(condition, config=None) \
     observations = run_candidate_observations(rep, config)
     return sc_pairing_symmetry_report(
         {'stage4': stage4, 'observations': observations})
+
+
+def phase_analysis_report(datasets, N=200, config=None) -> AnalysisReport:
+    """d+id 相位数值诊断的集成包装。
+
+    链：datasets（三个 refbond × 三键方向 × 复值关联的装配结构，
+    SCPhaseAnalyzer.assemble_datasets 或等价 dict，含 '_ref_keys'）→
+    SCPhaseAnalyzer.analyze → from_phase_analysis。
+
+    语义约定：
+    - 六态数值分类（chiral_phase_candidate / no_chiral_signal /
+      d_component_suppressed / d_component_unresolved / insufficient /
+      inconclusive），非相态判定
+    - 不捕获底层异常（装配缺失/公共 bin 为空等 ValueError 原样传播）
+    - payload 保留 to_dict 引用（默认不序列化）
+    - 阈值为默认值（defaults_not_authorized，未获物理授权）
+    """
+    from ..physical_analysis.SC_Phase_Analyzer import (
+        SCPhaseAnalyzer, PhaseAnalyzerConfig)
+    from .Analysis_Contract import from_phase_analysis
+
+    cfg = config if config is not None else PhaseAnalyzerConfig()
+    result = SCPhaseAnalyzer.analyze(datasets, N=N, config=cfg)
+    return from_phase_analysis(result.to_dict())

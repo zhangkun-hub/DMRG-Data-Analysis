@@ -48,6 +48,7 @@ ANALYZER_DENSITY = 'DensityEstimator'
 ANALYZER_SZ_PROFILE = 'SzProfileEstimator'
 ANALYZER_PAIRING_G2 = 'PairingG2Comparison'
 ANALYZER_CHARGE_SPIN_PEAK_ALIGNMENT = 'ChargeSpinPeakAlignmentEstimator'
+ANALYZER_SC_PHASE = 'SCPhaseAnalyzer'
 
 # ---- 物理量标识 ----
 OBSERVABLE_SUPERCONDUCTING_CORRELATION = 'superconducting_correlation'
@@ -63,6 +64,7 @@ OBSERVABLE_LOCAL_DENSITY = 'local_density'
 OBSERVABLE_LOCAL_SZ = 'local_sz'
 OBSERVABLE_PAIRING_G2_COMPARISON = 'pairing_g2_comparison'
 OBSERVABLE_CHARGE_SPIN_PEAK_ALIGNMENT = 'charge_spin_peak_alignment'
+OBSERVABLE_SC_PAIRING_PHASE = 'sc_pairing_phase'
 
 
 def _convert(obj):
@@ -545,4 +547,66 @@ def from_energy_extrapolation(e_inf, ns, power: int = 1, threshold: float = 2.0)
         warnings=[],
         metadata={},
         payload=None,
+    )
+
+
+def from_phase_analysis(result_dict) -> AnalysisReport:
+    """SCPhaseAnalyzer.analyze 的 to_dict 输出 → AnalysisReport。
+
+    映射规则：
+    - status：result_dict 为 None → 'failed'；'error' → 'failed'；
+      classification='insufficient' → 'inconclusive'（计算完成但
+      无有效相位证据）；其余 → 'ok'
+    - classification：六态数值分类原样映射（chiral_phase_candidate /
+      no_chiral_signal / d_component_suppressed /
+      d_component_unresolved / insufficient / inconclusive——
+      数值分析分类，非相态判定）
+    - parameters：n_bins / n_valid_bins / noise_floor /
+      circular_mean_deg / circular_std_deg / d2_ratio_median /
+      max_conjugate_deviation
+    - data_restricted：None
+    - metadata：阈值状态（defaults_not_authorized）+ 判据语义说明
+      （±90° 平台是 d+id 候选证据的必要条件；no_chiral_signal /
+      d_component_suppressed 不表示二维热力学极限下不存在手性超导；
+      insufficient 仅表示证据不足）
+    - payload：result_dict 原对象引用（默认不序列化）
+    """
+    if result_dict is None or result_dict.get('status') == 'error':
+        return AnalysisReport(analyzer=ANALYZER_SC_PHASE,
+                              observable=OBSERVABLE_SC_PAIRING_PHASE,
+                              status=STATUS_FAILED)
+    cls = result_dict.get('classification')
+    status = STATUS_INCONCLUSIVE if cls == 'insufficient' else STATUS_OK
+    params = {
+        'n_bins': result_dict.get('n_bins'),
+        'n_valid_bins': result_dict.get('n_valid_bins'),
+        'noise_floor': result_dict.get('noise_floor'),
+        'circular_mean_deg': result_dict.get('circular_mean_deg'),
+        'circular_std_deg': result_dict.get('circular_std_deg'),
+        'd2_ratio_median': result_dict.get('d2_ratio_median'),
+        'max_conjugate_deviation':
+            result_dict.get('conjugate_diagnostics', {}).get(
+                'max_relative_deviation'),
+    }
+    metadata = {
+        'threshold_status': 'defaults_not_authorized',
+        'note': ('d+id 相位数值诊断：±90° 平台为手性候选证据的必要'
+                 '条件，不构成相态判定；chiral_phase_candidate 为数值'
+                 '候选、no_chiral_signal 仅限当前参数与有限宽度圆柱、'
+                 'd_component_suppressed 表示 d_xy 通道物理可分辨的'
+                 '抑制（比值 1e-8~1e-6）、d_component_unresolved 表示'
+                 'd_xy 通道低于数值分辨能力（物理抑制与数值零无法区分）、'
+                 'insufficient 仅表示相位证据不足；阈值未获物理授权'),
+    }
+    return AnalysisReport(
+        analyzer=ANALYZER_SC_PHASE,
+        observable=OBSERVABLE_SC_PAIRING_PHASE,
+        status=status,
+        classification=cls,
+        parameters=params,
+        evidence=None,
+        data_restricted=None,
+        warnings=list(result_dict.get('reasons') or []),
+        metadata=metadata,
+        payload=result_dict,
     )
